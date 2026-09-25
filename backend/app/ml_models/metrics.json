@@ -1,0 +1,23 @@
+{
+  "status": "trained",
+  "accuracy": 0.9995,
+  "std": 0.0003,
+  "n_samples": 26315,
+  "n_features": 11,
+  "feature_names": [
+    "rainfall_mm",
+    "temp_max",
+    "temp_min",
+    "humidity_avg",
+    "wind_speed_max",
+    "precipitation_hours",
+    "rain_lag1",
+    "temp_range",
+    "rain_squared",
+    "humidity_x_rain",
+    "wind_x_rain"
+  ],
+  "trained_at": "2026-08-28T08:37:08.995559",
+  "model_type": "XGBClassifier",
+  "version": "1.0"
+}

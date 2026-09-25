@@ -1,0 +1,168 @@
+{"kind":"deck","id":"pr/qv39lp","name":"Deck"}
+{"kind":"layout","layoutId":"8ecdc2e7-cc01-4055-ba2f-38a34efe0bc4","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"a00102ce-606c-4ee3-ba00-93d071db8a71","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/w0jxqh","slide":1,"title":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textShapes":12}
+{"kind":"shape","id":"sh/mhk3q5o7","slide":1,"bbox":[0,0,1280,12]}
+{"kind":"textbox","id":"sh/t83itgfm","slide":1,"text":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textPreview":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textChars":37,"textLines":1,"bbox":[58,30,500,20]}
+{"kind":"textbox","id":"sh/4nap4r65","slide":1,"text":"PROJECT CONCEPT","textPreview":"PROJECT CONCEPT","textChars":15,"textLines":1,"bbox":[930,30,290,20]}
+{"kind":"textbox","id":"sh/bq1oryts","slide":1,"text":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textPreview":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textChars":59,"textLines":1,"bbox":[650,674,570,18]}
+{"kind":"textbox","id":"sh/m58z25kb","slide":1,"text":"RIIS","textPreview":"RIIS","textChars":4,"textLines":1,"bbox":[58,188,360,66]}
+{"kind":"textbox","id":"sh/twra5gbq","slide":1,"text":"Rainfall Impact\nIntelligence System","textPreview":"Rainfall Impact | Intelligence System","textChars":35,"textLines":2,"bbox":[58,258,550,115]}
+{"kind":"textbox","id":"sh/4byhgn29","slide":1,"text":"A futuristic decision-support platform that turns changing weather conditions into clear, local and explainable action for rainfall-related emergencies.","textPreview":"A futuristic decision-support platform that turns changing weather conditions into clear, local and explainable action for rainfall-relat...","textChars":152,"textLines":1,"bbox":[58,397,530,88]}
+{"kind":"shape","id":"sh/bm58z25k","slide":1,"bbox":[58,510,320,28]}
+{"kind":"textbox","id":"sh/m1cfa9w3","slide":1,"text":"WEATHER INTELLIGENCE FOR SAFER COMMUNITIES","textPreview":"WEATHER INTELLIGENCE FOR SAFER COMMUNITIES","textChars":42,"textLines":1,"bbox":[58,516,320,16]}
+{"kind":"shape","id":"sh/cfa9w3m9","slide":1,"bbox":[670,120,525,500]}
+{"kind":"textbox","id":"sh/1032lszq","slide":1,"text":"LIVE WEATHER INTELLIGENCE","textPreview":"LIVE WEATHER INTELLIGENCE","textChars":25,"textLines":1,"bbox":[700,150,330,22]}
+{"kind":"textbox","id":"sh/u9knih4b","slide":1,"text":"Predict","textPreview":"Predict","textChars":7,"textLines":1,"bbox":[700,205,250,54]}
+{"kind":"textbox","id":"sh/judg7ads","slide":1,"text":"Understand","textPreview":"Understand","textChars":10,"textLines":1,"bbox":[700,273,280,54]}
+{"kind":"textbox","id":"sh/c7u54zid","slide":1,"text":"Act early","textPreview":"Act early","textChars":9,"textLines":1,"bbox":[700,341,260,54]}
+{"kind":"shape","id":"sh/1orytsvu","slide":1,"bbox":[973.75,418.75,72.5,72.5]}
+{"kind":"shape","id":"sh/u18jqh0f","slide":1,"bbox":[937.5,382.5,145,145]}
+{"kind":"shape","id":"sh/jm1cfa9w","slide":1,"bbox":[901.25,346.25,217.5,217.5]}
+{"kind":"shape","id":"sh/cvixczed","slide":1,"bbox":[865,310,290,290]}
+{"kind":"shape","id":"sh/5gbq1ory","slide":1,"bbox":[865,310,290,290]}
+{"kind":"textbox","id":"sh/90je9cvi","slide":1,"text":"Weather  •  Maps  •  Explainable AI  •  Response tools","textPreview":"Weather  •  Maps  •  Explainable AI  •  Response tools","textChars":54,"textLines":1,"bbox":[700,565,430,24]}
+{"kind":"notes","id":"nt/w0jxqh","slide":1,"text":""}
+{"kind":"slide","id":"sl/hdu26n","slide":2,"title":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textShapes":22}
+{"kind":"shape","id":"sh/nih4byhg","slide":2,"bbox":[0,0,1280,12]}
+{"kind":"textbox","id":"sh/g3ex0nux","slide":2,"text":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textPreview":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textChars":37,"textLines":1,"bbox":[58,30,500,20]}
+{"kind":"textbox","id":"sh/5o7qpg3e","slide":2,"text":"GEOSPATIAL MONITORING","textPreview":"GEOSPATIAL MONITORING","textChars":21,"textLines":1,"bbox":[930,30,290,20]}
+{"kind":"textbox","id":"sh/ylc7u54z","slide":2,"text":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textPreview":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textChars":59,"textLines":1,"bbox":[650,674,570,18]}
+{"kind":"textbox","id":"sh/r65wjudg","slide":2,"text":"Understand where rainfall becomes a real-world risk","textPreview":"Understand where rainfall becomes a real-world risk","textChars":51,"textLines":1,"bbox":[58,78,1140,50]}
+{"kind":"textbox","id":"sh/gr2p8nqx","slide":2,"text":"RIIS connects large-scale weather patterns with city and ward-level conditions so support can reach the right place.","textPreview":"RIIS connects large-scale weather patterns with city and ward-level conditions so support can reach the right place.","textChars":116,"textLines":1,"bbox":[58,132,1140,30]}
+{"kind":"shape","id":"sh/9cvixcze","slide":2,"bbox":[58,190,540,420]}
+{"kind":"textbox","id":"sh/yd0z6103","slide":2,"text":"INDIA RISK MAP","textPreview":"INDIA RISK MAP","textChars":14,"textLines":1,"bbox":[86,216,200,22]}
+{"kind":"textbox","id":"sh/rytsvu9k","slide":2,"text":"The national view helps teams compare weather conditions across districts and identify regions that may need attention.","textPreview":"The national view helps teams compare weather conditions across districts and identify regions that may need attention.","textChars":119,"textLines":1,"bbox":[86,246,420,48]}
+{"kind":"shape","id":"sh/bi9s36hc","slide":2,"bbox":[180,340,18,18]}
+{"kind":"textbox","id":"sh/ixczed8v","slide":2,"text":"Northern region","textPreview":"Northern region","textChars":15,"textLines":1,"bbox":[204,341,100,16]}
+{"kind":"shape","id":"sh/tovahoza","slide":2,"bbox":[290,310,18,18]}
+{"kind":"textbox","id":"sh/032lszqt","slide":2,"text":"Central region","textPreview":"Central region","textChars":14,"textLines":1,"bbox":[314,311,100,16]}
+{"kind":"shape","id":"sh/bulwval8","slide":2,"bbox":[360,370,18,18]}
+{"kind":"textbox","id":"sh/i9s36hcr","slide":2,"text":"Eastern region","textPreview":"Eastern region","textChars":14,"textLines":1,"bbox":[384,371,100,16]}
+{"kind":"shape","id":"sh/p0bi9s36","slide":2,"bbox":[260,430,18,18]}
+{"kind":"textbox","id":"sh/0fepkzup","slide":2,"text":"Western region","textPreview":"Western region","textChars":14,"textLines":1,"bbox":[284,431,100,16]}
+{"kind":"shape","id":"sh/byhgn29g","slide":2,"bbox":[365,500,18,18]}
+{"kind":"textbox","id":"sh/idonyd0z","slide":2,"text":"Coastal region","textPreview":"Coastal region","textChars":14,"textLines":1,"bbox":[389,501,100,16]}
+{"kind":"textbox","id":"sh/65wjudg7","slide":2,"text":"Risk levels are communicated visually so patterns can be understood at a glance.","textPreview":"Risk levels are communicated visually so patterns can be understood at a glance.","textChars":80,"textLines":1,"bbox":[86,555,430,24]}
+{"kind":"shape","id":"sh/zqtcj6to","slide":2,"bbox":[630,190,565,420]}
+{"kind":"textbox","id":"sh/obm58z25","slide":2,"text":"CITY AND WARD VIEW","textPreview":"CITY AND WARD VIEW","textChars":18,"textLines":1,"bbox":[658,216,230,22]}
+{"kind":"textbox","id":"sh/hwfyxobm","slide":2,"text":"The local view combines forecast rainfall, likely water accumulation and population exposure to show which neighbourhoods are more vulnerable.","textPreview":"The local view combines forecast rainfall, likely water accumulation and population exposure to show which neighbourhoods are more vulner...","textChars":142,"textLines":1,"bbox":[658,246,460,50]}
+{"kind":"shape","id":"sh/6xkf6dcb","slide":2,"bbox":[720,350,92,42]}
+{"kind":"textbox","id":"sh/zed8v6ps","slide":2,"text":"Velachery","textPreview":"Velachery","textChars":9,"textLines":1,"bbox":[728,358,78,16]}
+{"kind":"shape","id":"sh/oza1gvy9","slide":2,"bbox":[875,330,92,42]}
+{"kind":"textbox","id":"sh/hk3q5o7q","slide":2,"text":"Saidapet","textPreview":"Saidapet","textChars":8,"textLines":1,"bbox":[883,338,78,16]}
+{"kind":"shape","id":"sh/al87ed8b","slide":2,"bbox":[970,415,92,42]}
+{"kind":"textbox","id":"sh/z61032ls","slide":2,"text":"Adyar","textPreview":"Adyar","textChars":5,"textLines":1,"bbox":[978,423,78,16]}
+{"kind":"shape","id":"sh/lc7u54zi","slide":2,"bbox":[760,470,92,42]}
+{"kind":"textbox","id":"sh/wra5gbq1","slide":2,"text":"Chromepet","textPreview":"Chromepet","textChars":9,"textLines":1,"bbox":[768,478,78,16]}
+{"kind":"shape","id":"sh/36hcrmhk","slide":2,"bbox":[925,490,92,42]}
+{"kind":"textbox","id":"sh/eloj2t83","slide":2,"text":"Tambaram","textPreview":"Tambaram","textChars":8,"textLines":1,"bbox":[933,498,78,16]}
+{"kind":"shape","id":"sh/l0rqd4vm","slide":2,"bbox":[1040,330,92,42]}
+{"kind":"textbox","id":"sh/wfyxobm5","slide":2,"text":"Perambur","textPreview":"Perambur","textChars":8,"textLines":1,"bbox":[1048,338,78,16]}
+{"kind":"textbox","id":"sh/7u54zido","slide":2,"text":"Device location can refresh the map context and weather information for the user’s current area.","textPreview":"Device location can refresh the map context and weather information for the user’s current area.","textChars":96,"textLines":1,"bbox":[658,554,460,28]}
+{"kind":"notes","id":"nt/hdu26n","slide":2,"text":""}
+{"kind":"slide","id":"sl/p04x9p","slide":3,"title":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textShapes":25}
+{"kind":"shape","id":"sh/xobm58z2","slide":3,"bbox":[0,0,1280,12]}
+{"kind":"textbox","id":"sh/qxs72x4n","slide":3,"text":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textPreview":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textChars":37,"textLines":1,"bbox":[58,30,500,20]}
+{"kind":"textbox","id":"sh/fil0rqd4","slide":3,"text":"AI & EXPLAINABILITY","textPreview":"AI & EXPLAINABILITY","textChars":19,"textLines":1,"bbox":[930,30,290,20]}
+{"kind":"textbox","id":"sh/4fu18jqh","slide":3,"text":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textPreview":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textChars":59,"textLines":1,"bbox":[650,674,570,18]}
+{"kind":"textbox","id":"sh/x0nuxc3y","slide":3,"text":"Make every rainfall forecast understandable","textPreview":"Make every rainfall forecast understandable","textChars":43,"textLines":1,"bbox":[58,78,1140,50]}
+{"kind":"textbox","id":"sh/m94fu18j","slide":3,"text":"RIIS combines forecasting models with explainable AI so users can see not only the prediction, but also the weather signals behind it.","textPreview":"RIIS combines forecasting models with explainable AI so users can see not only the prediction, but also the weather signals behind it.","textChars":134,"textLines":1,"bbox":[58,132,1140,30]}
+{"kind":"shape","id":"sh/fu18jqh0","slide":3,"bbox":[58,190,390,410]}
+{"kind":"textbox","id":"sh/4r65wjud","slide":3,"text":"HOW THE INTELLIGENCE FLOWS","textPreview":"HOW THE INTELLIGENCE FLOWS","textChars":26,"textLines":1,"bbox":[86,216,280,22]}
+{"kind":"shape","id":"sh/xc3ylc7u","slide":3,"bbox":[90,264,320,36]}
+{"kind":"textbox","id":"sh/9cvixcze","slide":3,"text":"Live weather and device location","textPreview":"Live weather and device location","textChars":32,"textLines":1,"bbox":[106,274,285,18]}
+{"kind":"textbox","id":"sh/gr2p8nqx","slide":3,"text":"↓","textPreview":"↓","textChars":1,"textLines":1,"bbox":[235,302,25,18]}
+{"kind":"shape","id":"sh/r65wjudg","slide":3,"bbox":[90,320,320,36]}
+{"kind":"textbox","id":"sh/ylc7u54z","slide":3,"text":"Radar, satellite and station feeds","textPreview":"Radar, satellite and station feeds","textChars":34,"textLines":1,"bbox":[106,330,285,18]}
+{"kind":"textbox","id":"sh/5o7qpg3e","slide":3,"text":"↓","textPreview":"↓","textChars":1,"textLines":1,"bbox":[235,358,25,18]}
+{"kind":"shape","id":"sh/g3ex0nux","slide":3,"bbox":[90,376,320,36]}
+{"kind":"textbox","id":"sh/nih4byhg","slide":3,"text":"Rainfall forecasting model","textPreview":"Rainfall forecasting model","textChars":26,"textLines":1,"bbox":[106,386,285,18]}
+{"kind":"textbox","id":"sh/yxobm58z","slide":3,"text":"↓","textPreview":"↓","textChars":1,"textLines":1,"bbox":[235,414,25,18]}
+{"kind":"shape","id":"sh/9s36hcrm","slide":3,"bbox":[90,432,320,36]}
+{"kind":"textbox","id":"sh/g7adsji5","slide":3,"text":"Impact assessment model","textPreview":"Impact assessment model","textChars":23,"textLines":1,"bbox":[106,442,285,18]}
+{"kind":"textbox","id":"sh/gbq1oryt","slide":3,"text":"↓","textPreview":"↓","textChars":1,"textLines":1,"bbox":[235,470,25,18]}
+{"kind":"shape","id":"sh/5wjudg7a","slide":3,"bbox":[90,488,320,36]}
+{"kind":"textbox","id":"sh/y90je9cv","slide":3,"text":"Explanation and confidence layer","textPreview":"Explanation and confidence layer","textChars":32,"textLines":1,"bbox":[106,498,285,18]}
+{"kind":"shape","id":"sh/nuxc3ylc","slide":3,"bbox":[480,190,715,195]}
+{"kind":"textbox","id":"sh/gn29gr2p","slide":3,"text":"WHAT THE EXPLAINABLE AI LOOKS FOR","textPreview":"WHAT THE EXPLAINABLE AI LOOKS FOR","textChars":33,"textLines":1,"bbox":[508,216,430,22]}
+{"kind":"shape","id":"sh/58z25kb6","slide":3,"bbox":[530,255,28,90]}
+{"kind":"textbox","id":"sh/yhgn29gr","slide":3,"text":"Humidity","textPreview":"Humidity","textChars":8,"textLines":1,"bbox":[506,357,105,16]}
+{"kind":"shape","id":"sh/n29gr2p8","slide":3,"bbox":[626,269,28,76]}
+{"kind":"textbox","id":"sh/czed8v6p","slide":3,"text":"Wind direction","textPreview":"Wind direction","textChars":14,"textLines":1,"bbox":[618,357,105,16]}
+{"kind":"shape","id":"sh/5kb6xkf6","slide":3,"bbox":[722,279,28,66]}
+{"kind":"textbox","id":"sh/vixczed8","slide":3,"text":"Radar activity","textPreview":"Radar activity","textChars":14,"textLines":1,"bbox":[730,357,105,16]}
+{"kind":"shape","id":"sh/2x4nap4r","slide":3,"bbox":[818,287,28,58]}
+{"kind":"textbox","id":"sh/donyd0z6","slide":3,"text":"Cloud cooling","textPreview":"Cloud cooling","textChars":13,"textLines":1,"bbox":[842,357,105,16]}
+{"kind":"shape","id":"sh/k3q5o7qp","slide":3,"bbox":[914,299,28,46]}
+{"kind":"textbox","id":"sh/val87ed8","slide":3,"text":"Air pressure","textPreview":"Air pressure","textChars":12,"textLines":1,"bbox":[954,357,105,16]}
+{"kind":"shape","id":"sh/6psfil0r","slide":3,"bbox":[1010,307,28,38]}
+{"kind":"textbox","id":"sh/dcbulwva","slide":3,"text":"Monsoon conditions","textPreview":"Monsoon conditions","textChars":18,"textLines":1,"bbox":[1066,357,105,16]}
+{"kind":"shape","id":"sh/kre1w7mp","slide":3,"bbox":[480,405,715,195]}
+{"kind":"textbox","id":"sh/v6psfil0","slide":3,"text":"TIME-BASED FORECAST TIMELINE","textPreview":"TIME-BASED FORECAST TIMELINE","textChars":28,"textLines":1,"bbox":[508,430,310,22]}
+{"kind":"textbox","id":"sh/2lszqtcj","slide":3,"text":"The timeline lets users follow how rainfall, risk and confidence change as the weather system develops.","textPreview":"The timeline lets users follow how rainfall, risk and confidence change as the weather system develops.","textChars":103,"textLines":1,"bbox":[508,465,640,34]}
+{"kind":"textbox","id":"sh/mhk3q5o7","slide":3,"text":"This makes it easier to plan action before a severe rainfall period begins.","textPreview":"This makes it easier to plan action before a severe rainfall period begins.","textChars":75,"textLines":1,"bbox":[508,526,640,24]}
+{"kind":"notes","id":"nt/p04x9p","slide":3,"text":""}
+{"kind":"slide","id":"sl/dn1rjp","slide":4,"title":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textShapes":27}
+{"kind":"shape","id":"sh/jm1cfa9w","slide":4,"bbox":[0,0,1280,12]}
+{"kind":"textbox","id":"sh/c7u54zid","slide":4,"text":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textPreview":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textChars":37,"textLines":1,"bbox":[58,30,500,20]}
+{"kind":"textbox","id":"sh/1orytsvu","slide":4,"text":"IMPACT INTELLIGENCE","textPreview":"IMPACT INTELLIGENCE","textChars":19,"textLines":1,"bbox":[930,30,290,20]}
+{"kind":"textbox","id":"sh/u9knih4b","slide":4,"text":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textPreview":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textChars":59,"textLines":1,"bbox":[650,674,570,18]}
+{"kind":"textbox","id":"sh/judg7ads","slide":4,"text":"Translate weather predictions into practical decisions","textPreview":"Translate weather predictions into practical decisions","textChars":54,"textLines":1,"bbox":[58,78,1140,50]}
+{"kind":"textbox","id":"sh/cfa9w3m9","slide":4,"text":"RIIS evaluates how a rainfall event could affect daily life, infrastructure and public safety, not only how much rain may fall.","textPreview":"RIIS evaluates how a rainfall event could affect daily life, infrastructure and public safety, not only how much rain may fall.","textChars":127,"textLines":1,"bbox":[58,132,1140,30]}
+{"kind":"shape","id":"sh/1032lszq","slide":4,"bbox":[58,205,232,106]}
+{"kind":"textbox","id":"sh/udg7adsj","slide":4,"text":"Urban flooding","textPreview":"Urban flooding","textChars":14,"textLines":1,"bbox":[76,221,190,20]}
+{"kind":"textbox","id":"sh/nyd0z610","slide":4,"text":"Identifies areas where intense rain may overwhelm drainage.","textPreview":"Identifies areas where intense rain may overwhelm drainage.","textChars":59,"textLines":1,"bbox":[76,248,192,46]}
+{"kind":"shape","id":"sh/v6psfil0","slide":4,"bbox":[318,205,232,106]}
+{"kind":"textbox","id":"sh/2lszqtcj","slide":4,"text":"Waterlogging","textPreview":"Waterlogging","textChars":12,"textLines":1,"bbox":[336,221,190,20]}
+{"kind":"textbox","id":"sh/d8bat47y","slide":4,"text":"Highlights roads and neighbourhoods likely to accumulate water.","textPreview":"Highlights roads and neighbourhoods likely to accumulate water.","textChars":63,"textLines":1,"bbox":[336,248,192,46]}
+{"kind":"shape","id":"sh/knih4byh","slide":4,"bbox":[578,205,232,106]}
+{"kind":"textbox","id":"sh/vu9knih4","slide":4,"text":"Traffic disruption","textPreview":"Traffic disruption","textChars":18,"textLines":1,"bbox":[596,221,190,20]}
+{"kind":"textbox","id":"sh/29gr2p8n","slide":4,"text":"Helps people and agencies prepare safer travel routes.","textPreview":"Helps people and agencies prepare safer travel routes.","textChars":54,"textLines":1,"bbox":[596,248,192,46]}
+{"kind":"shape","id":"sh/d0z61032","slide":4,"bbox":[58,333,232,106]}
+{"kind":"textbox","id":"sh/kf6dcbul","slide":4,"text":"River and reservoir risk","textPreview":"River and reservoir risk","textChars":24,"textLines":1,"bbox":[76,349,190,20]}
+{"kind":"textbox","id":"sh/vixczed8","slide":4,"text":"Supports monitoring of inflow, overflow and water release decisions.","textPreview":"Supports monitoring of inflow, overflow and water release decisions.","textChars":68,"textLines":1,"bbox":[76,376,192,46]}
+{"kind":"shape","id":"sh/2x4nap4r","slide":4,"bbox":[318,333,232,106]}
+{"kind":"textbox","id":"sh/ex0nuxc3","slide":4,"text":"Farmer advisory","textPreview":"Farmer advisory","textChars":15,"textLines":1,"bbox":[336,349,190,20]}
+{"kind":"textbox","id":"sh/3itgfmlk","slide":4,"text":"Converts rainfall conditions into crop-protection guidance.","textPreview":"Converts rainfall conditions into crop-protection guidance.","textChars":59,"textLines":1,"bbox":[336,376,192,46]}
+{"kind":"shape","id":"sh/w3m94fu1","slide":4,"bbox":[578,333,232,106]}
+{"kind":"textbox","id":"sh/loj2t83i","slide":4,"text":"Public safety","textPreview":"Public safety","textChars":13,"textLines":1,"bbox":[596,349,190,20]}
+{"kind":"textbox","id":"sh/e9cvixcz","slide":4,"text":"Brings key threats together for emergency readiness.","textPreview":"Brings key threats together for emergency readiness.","textChars":52,"textLines":1,"bbox":[596,376,192,46]}
+{"kind":"shape","id":"sh/3q5o7qpg","slide":4,"bbox":[858,205,337,280]}
+{"kind":"textbox","id":"sh/wb2hwfyx","slide":4,"text":"ACTION TOOLS","textPreview":"ACTION TOOLS","textChars":12,"textLines":1,"bbox":[884,229,230,22]}
+{"kind":"shape","id":"sh/lwval87e","slide":4,"bbox":[884,270,6,54]}
+{"kind":"textbox","id":"sh/ahoza1gv","slide":4,"text":"Flood Simulator","textPreview":"Flood Simulator","textChars":15,"textLines":1,"bbox":[904,270,250,18]}
+{"kind":"textbox","id":"sh/32lszqtc","slide":4,"text":"Explores likely flooding under different rainfall conditions.","textPreview":"Explores likely flooding under different rainfall conditions.","textChars":61,"textLines":1,"bbox":[904,293,250,34]}
+{"kind":"shape","id":"sh/t47y1kre","slide":4,"bbox":[884,335,6,54]}
+{"kind":"textbox","id":"sh/0je9cvix","slide":4,"text":"Farmer Advisory","textPreview":"Farmer Advisory","textChars":15,"textLines":1,"bbox":[904,335,250,18]}
+{"kind":"textbox","id":"sh/byhgn29g","slide":4,"text":"Offers practical guidance for crops and field activity.","textPreview":"Offers practical guidance for crops and field activity.","textChars":55,"textLines":1,"bbox":[904,358,250,34]}
+{"kind":"shape","id":"sh/idonyd0z","slide":4,"bbox":[884,400,6,54]}
+{"kind":"textbox","id":"sh/tcj6tova","slide":4,"text":"Reservoir Operations","textPreview":"Reservoir Operations","textChars":20,"textLines":1,"bbox":[904,400,250,18]}
+{"kind":"textbox","id":"sh/0rqd4vmt","slide":4,"text":"Supports safe storage, inflow and release decisions.","textPreview":"Supports safe storage, inflow and release decisions.","textChars":52,"textLines":1,"bbox":[904,423,250,34]}
+{"kind":"shape","id":"sh/b6xkf6dc","slide":4,"bbox":[58,490,1137,110]}
+{"kind":"textbox","id":"sh/il0rqd4v","slide":4,"text":"Decision path","textPreview":"Decision path","textChars":13,"textLines":1,"bbox":[86,514,130,20]}
+{"kind":"textbox","id":"sh/tovahoza","slide":4,"text":"Rainfall forecast  →  Expected impact  →  Recommended response  →  Alert","textPreview":"Rainfall forecast  →  Expected impact  →  Recommended response  →  Alert","textChars":72,"textLines":1,"bbox":[86,545,930,28]}
+{"kind":"textbox","id":"sh/032lszqt","slide":4,"text":"The platform converts complex environmental data into a clear next step for each user group.","textPreview":"The platform converts complex environmental data into a clear next step for each user group.","textChars":92,"textLines":1,"bbox":[86,575,930,17]}
+{"kind":"notes","id":"nt/dn1rjp","slide":4,"text":""}
+{"kind":"slide","id":"sl/46cx4d","slide":5,"title":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textShapes":15}
+{"kind":"shape","id":"sh/hk3q5o7q","slide":5,"bbox":[0,0,1280,12]}
+{"kind":"textbox","id":"sh/6xkf6dcb","slide":5,"text":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textPreview":"RIIS  /  RAINFALL IMPACT INTELLIGENCE","textChars":37,"textLines":1,"bbox":[58,30,500,20]}
+{"kind":"textbox","id":"sh/zed8v6ps","slide":5,"text":"RESPONSE ECOSYSTEM","textPreview":"RESPONSE ECOSYSTEM","textChars":18,"textLines":1,"bbox":[930,30,290,20]}
+{"kind":"textbox","id":"sh/obm58z25","slide":5,"text":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textPreview":"AI FORECASTING  •  IMPACT INTELLIGENCE  •  EMERGENCY ACTION","textChars":59,"textLines":1,"bbox":[650,674,570,18]}
+{"kind":"textbox","id":"sh/hwfyxobm","slide":5,"text":"Bring prediction, response and learning into one platform","textPreview":"Bring prediction, response and learning into one platform","textChars":57,"textLines":1,"bbox":[58,78,1140,50]}
+{"kind":"textbox","id":"sh/65wjudg7","slide":5,"text":"RIIS supports emergency teams, residents and administrators through a connected workflow before, during and after severe weather.","textPreview":"RIIS supports emergency teams, residents and administrators through a connected workflow before, during and after severe weather.","textChars":129,"textLines":1,"bbox":[58,132,1140,30]}
+{"kind":"shape","id":"sh/zqtcj6to","slide":5,"bbox":[58,205,350,310]}
+{"kind":"textbox","id":"sh/sfil0rqd","slide":5,"text":"ALERTS","textPreview":"ALERTS","textChars":6,"textLines":1,"bbox":[84,232,290,20]}
+{"kind":"textbox","id":"sh/h0fepkzu","slide":5,"text":"Warnings communicate the affected area, likely impact and recommended precaution for rainfall, floods, roads, reservoirs and crops.","textPreview":"Warnings communicate the affected area, likely impact and recommended precaution for rainfall, floods, roads, reservoirs and crops.","textChars":131,"textLines":1,"bbox":[84,290,295,102]}
+{"kind":"textbox","id":"sh/5wjudg7a","slide":5,"text":"Act before the impact grows.","textPreview":"Act before the impact grows.","textChars":28,"textLines":1,"bbox":[84,435,295,30]}
+{"kind":"shape","id":"sh/gbq1oryt","slide":5,"bbox":[436,205,350,310]}
+{"kind":"textbox","id":"sh/nuxc3ylc","slide":5,"text":"DISASTER OPERATIONS","textPreview":"DISASTER OPERATIONS","textChars":19,"textLines":1,"bbox":[462,232,290,20]}
+{"kind":"textbox","id":"sh/y90je9cv","slide":5,"text":"Hospitals, shelters and emergency resources are displayed together to help response teams coordinate people and support.","textPreview":"Hospitals, shelters and emergency resources are displayed together to help response teams coordinate people and support.","textChars":120,"textLines":1,"bbox":[462,290,295,102]}
+{"kind":"textbox","id":"sh/58z25kb6","slide":5,"text":"Match resources to local need.","textPreview":"Match resources to local need.","textChars":30,"textLines":1,"bbox":[462,435,295,30]}
+{"kind":"shape","id":"sh/gn29gr2p","slide":5,"bbox":[814,205,350,310]}
+{"kind":"textbox","id":"sh/n29gr2p8","slide":5,"text":"COMMUNITY AND ADMIN","textPreview":"COMMUNITY AND ADMIN","textChars":19,"textLines":1,"bbox":[840,232,290,20]}
+{"kind":"textbox","id":"sh/yhgn29gr","slide":5,"text":"Citizen reports show ground conditions such as waterlogging and road damage. Admin tools monitor model quality and platform activity.","textPreview":"Citizen reports show ground conditions such as waterlogging and road damage. Admin tools monitor model quality and platform activity.","textChars":133,"textLines":1,"bbox":[840,290,295,102]}
+{"kind":"textbox","id":"sh/5kb6xkf6","slide":5,"text":"Learn continuously from real events.","textPreview":"Learn continuously from real events.","textChars":36,"textLines":1,"bbox":[840,435,295,30]}
+{"kind":"shape","id":"sh/czed8v6p","slide":5,"bbox":[58,548,1137,66]}
+{"kind":"textbox","id":"sh/8bat47y1","slide":5,"text":"RIIS transforms weather information into timely, explainable action for safer communities.","textPreview":"RIIS transforms weather information into timely, explainable action for safer communities.","textChars":90,"textLines":1,"bbox":[86,568,1030,28]}
+{"kind":"notes","id":"nt/46cx4d","slide":5,"text":""}

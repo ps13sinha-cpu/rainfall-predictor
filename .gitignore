@@ -1,0 +1,39 @@
+# Environment variables
+.env
+
+# Databases & logs
+*.db
+*.sqlite3
+riis.db
+*.log
+*.log.err
+server.log
+server.log.err
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# Node / JS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Agent / Scratch / Temp files
+.agents/
+.freebuff/
+project.zip
+uploads/
