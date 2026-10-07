@@ -123,8 +123,9 @@ async def route(from_lat: float = Query(...), from_lon: float = Query(...), to_l
                         scenario_key=scn["key"], safe_len_m=(res.get("safe_route") or {}).get("length_m"),
                         normal_len_m=(res.get("normal_route") or {}).get("length_m"), closed_avoided=len(res.get("closed_avoided", []))))
         await db.commit()
-    except Exception:
-        pass
+    except Exception as e:   # logging must never fail the route; leave the session clean for get_db's commit
+        await db.rollback()
+        print(f"[RIIS-SafeRoutes] route log skipped: {e}")
     return res
 
 
@@ -166,7 +167,11 @@ async def report(body: ReportIn, user: Optional[User] = Depends(get_current_user
                      source="admin" if (user and getattr(user, "role", "") == "admin") else "user", note=body.note,
                      scenario_key=key, expires_at=datetime.utcnow() + timedelta(hours=6))
     db.add(rep)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=503, detail=f"could not save report: {e}")
     return {"id": rep.id, "segment_id": seg_id, "status": rep.status, "expires_at": rep.expires_at.isoformat()}
 
 
