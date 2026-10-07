@@ -47,6 +47,7 @@ def start_scheduler():
         id="reservoir_sync",
         replace_existing=True,
         next_run_time=datetime.now() + timedelta(seconds=5),
+        misfire_grace_time=600,   # startup can be slow; never skip the first sync
     )
     scheduler.start()
     print(f"[RIIS-Scheduler] Started — weather every {interval_sec}s, reservoirs every 6h")

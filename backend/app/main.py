@@ -19,6 +19,10 @@ async def lifespan(app: FastAPI):
         await ensure_schema(db)
     await seed()
     start_scheduler()
+    # Pull today's reservoir reports right away (the scheduler also repeats this every 6 h).
+    import asyncio
+    from app.services.scheduler import scheduled_reservoir_sync
+    asyncio.create_task(scheduled_reservoir_sync())
     print(f"[RIIS] Server running on {settings.host}:{settings.port}")
     yield
     stop_scheduler()

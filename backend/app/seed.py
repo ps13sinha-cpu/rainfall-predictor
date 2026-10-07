@@ -47,21 +47,18 @@ DISTRICTS = [
 
 # ── Reservoirs (Tamil Nadu + Kerala major reservoirs) ─────────────────────────
 RESERVOIRS = [
-    {"code":"PO","name":"POONDI","lat":13.25,"lon":80.07,"cap":3300,"cur":2475,"in":22,"out":15},
-    {"code":"SH","name":"SHOLAVARAM","lat":13.30,"lon":80.12,"cap":1081,"cur":810,"in":12,"out":8},
-    {"code":"RD","name":"RED HILLS","lat":13.18,"lon":80.18,"cap":2120,"cur":1590,"in":18,"out":12},
-    {"code":"CH","name":"CHOLAVARAM","lat":13.23,"lon":80.23,"cap":1225,"cur":918,"in":10,"out":7},
-    {"code":"KR","name":"KUNDRAH","lat":13.15,"lon":80.05,"cap":494,"cur":370,"in":6,"out":4},
-    {"code":"AK","name":"ANNA KUDAI","lat":13.10,"lon":80.20,"cap":320,"cur":240,"in":5,"out":3},
-    {"code":"MB","name":"MADURANTHAKAM","lat":12.50,"lon":79.85,"cap":1617,"cur":1213,"in":14,"out":10},
-    {"code":"VB","name":"VHBN","lat":12.65,"lon":79.50,"cap":1460,"cur":1095,"in":12,"out":8},
-    {"code":"PE","name":"PEUMBAKKAM","lat":12.70,"lon":79.60,"cap":370,"cur":278,"in":5,"out":3},
-    {"code":"ER","name":"ERIE","lat":12.60,"lon":79.45,"cap":285,"cur":214,"in":4,"out":3},
-    {"code":"TK","name":"THIRUKKAZHUKUNRAM","lat":12.55,"lon":79.55,"cap":225,"cur":169,"in":3,"out":2},
-    {"code":"ML","name":"MULLAPERIYAR","lat":9.85,"lon":77.10,"cap":4440,"cur":3330,"in":45,"out":30},
-    {"code":"ID","name":"IDUKKI","lat":9.85,"lon":76.98,"cap":1980,"cur":1485,"in":60,"out":40},
-    {"code":"BM","name":"BHAVANI","lat":11.45,"lon":77.60,"cap":3280,"cur":2460,"in":28,"out":18},
-    {"code":"HK","name":"HOSUR","lat":12.70,"lon":77.80,"cap":1005,"cur":754,"in":10,"out":7},
+    # Only reservoirs with a public feed or a real identity. Chennai lakes and Kerala dams are updated
+    # daily by services/reservoir_live.py; the three below have no free daily feed yet (CWC weekly PDF only).
+    {"code":"PO","name":"Poondi","lat":13.25,"lon":80.07,"cap":3231,"cur":772,"in":0,"out":15},
+    {"code":"CH","name":"Cholavaram","lat":13.23,"lon":80.23,"cap":1081,"cur":128,"in":0,"out":0.2},
+    {"code":"RD","name":"Puzhal (Red Hills)","lat":13.18,"lon":80.18,"cap":3300,"cur":1871,"in":6.4,"out":5.8},
+    {"code":"CB","name":"Chembarambakkam","lat":13.00,"lon":80.06,"cap":3645,"cur":1254,"in":6.1,"out":4.7},
+    {"code":"KT","name":"Kannankottai Thervoy Kandigai","lat":13.33,"lon":80.03,"cap":500,"cur":248,"in":0,"out":0.6},
+    {"code":"VR","name":"Veeranam","lat":11.33,"lon":79.55,"cap":1465,"cur":543,"in":11.9,"out":8.9},
+    {"code":"MT","name":"Mettur (Stanley)","lat":11.79,"lon":77.80,"cap":93470,"cur":60000,"in":120,"out":100},
+    {"code":"BM","name":"Bhavanisagar","lat":11.46,"lon":77.13,"cap":32800,"cur":20000,"in":40,"out":35},
+    {"code":"ML","name":"Mullaperiyar","lat":9.53,"lon":77.14,"cap":15661,"cur":9000,"in":30,"out":25},
+    {"code":"ID","name":"Idukki","lat":9.85,"lon":76.98,"cap":51541,"cur":31074,"in":33,"out":55},
 ]
 
 
@@ -80,9 +77,13 @@ async def seed():
 
         # Seed reservoirs
         existing_r = (await db.execute(select(Reservoir))).scalars().all()
+        if existing_r:
+            RESERVOIRS_TO_ADD = []   # table already populated: leave it to the live sync
+        else:
+            RESERVOIRS_TO_ADD = RESERVOIRS
         existing_rc = {r.code for r in existing_r}
         added_r = 0
-        for r in RESERVOIRS:
+        for r in RESERVOIRS_TO_ADD:
             if r["code"] not in existing_rc:
                 db.add(Reservoir(
                     code=r["code"], name=r["name"], lat=r["lat"], lon=r["lon"],
