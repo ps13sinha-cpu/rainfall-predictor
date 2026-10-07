@@ -302,6 +302,17 @@ async def ensure_site(db, lat: float, lon: float, force: bool = False) -> dict:
         _status.clear()
         timings["segments_built"] = len(segs)
 
+    # static terrain feature for the risk model: depth of the depression the segment midpoint sits in
+    # (depression-filled surface minus ground), i.e. how much water can pond there before it spills
+    filled = grid.get("filled")
+    if filled is None:
+        from app.services.inundation import priority_flood
+        filled = priority_flood(grid["dem"].astype(np.float64))
+        grid["filled"] = filled
+    for sg in segs.values():
+        idx = _grid_index(grid, sg["mid_lat"], sg["mid_lon"])
+        sg["pit_depth_m"] = round(float(filled[idx] - grid["dem"][idx]), 2) if idx else 0.0
+
     graph, nodes = build_graph(segs)
     node_ids = list(nodes)
     coords = np.array([[nodes[i][0], nodes[i][1]] for i in node_ids]) if node_ids else np.zeros((0, 2))

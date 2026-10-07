@@ -21,7 +21,7 @@ MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ml_m
 MODEL_PATH = os.path.join(MODEL_DIR, "road_risk.pkl")
 METRICS_PATH = os.path.join(MODEL_DIR, "road_risk_metrics.json")
 
-FEATURES = ["rainfall_mm", "duration_h", "intensity_mm_h", "elev_m", "hand_m", "slope_pct", "dist_water_m",
+FEATURES = ["rainfall_mm", "duration_h", "intensity_mm_h", "elev_m", "hand_m", "pit_depth_m", "slope_pct", "dist_water_m",
             "impervious_pct", "culvert_near", "tunnel", "bridge", "layer", "highway_class", "length_m",
             "site_saturation_pct", "site_infiltration_mm_h", "site_drain_count"]
 LABELS = {"open": 0, "caution": 1, "closed_cars": 2, "closed_all": 2}
@@ -33,7 +33,7 @@ def segment_features(seg: dict, scenario: dict, site_ctx: dict) -> dict:
     return {
         "rainfall_mm": scenario["rainfall_mm"], "duration_h": scenario["duration_h"],
         "intensity_mm_h": scenario.get("intensity_mm_h") or round(scenario["rainfall_mm"] / max(scenario["duration_h"], 0.5), 1),
-        "elev_m": seg.get("elev_m"), "hand_m": seg.get("hand_m"), "slope_pct": seg.get("slope_pct"),
+        "elev_m": seg.get("elev_m"), "hand_m": seg.get("hand_m"), "pit_depth_m": seg.get("pit_depth_m"), "slope_pct": seg.get("slope_pct"),
         "dist_water_m": seg.get("dist_water_m"), "impervious_pct": seg.get("impervious_pct"),
         "culvert_near": int(bool(seg.get("culvert_near"))), "tunnel": int(bool(seg.get("tunnel"))),
         "bridge": int(bool(seg.get("bridge"))), "layer": seg.get("layer") or 0,
