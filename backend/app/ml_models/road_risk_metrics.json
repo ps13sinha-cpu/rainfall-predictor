@@ -1,0 +1,93 @@
+{
+  "trained_at": "2026-10-07T16:09:22.360388",
+  "features": [
+    "rainfall_mm",
+    "duration_h",
+    "intensity_mm_h",
+    "elev_m",
+    "hand_m",
+    "pit_depth_m",
+    "slope_pct",
+    "dist_water_m",
+    "impervious_pct",
+    "culvert_near",
+    "tunnel",
+    "bridge",
+    "layer",
+    "highway_class",
+    "length_m",
+    "site_saturation_pct",
+    "site_infiltration_mm_h",
+    "site_drain_count"
+  ],
+  "n_train": 112000,
+  "n_test": 22400,
+  "sites": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "held_out_site": 6,
+  "label_sources": {
+    "sim": 134400,
+    "report": 0
+  },
+  "train_label_counts": [
+    103219,
+    2038,
+    6743
+  ],
+  "caveat": "Labels come from the DEM ponding simulation (surrogate), not observed floods, except rows with label_source=report.",
+  "accuracy": 0.7937,
+  "macro_f1": 0.421,
+  "per_class_recall": {
+    "open": 0.798,
+    "caution": 0.276,
+    "closed": 0.935
+  },
+  "confusion_matrix": [
+    [
+      17092,
+      990,
+      3339
+    ],
+    [
+      0,
+      96,
+      252
+    ],
+    [
+      0,
+      41,
+      590
+    ]
+  ],
+  "test_label_counts": [
+    21421,
+    348,
+    631
+  ],
+  "feature_importance": {
+    "tunnel": 0.4259,
+    "intensity_mm_h": 0.2061,
+    "pit_depth_m": 0.0699,
+    "site_infiltration_mm_h": 0.0667,
+    "site_saturation_pct": 0.0457,
+    "elev_m": 0.0278,
+    "impervious_pct": 0.0248,
+    "length_m": 0.0232,
+    "slope_pct": 0.0215,
+    "hand_m": 0.0207,
+    "highway_class": 0.0167,
+    "rainfall_mm": 0.0155,
+    "dist_water_m": 0.0142,
+    "layer": 0.0096,
+    "duration_h": 0.0078,
+    "bridge": 0.0041,
+    "culvert_near": 0.0,
+    "site_drain_count": 0.0
+  }
+}
