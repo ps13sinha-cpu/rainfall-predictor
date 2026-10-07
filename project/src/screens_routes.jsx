@@ -30,6 +30,7 @@ function RoutesScreen() {
   const [routeState, setRouteState] = useState_r('idle');
   const [routeErr, setRouteErr] = useState_r(null);
   const [reports, setReports] = useState_r([]);
+  const [destRoads, setDestRoads] = useState_r(null);   // roads around a far destination, once its area is mapped
   const [model, setModel] = useState_r(null);
   const [flashId, setFlashId] = useState_r(null);
   const [copied, setCopied] = useState_r(false);
@@ -98,6 +99,16 @@ function RoutesScreen() {
     return () => { alive = false; clearTimeout(t); };
   }, [origin && origin.lat, origin && origin.lon, dest && dest.lat, dest && dest.lon, mode, tick]);
 
+  // Far destination: once the backend reports its area as mapped, fetch and merge its roads
+  useEffect_r(() => {
+    if (!window.RIIS_API || !routes || routes.source !== 'osrm+local') { setDestRoads(null); return; }
+    if (routes.destination_site !== 'ready' || !dest) { if (routes.destination_site === 'building') { const t = setTimeout(() => setTick(x => x + 1), 45000); return () => clearTimeout(t); } return; }
+    let alive = true;
+    window.RIIS_API.getRoads({ lat: dest.lat, lon: dest.lon, mode }).then(r => { if (alive) setDestRoads(r); }).catch(() => {});
+    return () => { alive = false; };
+  }, [routes && routes.source, routes && routes.destination_site, dest && dest.lat, dest && dest.lon, mode, tick]);
+  const mergedRoads = roads && destRoads ? { ...roads, features: roads.features.concat(destRoads.features) } : roads;
+
   const pick = (which, pt) => { if (which === 'origin') setOrigin(pt); else { setDest(pt); setDestLabel(''); } setPicking(null); };
   const share = () => {
     const url = `${location.origin}${location.pathname}#/routes?from=${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}${dest ? `&to=${dest.lat.toFixed(5)},${dest.lon.toFixed(5)}` : ''}&mode=${mode}`;
@@ -159,7 +170,7 @@ function RoutesScreen() {
             <span className="sub">{roads ? `${roads.features.length} segments · DEM ${roads.site.dem_res_m} m · ${roads.computed_in_s}s` : 'DEM + OSM + live rain'}</span>
           </div>
           <div className="panel-bd">
-            <SafeRouteMap origin={origin} dest={dest} scenario={scenario} mode={mode} roads={roads} routes={routes} reports={reports}
+            <SafeRouteMap origin={origin} dest={dest} scenario={scenario} mode={mode} roads={mergedRoads} routes={routes} reports={reports}
               picking={picking} flashSegmentId={flashId} state={roadsState} errorText={roadsErr} showNormal={false} onPick={pick}
               onMoveOrigin={pt => setOrigin(pt)} onMoveDest={pt => { setDest(pt); setDestLabel(''); }} onReport={report}
               onRetry={() => setTick(t => t + 1)} />
@@ -182,7 +193,7 @@ function RoutesScreen() {
               <div style={ctrl}>
                 <div className="k" style={{ display: 'flex', justifyContent: 'space-between' }}><span>DESTINATION</span>
                   <button className={'chip ' + (picking === 'dest' ? 'active' : '')} onClick={() => setPicking(picking === 'dest' ? null : 'dest')}>Pick on map</button></div>
-                <input style={{ ...input, marginTop: 6 }} placeholder="Search a place within 15 km…" value={query} onChange={e => setQuery(e.target.value)} />
+                <input style={{ ...input, marginTop: 6 }} placeholder="Search a place within 60 km…" value={query} onChange={e => setQuery(e.target.value)} />
                 {results.length > 0 && (
                   <div style={{ marginTop: 4, border: '1px solid var(--stroke)', borderRadius: 6, overflow: 'hidden' }}>
                     {results.map((r, i) => (
@@ -216,7 +227,7 @@ function RoutesScreen() {
               {routeErr && <div style={{ fontSize: 12, color: '#FCA5A5', marginBottom: 8 }}>{routeErr}</div>}
               {routes && routes.reachable === false && routes.snapped && (
                 <div style={{ padding: '8px 10px', background: 'rgba(239,68,68,0.12)', border: '1px solid #EF444455', borderRadius: 8, marginBottom: 10, fontSize: 12 }}>
-                  <b style={{ color: '#FCA5A5' }}>No safe way through right now.</b>
+                  <b style={{ color: '#FCA5A5' }}>{routes.source === 'osrm+local' ? 'The road route passes flooded roads with no local detour.' : 'No safe way through right now.'}</b>
                   {(routes.blocking_segments || []).length > 0 && <div style={{ color: 'var(--text-mid)', marginTop: 4 }}>Blocked by: {routes.blocking_segments.slice(0, 5).map(s => `${s.name || s.highway} (${s.max_depth_m} m)`).join(', ')}</div>}
                 </div>
               )}
@@ -233,6 +244,14 @@ function RoutesScreen() {
                       : (normal && normal.closed_segments ? `The usual way has ${normal.closed_segments} closed segment${normal.closed_segments === 1 ? '' : 's'}` : 'Same as the usual way — nothing flooded on it right now.')}
                   </div>
                   {safe.worst_status === 'caution' && <div style={{ fontSize: 11.5, color: '#F59E0B' }}>Some stretches have 15 to 30 cm of standing water. Drive slowly, keep to the crown of the road.</div>}
+                  {routes.source === 'osrm+local' && (
+                    <div style={{ fontSize: 11.5, color: 'var(--text-mid)', lineHeight: 1.5, padding: '6px 8px', background: 'rgba(10,18,28,0.5)', border: '1px solid var(--stroke)', borderRadius: 6 }}>
+                      <b style={{ color: 'var(--text-hi)' }}>Long-distance route</b> via OSRM · {Math.round((routes.scored_fraction || 0) * 100)}% of it flood-checked
+                      {routes.detoured ? ' · detoured around flooded roads' : ''}
+                      {routes.destination_site === 'building' ? ' · mapping the destination area…' : routes.destination_site === 'ready' ? ' · destination area mapped' : ''}
+                      <div style={{ color: 'var(--text-lo)', marginTop: 2 }}>{routes.note}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

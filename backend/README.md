@@ -74,7 +74,7 @@ Design and data sources: see [HYPERLOCAL_ENGINE.md](HYPERLOCAL_ENGINE.md).
 ### Safe Routes — `/api/routes` (flood-aware routing)
 - `GET /api/routes/site?lat&lon` — Build or load the road site (~3.6 km SRTM window): OSM roads, culverts, water; cached 7 days
 - `GET /api/routes/roads?lat&lon&rainfall_mm&duration_h&intensity_mm_h&mode` — GeoJSON of every segment with `status` (open | caution | closed_cars | closed_all), `max_depth_m`, `wet_fraction`, `risk_ml`, plus `most_affected`
-- `GET /api/routes/route?from_lat&from_lon&to_lat&to_lon&rainfall_mm&duration_h&mode` — Safe route (closed removed, caution penalised) next to the normal shortest route; `reachable:false` + `blocking_segments` when cut off
+- `GET /api/routes/route?from_lat&from_lon&to_lat&to_lon&rainfall_mm&duration_h&mode` — Safe route (closed removed, caution penalised) next to the normal shortest route; `reachable:false` + `blocking_segments` when cut off. Destinations beyond the ~3.6 km site use the public OSRM router for the baseline (`source: osrm+local`), flood-checked and locally detoured inside every mapped area the route crosses; the destination area is mapped in the background and `scored_fraction` says how much of the route is checked
 - `GET /api/routes/geocode?q&lat&lon` / `GET /api/routes/reverse?lat&lon` — Nominatim proxies (custom User-Agent, 1 request/s, cached)
 - `POST /api/routes/report` `{lat, lon, status, depth_cm, note}` / `GET /api/routes/reports?lat&lon` — Field reports override the simulation within 25 m for 6 h
 - `GET /api/routes/model` / `POST /api/routes/train` — Road flood-risk surrogate metrics / retrain (admin)

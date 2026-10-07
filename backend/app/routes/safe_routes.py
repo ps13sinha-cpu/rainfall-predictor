@@ -135,10 +135,13 @@ async def route(from_lat: float = Query(...), from_lon: float = Query(...), to_l
         raise HTTPException(status_code=502, detail=str(e))
     bbox = b["site"]["bbox"]
     if not (bbox["south"] <= to_lat <= bbox["north"] and bbox["west"] <= to_lon <= bbox["east"]):
-        return {"site_id": b["site"]["id"], "scenario": scn, "snapped": False, "reachable": False,
-                "error": "destination is outside this site's road grid (about 3.6 km); pick a closer point",
-                "bbox": bbox}
-    res = R.find_routes(b, status, (from_lat, from_lon), (to_lat, to_lon), mode, scn)
+        # far destination: OSRM baseline, flood-checked and detoured inside every mapped area it crosses
+        async def _status(bundle):
+            return await R.score_segments(db, bundle, scn["rainfall_mm"], scn["duration_h"], scn.get("intensity_mm_h"))
+        res = await R.long_route(db, b, _status, (from_lat, from_lon), (to_lat, to_lon), mode, scn)
+        res["site_id"] = b["site"]["id"]
+    else:
+        res = R.find_routes(b, status, (from_lat, from_lon), (to_lat, to_lon), mode, scn)
     try:
         db.add(RouteLog(site_id=b["site"]["id"], from_lat=from_lat, from_lon=from_lon, to_lat=to_lat, to_lon=to_lon,
                         scenario_key=scn["key"], safe_len_m=(res.get("safe_route") or {}).get("length_m"),

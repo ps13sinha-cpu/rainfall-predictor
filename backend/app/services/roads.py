@@ -554,7 +554,7 @@ async def nominatim(path: str, params: dict) -> list | dict:
 
 
 async def geocode(q: str, lat: float, lon: float, limit: int = 5) -> list:
-    d = 15 / 111.0
+    d = 60 / 111.0   # 60 km search box: far destinations route via OSRM
     data = await nominatim("search", {"format": "json", "q": q, "limit": limit, "bounded": 1,
                                       "viewbox": f"{lon - d},{lat + d},{lon + d},{lat - d}", "addressdetails": 0})
     return [{"name": x.get("display_name"), "lat": float(x["lat"]), "lon": float(x["lon"]), "type": x.get("type"),
@@ -566,3 +566,179 @@ async def reverse(lat: float, lon: float) -> dict:
     a = data.get("address", {}) if isinstance(data, dict) else {}
     short = ", ".join([x for x in (a.get("road"), a.get("suburb") or a.get("neighbourhood"), a.get("city") or a.get("town")) if x])
     return {"name": data.get("display_name") if isinstance(data, dict) else None, "short": short or None, "address": a}
+
+
+# ── Long-distance routes: OSRM baseline + local flood-aware detours ──────────
+OSRM_URL = "https://router.project-osrm.org/route/v1/driving/"
+OSRM_UA = "RIIS-SafeRoutes/1.0 (rainfall impact research)"
+ROUTE_SAMPLE_M = 15.0
+ROUTE_MATCH_M = 30.0
+_building = {}   # site key -> asyncio.Task building a destination site in the background
+
+
+async def osrm_route(from_latlon, to_latlon) -> dict:
+    """Shortest driving route from the public OSRM demo server (car profile only)."""
+    (fla, flo), (tla, tlo) = from_latlon, to_latlon
+    url = f"{OSRM_URL}{flo},{fla};{tlo},{tla}"
+    async with httpx.AsyncClient(timeout=25) as client:
+        r = await client.get(url, params={"overview": "full", "geometries": "geojson", "steps": "false"},
+                             headers={"User-Agent": OSRM_UA})
+    r.raise_for_status()
+    data = r.json()
+    if data.get("code") != "Ok" or not data.get("routes"):
+        raise RuntimeError(f"OSRM: {data.get('code')} {data.get('message', '')}")
+    rt = data["routes"][0]
+    return {"coords": rt["geometry"]["coordinates"], "distance_m": float(rt["distance"]), "duration_s": float(rt["duration"])}
+
+
+def _seg_tree(bundle):
+    """KD-tree over segment midpoints (built once per site bundle)."""
+    if "seg_tree" not in bundle:
+        ids = list(bundle["segments"])
+        pts = np.array([[bundle["segments"][i]["mid_lat"], bundle["segments"][i]["mid_lon"]] for i in ids]) if ids else np.zeros((0, 2))
+        bundle["seg_tree"] = (cKDTree(pts) if len(pts) else None, ids)
+    return bundle["seg_tree"]
+
+
+def _in_bbox(bbox, lat, lon):
+    return bbox["south"] <= lat <= bbox["north"] and bbox["west"] <= lon <= bbox["east"]
+
+
+def _polyline_len(coords):
+    return sum(_haversine_km(a[1], a[0], b[1], b[0]) for a, b in zip(coords[:-1], coords[1:])) * 1000.0
+
+
+def score_polyline(bundle, status, coords):
+    """Attach scored segment statuses to the part of a polyline that crosses this site.
+
+    Returns {"runs": [(i0, i1)], "segments": [...], "scored_m": metres inside the site, "points": sampled pts}."""
+    tree, ids = _seg_tree(bundle)
+    bbox = bundle["site"]["bbox"]
+    mlat, mlon = _m_per_deg(bundle["site"]["lat"])
+    pts = _interp_points(coords, ROUTE_SAMPLE_M)
+    inside = [_in_bbox(bbox, p[1], p[0]) for p in pts]
+    runs, start = [], None
+    for i, flag in enumerate(inside + [False]):
+        if flag and start is None:
+            start = i
+        elif not flag and start is not None:
+            runs.append((start, i - 1))
+            start = None
+    seen, segs = set(), []
+    if tree is not None:
+        for i, (lon, lat) in enumerate(pts):
+            if not inside[i]:
+                continue
+            d, j = tree.query([lat, lon])
+            if d * (mlat + mlon) / 2 <= ROUTE_MATCH_M:
+                sid = ids[int(j)]
+                if sid not in seen:
+                    seen.add(sid)
+                    seg = bundle["segments"][sid]
+                    st = status.get(sid, {})
+                    segs.append({"segment_id": sid, "name": seg["name"], "highway": seg["highway"], "status": st.get("status", "open"),
+                                 "max_depth_m": st.get("max_depth_m", 0.0), "length_m": seg["length_m"]})
+    scored_m = sum(1 for f in inside if f) * ROUTE_SAMPLE_M
+    return {"runs": runs, "segments": segs, "scored_m": scored_m, "points": pts}
+
+
+def splice_detours(bundle, status, coords, mode):
+    """Where the route crosses this site and touches closed roads, replace that stretch with the
+    local flood-aware path between the stretch's entry and exit points. Returns (coords, avoided, detoured)."""
+    sc = score_polyline(bundle, status, coords)
+    closed = [s for s in sc["segments"] if s["status"].startswith("closed")]
+    if not closed or not sc["runs"]:
+        return coords, [], False
+    pts = sc["points"]
+    new_pts = list(pts)
+    offset = 0
+    avoided = []
+    for (i0, i1) in sc["runs"]:
+        a, b = pts[i0], pts[i1]
+        res = find_routes(bundle, status, (a[1], a[0]), (b[1], b[0]), mode)
+        if not res.get("reachable") or not res.get("safe_route"):
+            continue
+        local = res["safe_route"]["geojson"]["coordinates"]
+        safe_ids = {s["segment_id"] for s in res["safe_route"]["segments"]}
+        avoided.extend([c for c in closed if c["segment_id"] not in safe_ids])
+        new_pts[i0 + offset:i1 + 1 + offset] = local
+        offset += len(local) - (i1 - i0 + 1)
+    return new_pts, avoided, bool(avoided)
+
+
+def _site_key_for(lat, lon):
+    return f"{round(lat, 2)},{round(lon, 2)}"
+
+
+async def long_route(db, origin_bundle, status_fn, from_latlon, to_latlon, mode, scenario) -> dict:
+    """Flood-aware long-distance route: OSRM baseline, scored and locally detoured through every
+    site we have (origin always; destination once its site has been built in the background)."""
+    try:
+        base = await osrm_route(from_latlon, to_latlon)
+    except Exception as e:
+        return {"snapped": False, "reachable": False, "source": "osrm", "error": f"long-distance router unavailable: {e}"}
+    coords = base["coords"]
+    sites = [origin_bundle]
+
+    # destination site: use it if present, otherwise build it in the background for the next call
+    dest_state = "none"
+    dkey = _site_key_for(*to_latlon)
+    dest_bundle = None
+    for b in _sites.values():
+        if b is not origin_bundle and _in_bbox(b["site"]["bbox"], *to_latlon):
+            dest_bundle = b
+            break
+    if dest_bundle is not None:
+        sites.append(dest_bundle)
+        dest_state = "ready"
+    else:
+        task = _building.get(dkey)
+        if task is None or task.done():
+            from app.database import async_session
+
+            async def _build():
+                async with async_session() as db2:
+                    try:
+                        await ensure_site(db2, to_latlon[0], to_latlon[1])
+                    except Exception as e:
+                        print(f"[RIIS-SafeRoutes] destination site build failed: {e}")
+            _building[dkey] = asyncio.create_task(_build())
+        dest_state = "building"
+
+    scored_m, segments, avoided, detoured = 0.0, [], [], False
+    for b in sites:
+        st = await status_fn(b)
+        coords, av, det = splice_detours(b, st, coords, mode)
+        sc = score_polyline(b, st, coords)
+        scored_m += sc["scored_m"]
+        segments.extend(sc["segments"])
+        avoided.extend(av)
+        detoured = detoured or det
+
+    length = _polyline_len(coords)
+    speed = SPEED_KMH[mode]
+    caution_m = sum(s["length_m"] for s in segments if s["status"] == "caution")
+    if mode == "car":
+        eta = base["duration_s"] / 60.0 * (length / max(base["distance_m"], 1.0)) + caution_m / 1000.0 / (speed / 2) * 60.0
+    else:
+        eta = length / 1000.0 / speed * 60.0 + caution_m / 1000.0 / speed * 60.0
+    worst = "open"
+    for s in segments:
+        worst = max(worst, s["status"], key=STATUS_ORDER.get)
+    closed_left = [s for s in segments if s["status"].startswith("closed")]
+    note = "Flood status is known inside the mapped area around the origin"
+    note += " and the destination" if dest_state == "ready" else ""
+    note += "; the rest of the route is unscored."
+    if dest_state == "building":
+        note += " The destination area is being mapped now (1 to 4 min) and will be scored on the next refresh."
+    return {
+        "snapped": True, "reachable": not closed_left, "source": "osrm+local", "mode": mode, "scenario": scenario or {},
+        "origin": {"lat": from_latlon[0], "lon": from_latlon[1]}, "destination": {"lat": to_latlon[0], "lon": to_latlon[1]},
+        "safe_route": {"geojson": {"type": "LineString", "coordinates": coords}, "length_m": round(length), "eta_min": round(eta, 1),
+                       "segments": segments, "worst_status": worst, "closed_segments": len(closed_left)},
+        "normal_route": {"geojson": {"type": "LineString", "coordinates": base["coords"]}, "length_m": round(base["distance_m"]),
+                         "eta_min": round(base["duration_s"] / 60.0, 1), "worst_status": None, "closed_segments": None, "segments": []},
+        "closed_avoided": avoided, "detoured": detoured, "blocking_segments": closed_left,
+        "scored_fraction": round(min(1.0, scored_m / max(length, 1.0)), 2), "destination_site": dest_state, "note": note,
+        "computed_at": datetime.utcnow().isoformat(),
+    }
