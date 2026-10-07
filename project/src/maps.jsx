@@ -559,13 +559,15 @@ function RealFloodMap({ intensity, onResult }) {
 // Modelled on RealFloodMap: one Leaflet instance in a ref, inundation polygons
 // under a roads layer coloured by flood status, safe + normal routes, draggable
 // origin / destination pins, click-to-pick, legend and loading / error overlays.
+// Safe (passable) roads are highlighted green so the safe network reads at a glance;
+// cautious and closed roads stand out in amber and red on top of it.
 const ROAD_STYLE = {
-  open:        { color: '#6B7280', weight: 2,  opacity: 0.85 },
+  open:        { color: '#10B981', weight: 3,  opacity: 0.9 },
   caution:     { color: '#F59E0B', weight: 4,  opacity: 0.95 },
   closed_cars: { color: '#EF4444', weight: 5,  opacity: 1 },
   closed_all:  { color: '#7F1D1D', weight: 6,  opacity: 1 },
 };
-const ROAD_LABEL = { open: 'Open', caution: 'Caution', closed_cars: 'Closed to cars', closed_all: 'Closed to all' };
+const ROAD_LABEL = { open: 'Safe · open', caution: 'Caution', closed_cars: 'Closed to cars', closed_all: 'Closed to all' };
 
 function pinIcon(color, letter) {
   return L.divIcon({
@@ -693,10 +695,16 @@ function SafeRouteMap({ origin, dest, scenario, mode, roads, routes, reports, pi
     }
     if (routes.safe_route && routes.safe_route.geojson) {
       const ll = toLatLngs(routes.safe_route.geojson);
-      Ls.safeCase = L.polyline(ll, { pane: 'routePane', color: '#fff', weight: 9, opacity: 0.7 }).addTo(map);
-      Ls.safe = L.polyline(ll, { pane: 'routePane', color: '#22D3EE', weight: 6, opacity: 1 }).addTo(map).bindTooltip('Flood-aware safe route');
+      // bold cyan route with a white casing and a soft glow so it is the first thing you see
+      Ls.safeCase = L.layerGroup([
+        L.polyline(ll, { pane: 'routePane', color: '#22D3EE', weight: 18, opacity: 0.18 }),
+        L.polyline(ll, { pane: 'routePane', color: '#fff', weight: 11, opacity: 0.85 }),
+      ]).addTo(map);
+      Ls.safe = L.polyline(ll, { pane: 'routePane', color: '#22D3EE', weight: 7, opacity: 1 }).addTo(map).bindTooltip('Flood-aware safe route');
+      Ls.safe.bringToFront();
       bounds.push(...ll);
     }
+    if (Ls.roads) Ls.roads.setStyle(f => { const p = f.properties; const st = { ...(ROAD_STYLE[p.status] || ROAD_STYLE.open) }; if (p.tunnel) st.dashArray = '6 6'; if (routes.safe_route) st.opacity = st.opacity * 0.55; return st; });
     if (bounds.length) map.fitBounds(L.latLngBounds(bounds).pad(0.15), { animate: true });
   }, [routes]);
 
@@ -752,7 +760,7 @@ function SafeRouteMap({ origin, dest, scenario, mode, roads, routes, reports, pi
         {Object.entries(ROAD_STYLE).map(([k, s]) => (
           <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: s.weight, background: s.color, display: 'inline-block', borderRadius: 2 }} />{ROAD_LABEL[k]}</div>
         ))}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 5, background: '#22D3EE', display: 'inline-block', borderRadius: 2, boxShadow: '0 0 0 2px #fff' }} />Safe route</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 7, background: '#22D3EE', display: 'inline-block', borderRadius: 3, boxShadow: '0 0 0 2px #fff, 0 0 8px #22D3EE' }} /><b style={{ color: '#22D3EE' }}>Your safe route</b></div>
         {showNormal && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 0, borderTop: '3px dashed #94A3B8', display: 'inline-block' }} />Normal route</div>}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 10, background: 'rgba(59,130,246,0.35)', border: '1px solid #3B82F6', display: 'inline-block' }} />Ponding (DEM)</div>
         <div style={{ color: 'var(--text-lo)' }}>dashed road = underpass · pins are draggable</div>
