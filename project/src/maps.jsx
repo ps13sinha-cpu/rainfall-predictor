@@ -576,7 +576,7 @@ function pinIcon(color, letter) {
 }
 
 function SafeRouteMap({ origin, dest, scenario, mode, roads, routes, reports, picking, flashSegmentId,
-                        state, onPick, onMoveOrigin, onMoveDest, onReport, onRetry }) {
+                        state, errorText, showNormal = true, onPick, onMoveOrigin, onMoveDest, onReport, onRetry }) {
   const elRef = useRef_m(null);
   const mapRef = useRef_m(null);
   const layers = useRef_m({ flood: null, roads: null, safe: null, safeCase: null, normal: null, origin: null, dest: null, reports: null, segs: {} });
@@ -686,7 +686,7 @@ function SafeRouteMap({ origin, dest, scenario, mode, roads, routes, reports, pi
     if (!routes) return;
     const toLatLngs = g => g.coordinates.map(([lon, lat]) => [lat, lon]);
     const bounds = [];
-    if (routes.normal_route && routes.normal_route.geojson) {
+    if (showNormal && routes.normal_route && routes.normal_route.geojson) {
       const ll = toLatLngs(routes.normal_route.geojson);
       Ls.normal = L.polyline(ll, { pane: 'routePane', color: '#94A3B8', weight: 3, dashArray: '8 8', opacity: 0.9 }).addTo(map).bindTooltip('Normal shortest route');
       bounds.push(...ll);
@@ -743,7 +743,7 @@ function SafeRouteMap({ origin, dest, scenario, mode, roads, routes, reports, pi
       {state === 'error' && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 600, display: 'grid', placeItems: 'center', background: 'rgba(6,13,21,0.6)' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#FCA5A5', marginBottom: 8 }}>Road data could not be loaded (Overpass may be rate-limiting).</div>
+            <div style={{ color: '#FCA5A5', marginBottom: 8, maxWidth: 420, textAlign: 'center' }}>Road data could not be loaded{errorText ? `: ${errorText}` : ''}. The backend builds the road site from OpenStreetMap on the first visit (1 to 4 minutes); later visits are instant.</div>
             <button className="btn primary" onClick={onRetry}>Retry</button>
           </div>
         </div>
@@ -753,7 +753,7 @@ function SafeRouteMap({ origin, dest, scenario, mode, roads, routes, reports, pi
           <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: s.weight, background: s.color, display: 'inline-block', borderRadius: 2 }} />{ROAD_LABEL[k]}</div>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 5, background: '#22D3EE', display: 'inline-block', borderRadius: 2, boxShadow: '0 0 0 2px #fff' }} />Safe route</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 0, borderTop: '3px dashed #94A3B8', display: 'inline-block' }} />Normal route</div>
+        {showNormal && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 0, borderTop: '3px dashed #94A3B8', display: 'inline-block' }} />Normal route</div>}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 10, background: 'rgba(59,130,246,0.35)', border: '1px solid #3B82F6', display: 'inline-block' }} />Ponding (DEM)</div>
         <div style={{ color: 'var(--text-lo)' }}>dashed road = underpass · pins are draggable</div>
       </div>

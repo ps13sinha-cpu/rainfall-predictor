@@ -13,8 +13,25 @@ from app.database import get_db
 from app.models import RoadReport, RouteLog, User
 from app.services.auth import get_current_user
 from app.services import roads as R
+from app.services.hyperlocal import get_live_conditions, get_antecedent
 
 router = APIRouter(prefix="/api/routes", tags=["safe-routes"])
+
+
+async def live_scenario(lat: float, lon: float) -> dict:
+    """Rain that has actually fallen in the last 6 h plus the next 6 h forecast at the point,
+    scored over a 12 h window. No sliders: this is what the roads look like now."""
+    live, ant = await get_live_conditions(lat, lon), await get_antecedent(lat, lon)
+    past6 = float(live.get("past_6h_rain") or 0.0)
+    next6 = float(live.get("next_6h_rain") or 0.0)
+    now = float(live.get("current_rain") or 0.0)
+    total = round(past6 + next6, 1)
+    return {"rainfall_mm": total, "duration_h": 12.0, "intensity_mm_h": round(max(live.get("peak_intensity") or 0.0, now), 1),
+            "key": R.scenario_key(total, 12.0, max(live.get("peak_intensity") or 0.0, now) or None), "source": "live",
+            "past_6h_mm": past6, "next_6h_mm": next6, "current_mm_h": now, "rain_24h_mm": ant.get("rain_1d_mm"),
+            "rain_7d_mm": ant.get("rain_7d_mm"), "saturation_pct": ant.get("saturation_pct"),
+            "forecast_source": live.get("source"), "models_next_6h": live.get("models_next_6h"),
+            "observed_at": live.get("fetched_at") or datetime.utcnow().isoformat()}
 
 MODES = ("car", "bike", "walk")
 
@@ -56,15 +73,17 @@ async def site(lat: float = Query(...), lon: float = Query(...), force: bool = Q
 
 @router.get("/roads")
 async def roads(lat: float = Query(...), lon: float = Query(...),
-                rainfall_mm: float = Query(60.0, ge=0, le=600), duration_h: float = Query(3.0, ge=0.5, le=72),
+                rainfall_mm: Optional[float] = Query(None, ge=0, le=600), duration_h: float = Query(3.0, ge=0.5, le=72),
                 intensity_mm_h: Optional[float] = Query(None, ge=0, le=300), mode: str = Query("car"),
                 db: AsyncSession = Depends(get_db)):
-    """GeoJSON of every road segment with its flood status for the scenario, plus the most affected named roads."""
+    """GeoJSON of every road segment with its flood status, plus the most affected named roads.
+
+    Without `rainfall_mm` the scenario is LIVE: rain observed in the last 6 h plus the next 6 h forecast."""
     t0 = time.time()
-    scn = _scn(rainfall_mm, duration_h, intensity_mm_h)
+    scn = await live_scenario(lat, lon) if rainfall_mm is None else _scn(rainfall_mm, duration_h, intensity_mm_h)
     try:
         b = await R.ensure_site(db, lat, lon)
-        status = await R.score_segments(db, b, rainfall_mm, duration_h, intensity_mm_h)
+        status = await R.score_segments(db, b, scn["rainfall_mm"], scn["duration_h"], scn.get("intensity_mm_h"))
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
     risk = _risk_ml(b)
@@ -100,16 +119,18 @@ async def roads(lat: float = Query(...), lon: float = Query(...),
 
 @router.get("/route")
 async def route(from_lat: float = Query(...), from_lon: float = Query(...), to_lat: float = Query(...), to_lon: float = Query(...),
-                rainfall_mm: float = Query(60.0, ge=0, le=600), duration_h: float = Query(3.0, ge=0.5, le=72),
+                rainfall_mm: Optional[float] = Query(None, ge=0, le=600), duration_h: float = Query(3.0, ge=0.5, le=72),
                 intensity_mm_h: Optional[float] = Query(None, ge=0, le=300), mode: str = Query("car"),
                 db: AsyncSession = Depends(get_db)):
-    """Flood-avoiding route next to the normal shortest route."""
+    """Flood-avoiding route (plus the normal shortest route for comparison).
+
+    Without `rainfall_mm` the scenario is LIVE: rain observed in the last 6 h plus the next 6 h forecast."""
     if mode not in MODES:
         raise HTTPException(status_code=400, detail=f"mode must be one of {MODES}")
-    scn = _scn(rainfall_mm, duration_h, intensity_mm_h)
+    scn = await live_scenario(from_lat, from_lon) if rainfall_mm is None else _scn(rainfall_mm, duration_h, intensity_mm_h)
     try:
         b = await R.ensure_site(db, from_lat, from_lon)
-        status = await R.score_segments(db, b, rainfall_mm, duration_h, intensity_mm_h)
+        status = await R.score_segments(db, b, scn["rainfall_mm"], scn["duration_h"], scn.get("intensity_mm_h"))
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
     bbox = b["site"]["bbox"]

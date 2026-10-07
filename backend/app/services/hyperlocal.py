@@ -694,6 +694,7 @@ async def get_live_conditions(lat: float, lon: float) -> dict:
                 return [v for v in vals if v is not None]
             p6 = seg("precipitation", 0, 6)
             p24 = seg("precipitation", 0, 24)
+            past6 = seg("precipitation", -6, 0)
             probs = seg("precipitation_probability", 0, 6)
             cape6 = seg("cape", 0, 6)
             sm0 = seg("soil_moisture_0_to_7cm", 0, 1)
@@ -721,6 +722,7 @@ async def get_live_conditions(lat: float, lon: float) -> dict:
                 "cloud_cover": cur.get("cloud_cover"),
                 "probability": round(sum(probs) / len(probs)) if probs else 40,
                 "next_6h_rain": round(sum(p6), 1),
+                "past_6h_rain": round(sum(past6), 1),
                 "next_24h_rain": round(sum(p24), 1),
                 "peak_intensity": round(max(p24), 1) if p24 else 0.0,
                 "nowcast_2h_mm": round(sum(m15), 2) if m15 else None,

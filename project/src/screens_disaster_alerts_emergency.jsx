@@ -222,7 +222,7 @@ function DisasterScreen(){
           <div className="k">EVACUATION · SAFE ROUTES</div>
           <div style={{fontSize:13,color:"var(--text-hi)",marginTop:2}}>Flood-aware routing on the real road network around {city}: closed underpasses and ponded streets are removed, cautious ones penalised.</div>
         </div>
-        <button className="btn primary" onClick={()=>{ location.hash = `#/routes?from=${RIIS.location.lat.toFixed(5)},${RIIS.location.lon.toFixed(5)}&rain=${Math.max(10, Math.round(RIIS.prediction.rainfall_mm || 40))}&dur=3&mode=car`; }}>Open Safe Routes →</button>
+        <button className="btn primary" onClick={()=>{ location.hash = `#/routes?from=${RIIS.location.lat.toFixed(5)},${RIIS.location.lon.toFixed(5)}&mode=car`; }}>Open Safe Routes →</button>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:14}}>
