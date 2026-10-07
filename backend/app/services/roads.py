@@ -57,7 +57,7 @@ PENALTY = {  # multiplier on length; None = edge removed
 SPEED_KMH = {"car": 30.0, "bike": 15.0, "walk": 5.0}
 
 NOMINATIM = "https://nominatim.openstreetmap.org"
-NOMINATIM_UA = "RIIS-SafeRoutes/1.0 (rainfall impact research; contact: riis@example.org)"
+NOMINATIM_UA = "RIIS-SafeRoutes/1.0 (rainfall impact research)"   # Nominatim blocks placeholder contact addresses
 
 # ── In-process caches (bounded) ───────────────────────────────────────────────
 _sites = {}        # site_id -> {"site": dict, "segments": {id: dict}, "graph": DiGraph, "nodes": {id: (lat, lon)},
