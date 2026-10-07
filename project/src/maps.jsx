@@ -555,5 +555,211 @@ function RealFloodMap({ intensity, onResult }) {
   );
 }
 
-Object.assign(window, { IndiaMap, ChennaiMap, FloodSimMap, RealFloodMap });
+// ── Safe Routes map ───────────────────────────────────────────────────────────
+// Modelled on RealFloodMap: one Leaflet instance in a ref, inundation polygons
+// under a roads layer coloured by flood status, safe + normal routes, draggable
+// origin / destination pins, click-to-pick, legend and loading / error overlays.
+const ROAD_STYLE = {
+  open:        { color: '#6B7280', weight: 2,  opacity: 0.85 },
+  caution:     { color: '#F59E0B', weight: 4,  opacity: 0.95 },
+  closed_cars: { color: '#EF4444', weight: 5,  opacity: 1 },
+  closed_all:  { color: '#7F1D1D', weight: 6,  opacity: 1 },
+};
+const ROAD_LABEL = { open: 'Open', caution: 'Caution', closed_cars: 'Closed to cars', closed_all: 'Closed to all' };
+
+function pinIcon(color, letter) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2px solid #fff;box-shadow:0 0 10px ${color}99;display:grid;place-items:center"><span style="transform:rotate(45deg);font:700 11px Inter,sans-serif;color:#061018">${letter}</span></div>`,
+    iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -24],
+  });
+}
+
+function SafeRouteMap({ origin, dest, scenario, mode, roads, routes, reports, picking, flashSegmentId,
+                        state, onPick, onMoveOrigin, onMoveDest, onReport, onRetry }) {
+  const elRef = useRef_m(null);
+  const mapRef = useRef_m(null);
+  const layers = useRef_m({ flood: null, roads: null, safe: null, safeCase: null, normal: null, origin: null, dest: null, reports: null, segs: {} });
+  const cbRef = useRef_m({});
+  cbRef.current = { onPick, onMoveOrigin, onMoveDest, onReport, picking };
+  const [floodState, setFloodState] = useState_m('idle');
+
+  // One-time init
+  useEffect_m(() => {
+    if (!elRef.current || mapRef.current || typeof L === 'undefined') return;
+    injectLeafletStyles();
+    const lat = (origin && origin.lat) || (window.RIIS && window.RIIS.location.lat) || 12.82;
+    const lon = (origin && origin.lon) || (window.RIIS && window.RIIS.location.lon) || 80.04;
+    const map = L.map(elRef.current, { center: [lat, lon], zoom: 15, zoomControl: false, minZoom: 3, maxZoom: 19, scrollWheelZoom: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19,
+    }).addTo(map);
+    map.getPane('tilePane').style.filter = 'invert(1) hue-rotate(180deg) saturate(0.65) brightness(0.92) contrast(1.12)';
+    map.createPane('floodPane'); map.getPane('floodPane').style.zIndex = 390;
+    map.createPane('roadPane'); map.getPane('roadPane').style.zIndex = 420;
+    map.createPane('routePane'); map.getPane('routePane').style.zIndex = 440;
+    map.on('click', e => { const cb = cbRef.current; if (cb.picking && cb.onPick) cb.onPick(cb.picking, { lat: e.latlng.lat, lon: e.latlng.lng }); });
+    // report buttons inside popups call back through this global
+    window.__riisRoadReport = (segId, lat, lon, status) => {
+      const cb = cbRef.current;
+      const depthEl = document.getElementById(`riis-depth-${segId}`);
+      const noteEl = document.getElementById(`riis-note-${segId}`);
+      if (cb.onReport) cb.onReport({ segment_id: segId, lat, lon, status, depth_cm: depthEl && depthEl.value ? +depthEl.value : null, note: noteEl ? noteEl.value : '' });
+      map.closePopup();
+    };
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
+
+  // Cursor while picking
+  useEffect_m(() => { if (elRef.current) elRef.current.style.cursor = picking ? 'crosshair' : ''; }, [picking]);
+
+  // Inundation polygons for the scenario (same engine as the simulator), translucent under the roads
+  useEffect_m(() => {
+    if (!window.RIIS_API || !origin || !mapRef.current) return;
+    let alive = true;
+    setFloodState('loading');
+    const t = setTimeout(() => {
+      window.RIIS_API.getInundation({ lat: origin.lat, lon: origin.lon, rainfall_mm: scenario.rainfall_mm, duration_h: scenario.duration_h })
+        .then(res => {
+          if (!alive || !mapRef.current) return;
+          const Ls = layers.current;
+          if (Ls.flood) { Ls.flood.remove(); Ls.flood = null; }
+          if (res.geojson && res.geojson.features.length) {
+            Ls.flood = L.geoJSON(res.geojson, { pane: 'floodPane', style: f => ({ color: '#3B82F6', weight: 1, fillColor: '#3B82F6', fillOpacity: 0.28 }) }).addTo(mapRef.current);
+          }
+          setFloodState('ok');
+        }).catch(() => { if (alive) setFloodState('error'); });
+    }, 400);
+    return () => { alive = false; clearTimeout(t); };
+  }, [origin && origin.lat, origin && origin.lon, scenario.rainfall_mm, scenario.duration_h]);
+
+  // Roads layer
+  useEffect_m(() => {
+    const map = mapRef.current; if (!map) return;
+    const Ls = layers.current;
+    if (Ls.roads) { Ls.roads.remove(); Ls.roads = null; Ls.segs = {}; }
+    if (!roads || !roads.features) return;
+    Ls.roads = L.geoJSON(roads, {
+      pane: 'roadPane',
+      style: f => { const p = f.properties; const s = { ...(ROAD_STYLE[p.status] || ROAD_STYLE.open) }; if (p.tunnel) s.dashArray = '6 6'; return s; },
+      onEachFeature: (f, lyr) => {
+        const p = f.properties;
+        Ls.segs[p.segment_id] = lyr;
+        const nm = p.name || `${p.highway} road`;
+        lyr.bindTooltip(`<b>${nm}</b><br/>${ROAD_LABEL[p.status] || p.status} · ${p.max_depth_m} m${p.tunnel ? ' · underpass' : ''}${p.bridge ? ' · bridge' : ''}`, { sticky: true });
+        const [lon, lat] = f.geometry.coordinates[Math.floor(f.geometry.coordinates.length / 2)];
+        lyr.bindPopup(
+          `<div style="font-family:Inter,sans-serif;min-width:220px">
+             <b>${nm}</b> <span style="color:#8ab">${p.highway}</span><br/>
+             <span style="font-family:JetBrains Mono">${ROAD_LABEL[p.status] || p.status} · max ${p.max_depth_m} m · wet ${Math.round(p.wet_fraction * 100)}%</span><br/>
+             <span style="color:#8ab;font-size:11px">HAND ${p.hand_m != null ? p.hand_m + ' m' : 'n/a'}${p.culvert_near ? ' · culvert nearby' : ''}${p.risk_ml != null ? ' · model risk ' + Math.round(p.risk_ml * 100) + '%' : ''} · source ${p.source}</span>
+             <hr style="border:0;border-top:1px solid #345;margin:8px 0"/>
+             <div style="font-size:11px;color:#8ab;margin-bottom:4px">Report the condition here (overrides the simulation for 6 h):</div>
+             <input id="riis-depth-${p.segment_id}" type="number" placeholder="depth cm" style="width:70px;margin-right:4px"/>
+             <input id="riis-note-${p.segment_id}" type="text" placeholder="note" style="width:120px"/>
+             <div style="margin-top:6px;display:flex;gap:4px">
+               <button onclick="window.__riisRoadReport(${p.segment_id},${lat},${lon},'open')" style="background:#10B981;border:0;color:#fff;padding:3px 8px;border-radius:4px;cursor:pointer">Open</button>
+               <button onclick="window.__riisRoadReport(${p.segment_id},${lat},${lon},'caution')" style="background:#F59E0B;border:0;color:#fff;padding:3px 8px;border-radius:4px;cursor:pointer">Caution</button>
+               <button onclick="window.__riisRoadReport(${p.segment_id},${lat},${lon},'closed')" style="background:#EF4444;border:0;color:#fff;padding:3px 8px;border-radius:4px;cursor:pointer">Closed</button>
+             </div>
+           </div>`);
+      },
+    }).addTo(map);
+  }, [roads]);
+
+  // Report markers
+  useEffect_m(() => {
+    const map = mapRef.current; if (!map) return;
+    const Ls = layers.current;
+    if (Ls.reports) { Ls.reports.remove(); Ls.reports = null; }
+    if (!reports || !reports.length) return;
+    Ls.reports = L.layerGroup(reports.map(r => L.circleMarker([r.lat, r.lon], { radius: 6, color: '#fff', weight: 1.5, fillColor: r.status === 'closed' ? '#EF4444' : r.status === 'caution' ? '#F59E0B' : '#10B981', fillOpacity: 0.95 })
+      .bindTooltip(`Report: ${r.status}${r.depth_cm != null ? ' · ' + r.depth_cm + ' cm' : ''}${r.note ? ' · ' + r.note : ''}`))).addTo(map);
+  }, [reports]);
+
+  // Routes
+  useEffect_m(() => {
+    const map = mapRef.current; if (!map) return;
+    const Ls = layers.current;
+    ['safe', 'safeCase', 'normal'].forEach(k => { if (Ls[k]) { Ls[k].remove(); Ls[k] = null; } });
+    if (!routes) return;
+    const toLatLngs = g => g.coordinates.map(([lon, lat]) => [lat, lon]);
+    const bounds = [];
+    if (routes.normal_route && routes.normal_route.geojson) {
+      const ll = toLatLngs(routes.normal_route.geojson);
+      Ls.normal = L.polyline(ll, { pane: 'routePane', color: '#94A3B8', weight: 3, dashArray: '8 8', opacity: 0.9 }).addTo(map).bindTooltip('Normal shortest route');
+      bounds.push(...ll);
+    }
+    if (routes.safe_route && routes.safe_route.geojson) {
+      const ll = toLatLngs(routes.safe_route.geojson);
+      Ls.safeCase = L.polyline(ll, { pane: 'routePane', color: '#fff', weight: 9, opacity: 0.7 }).addTo(map);
+      Ls.safe = L.polyline(ll, { pane: 'routePane', color: '#22D3EE', weight: 6, opacity: 1 }).addTo(map).bindTooltip('Flood-aware safe route');
+      bounds.push(...ll);
+    }
+    if (bounds.length) map.fitBounds(L.latLngBounds(bounds).pad(0.15), { animate: true });
+  }, [routes]);
+
+  // Origin / destination pins (draggable)
+  useEffect_m(() => {
+    const map = mapRef.current; if (!map) return;
+    const Ls = layers.current;
+    const sync = (key, pt, color, letter, cb) => {
+      if (!pt) { if (Ls[key]) { Ls[key].remove(); Ls[key] = null; } return; }
+      if (!Ls[key]) {
+        Ls[key] = L.marker([pt.lat, pt.lon], { icon: pinIcon(color, letter), draggable: true, zIndexOffset: 1000 }).addTo(map);
+        Ls[key].on('dragend', e => { const ll = e.target.getLatLng(); const fn = cbRef.current[cb]; if (fn) fn({ lat: ll.lat, lon: ll.lng }); });
+      } else {
+        Ls[key].setLatLng([pt.lat, pt.lon]);
+      }
+    };
+    sync('origin', origin, '#10B981', 'A', 'onMoveOrigin');
+    sync('dest', dest, '#EF4444', 'B', 'onMoveDest');
+    if (origin && !dest && !routes) map.panTo([origin.lat, origin.lon]);
+  }, [origin && origin.lat, origin && origin.lon, dest && dest.lat, dest && dest.lon]);
+
+  // Flash a segment from the "most affected" list
+  useEffect_m(() => {
+    const map = mapRef.current; const lyr = flashSegmentId && layers.current.segs[flashSegmentId];
+    if (!map || !lyr) return;
+    const b = lyr.getBounds(); map.panTo(b.getCenter());
+    const base = lyr.options; let n = 0;
+    const iv = setInterval(() => { lyr.setStyle({ color: n % 2 ? base.color : '#22D3EE', weight: n % 2 ? base.weight : 9 }); if (++n > 6) { clearInterval(iv); lyr.setStyle({ color: base.color, weight: base.weight }); } }, 180);
+    return () => clearInterval(iv);
+  }, [flashSegmentId]);
+
+  const boxStyle = { position: 'relative', width: '100%', height: 560, borderRadius: 12, overflow: 'hidden', background: '#060D15' };
+  const chip = (txt, color) => <span className="mono" style={{ fontSize: 10, background: 'rgba(6,13,21,0.85)', border: '1px solid var(--stroke)', borderRadius: 6, padding: '3px 8px', color }}>{txt}</span>;
+  if (typeof L === 'undefined') return <div style={boxStyle}><div style={{ padding: 20, color: 'var(--text-lo)' }}>Leaflet not loaded</div></div>;
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={boxStyle} ref={elRef} />
+      <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 500, pointerEvents: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {picking && chip(`CLICK THE MAP TO SET ${picking === 'origin' ? 'ORIGIN' : 'DESTINATION'}`, '#F59E0B')}
+        {state === 'loading' && chip('FETCHING ROADS · DEM · FLOOD STATUS…', 'var(--cyan)')}
+        {floodState === 'loading' && chip('COMPUTING INUNDATION…', '#3B82F6')}
+        {state === 'ok' && roads && chip(`${roads.features.length} SEGMENTS · ${Object.entries(roads.status_counts || {}).map(([k, v]) => `${v} ${k}`).join(' · ')}`, 'var(--text-mid)')}
+      </div>
+      {state === 'error' && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 600, display: 'grid', placeItems: 'center', background: 'rgba(6,13,21,0.6)' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: '#FCA5A5', marginBottom: 8 }}>Road data could not be loaded (Overpass may be rate-limiting).</div>
+            <button className="btn primary" onClick={onRetry}>Retry</button>
+          </div>
+        </div>
+      )}
+      <div style={{ position: 'absolute', bottom: 10, left: 10, zIndex: 500, background: 'rgba(6,13,21,0.88)', border: '1px solid var(--stroke)', borderRadius: 8, padding: '8px 10px', fontSize: 10.5, color: 'var(--text-mid)', lineHeight: 1.7 }}>
+        {Object.entries(ROAD_STYLE).map(([k, s]) => (
+          <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: s.weight, background: s.color, display: 'inline-block', borderRadius: 2 }} />{ROAD_LABEL[k]}</div>
+        ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 5, background: '#22D3EE', display: 'inline-block', borderRadius: 2, boxShadow: '0 0 0 2px #fff' }} />Safe route</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 0, borderTop: '3px dashed #94A3B8', display: 'inline-block' }} />Normal route</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 22, height: 10, background: 'rgba(59,130,246,0.35)', border: '1px solid #3B82F6', display: 'inline-block' }} />Ponding (DEM)</div>
+        <div style={{ color: 'var(--text-lo)' }}>dashed road = underpass · pins are draggable</div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { IndiaMap, ChennaiMap, FloodSimMap, RealFloodMap, SafeRouteMap });
 

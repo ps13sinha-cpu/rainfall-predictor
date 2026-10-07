@@ -98,6 +98,7 @@ function Rail({ active, go }){
     { id:"explainable",label:"Explainable AI", ic:Icon.brain,    hash:"#/explainable" },
     { id:"timeline",  label:"Timeline",        ic:Icon.clock,    hash:"#/timeline" },
     { id:"simulate",  label:"Flood Simulator", ic:Icon.wave,     hash:"#/simulate" },
+    { id:"routes",    label:"Safe Routes",     ic:Icon.map,      hash:"#/routes" },
     { id:"farmer",    label:"Farmer Advisory", ic:Icon.leaf,     hash:"#/farmer" },
     { id:"reservoir", label:"Reservoirs",      ic:Icon.droplet,  hash:"#/reservoir" },
     { id:"disaster",  label:"Disaster Ops",    ic:Icon.shield,   hash:"#/disaster" },
@@ -164,6 +165,7 @@ function App(){
     case "explainable":screen = <ExplainableScreen/>; break;
     case "timeline":   screen = <TimelineScreen/>; break;
     case "simulate":   screen = <SimulateScreen/>; break;
+    case "routes":     screen = <RoutesScreen/>; break;
     case "farmer":     screen = <FarmerScreen/>; break;
     case "reservoir":  screen = <ReservoirScreen/>; break;
     case "disaster":   screen = <DisasterScreen/>; break;

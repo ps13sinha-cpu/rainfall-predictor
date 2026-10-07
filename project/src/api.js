@@ -259,6 +259,54 @@
       return apiFetch(`/api/hyperlocal/factors?lat=${lat}&lon=${lon}`);
     },
 
+    // ── Safe Routes ─────────────────────────────────────────────────────────
+    getRoadSite(lat, lon, force = false) {
+      return apiFetch(`/api/routes/site?lat=${lat}&lon=${lon}${force ? '&force=true' : ''}`);
+    },
+
+    // Road segments with flood status for a scenario (GeoJSON + most_affected)
+    getRoads(params = {}) {
+      const qs = new URLSearchParams();
+      qs.set('lat', params.lat); qs.set('lon', params.lon);
+      if (params.rainfall_mm != null) qs.set('rainfall_mm', params.rainfall_mm);
+      if (params.duration_h != null) qs.set('duration_h', params.duration_h);
+      if (params.intensity_mm_h != null) qs.set('intensity_mm_h', params.intensity_mm_h);
+      if (params.mode) qs.set('mode', params.mode);
+      return apiFetch(`/api/routes/roads?${qs.toString()}`);
+    },
+
+    // Safe route + normal route between two points
+    getRoute(params = {}) {
+      const qs = new URLSearchParams();
+      qs.set('from_lat', params.from_lat); qs.set('from_lon', params.from_lon);
+      qs.set('to_lat', params.to_lat); qs.set('to_lon', params.to_lon);
+      if (params.rainfall_mm != null) qs.set('rainfall_mm', params.rainfall_mm);
+      if (params.duration_h != null) qs.set('duration_h', params.duration_h);
+      if (params.intensity_mm_h != null) qs.set('intensity_mm_h', params.intensity_mm_h);
+      if (params.mode) qs.set('mode', params.mode);
+      return apiFetch(`/api/routes/route?${qs.toString()}`);
+    },
+
+    geocode(q, lat, lon) {
+      return apiFetch(`/api/routes/geocode?q=${encodeURIComponent(q)}&lat=${lat}&lon=${lon}`);
+    },
+
+    reverseGeocode(lat, lon) {
+      return apiFetch(`/api/routes/reverse?lat=${lat}&lon=${lon}`);
+    },
+
+    postRoadReport(body) {
+      return apiFetch('/api/routes/report', { method: 'POST', body: JSON.stringify(body) });
+    },
+
+    getRoadReports(lat, lon) {
+      return apiFetch(`/api/routes/reports?lat=${lat}&lon=${lon}`);
+    },
+
+    getRoadModel() {
+      return apiFetch('/api/routes/model');
+    },
+
     // ── Stats ───────────────────────────────────────────────────────────────
     getStats() {
       return apiFetch('/api/stats');
