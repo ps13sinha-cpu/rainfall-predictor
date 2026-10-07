@@ -83,6 +83,11 @@ Tables: `road_sites`, `road_segments`, `road_status_cache`, `road_reports`, `rou
 Thresholds: closed_all >= 0.60 m, closed_cars >= 0.30 m, caution >= 0.15 m (or >= 0.05 m next to a culvert); underpasses are at least caution and closed to cars when any wet cell is within 60 m; bridges stay open.
 Depth comes from the same `net_ponding_mm` + `depth_grid` the inundation map uses. The road risk model is a **surrogate trained on simulated scenarios** (28 per site, six seed sites, one site held out); `label_source` records which samples are real community reports. See `python -m app.train_roads`.
 
+### Farmer advisory — `/api/farmer`
+- `GET /api/farmer/advisory?lat&lon&crop&stage` — Live, location-specific advice: 7-day forecast (rain, probability, temperatures, ET0, wind, UV), soil moisture at 0-7 / 7-28 / 28-100 cm, FAO-56 water balance (Kc x ET0) and irrigation amount / timing, waterlogging hours from the ponding model vs crop tolerance, heat and cold stress days, disease pressure from hourly humidity and temperature, spray / harvest / sowing windows, lodging risk, flood history and the nearest reservoir, plus ranked advisories. Crops: paddy, sugarcane, cotton, groundnut, millets, tomato; stages: Sowing, Vegetative, Flowering, Grain-filling, Harvest. Cached 15 min.
+- `GET /api/farmer/geocode?q=` — India-wide place search for the field location box
+- `GET /api/farmer/crops` — crop and stage lists
+
 ### System
 - `GET /api/health` — Health check
 - `GET /api/stats` — System-wide statistics

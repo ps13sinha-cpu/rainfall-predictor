@@ -307,6 +307,15 @@
       return apiFetch('/api/routes/model');
     },
 
+    // ── Farmer advisory ─────────────────────────────────────────────────────
+    getFarmerAdvisory(lat, lon, crop, stage) {
+      return apiFetch(`/api/farmer/advisory?lat=${lat}&lon=${lon}&crop=${encodeURIComponent(crop)}&stage=${encodeURIComponent(stage)}`);
+    },
+
+    farmerGeocode(q) {
+      return apiFetch(`/api/farmer/geocode?q=${encodeURIComponent(q)}`);
+    },
+
     // ── Stats ───────────────────────────────────────────────────────────────
     getStats() {
       return apiFetch('/api/stats');

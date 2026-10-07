@@ -314,182 +314,238 @@ function SimulateScreen(){
 }
 
 function FarmerScreen(){
-  const [crop, setCrop] = useState_s("paddy");
-  const [stage, setStage] = useState_s("Vegetative");
-  const [loc, setLoc] = useState_s(() => RIIS.location.city || "Local Sector");
-  const w = RIIS.live;
-  const p = RIIS.prediction;
+  const CROPS = [["paddy","Paddy"],["sugarcane","Sugarcane"],["cotton","Cotton"],["groundnut","Groundnut"],["millets","Millets"],["tomato","Tomato"]];
+  const STAGES = ["Sowing","Vegetative","Flowering","Grain-filling","Harvest"];
+  const ICONS = { droplet: Icon.droplet, sun: Icon.flame, bug: Icon.siren, flame: Icon.flame, wind: Icon.wave, calendar: Icon.clock, leaf: Icon.leaf, chart: Icon.chart, shield: Icon.shield };
+  const [crop, setCrop] = useState_s(() => { try { return localStorage.getItem("riis:farm:crop") || "paddy"; } catch(e) { return "paddy"; } });
+  const [stage, setStage] = useState_s(() => { try { return localStorage.getItem("riis:farm:stage") || "Vegetative"; } catch(e) { return "Vegetative"; } });
+  // the advisory has its own location so a farmer can look at any field without moving the app's location
+  const [site, setSite] = useState_s(() => ({ lat: RIIS.location.lat, lon: RIIS.location.lon, label: RIIS.location.city || "Your location" }));
+  const [query, setQuery] = useState_s("");
+  const [results, setResults] = useState_s([]);
+  const [adv, setAdv] = useState_s(null);
+  const [state, setState] = useState_s("idle");
+  const [err, setErr] = useState_s(null);
+  const [tick, setTick] = useState_s(0);
 
-  // Live geofactors (soil, saturation, antecedent rain) from backend
-  const [geo, setGeo] = useState_s(null);
+  useEffect_s(() => { try { localStorage.setItem("riis:farm:crop", crop); localStorage.setItem("riis:farm:stage", stage); } catch(e) {} }, [crop, stage]);
+
+  // India-wide place search (400 ms debounce, via the backend Nominatim proxy)
   useEffect_s(() => {
+    if (!window.RIIS_API || query.trim().length < 2) { setResults([]); return; }
     let alive = true;
-    if (window.RIIS_API && RIIS.location.lat != null) {
-      window.RIIS_API.getGeofactors(RIIS.location.lat, RIIS.location.lon)
-        .then(r => { if (alive) setGeo(r); })
-        .catch(() => {});
-    }
+    const t = setTimeout(() => {
+      const coord = query.trim().match(/^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/);
+      if (coord) { setResults([{ name: `${coord[1]}, ${coord[3]}`, lat: +coord[1], lon: +coord[3] }]); return; }
+      window.RIIS_API.farmerGeocode(query.trim()).then(r => { if (alive) setResults(r.results || []); }).catch(() => { if (alive) setResults([]); });
+    }, 400);
+    return () => { alive = false; clearTimeout(t); };
+  }, [query]);
+
+  // The advisory itself: every factor for this point, crop and stage
+  useEffect_s(() => {
+    if (!window.RIIS_API || site.lat == null) return;
+    let alive = true;
+    setState("loading"); setErr(null);
+    (window.RIIS_API.ready || Promise.resolve()).then(() => window.RIIS_API.getFarmerAdvisory(site.lat, site.lon, crop, stage))
+      .then(r => { if (!alive) return; setAdv(r); setState("ok"); })
+      .catch(e => { if (alive) { setErr(e.message); setState("error"); } });
     return () => { alive = false; };
-  }, [RIIS.location.lat, RIIS.location.lon]);
-  const soilSat = geo && geo.antecedent ? geo.antecedent.saturation_pct : Math.round(w.humidity * 0.45);
-  const soilInfo = geo && geo.geo ? geo.geo.soil : null;
+  }, [site.lat, site.lon, crop, stage, tick]);
+  useEffect_s(() => { const iv = setInterval(() => setTick(t => t + 1), 15 * 60 * 1000); return () => clearInterval(iv); }, []);
 
-  // Dynamic advisories based on real rainfall & temperature
-  const isRainHigh = p.rainfall_mm > 15;
-  const isRainMod = p.rainfall_mm > 3;
-  const isTempHigh = w.temperature > 33;
-
-  const dynamicAdvisories = [
-    // Real soil/antecedent advisory from backend geofactors
-    ...(geo ? [{
-      type: soilSat >= 70 ? "warn" : soilSat >= 45 ? "info" : "good",
-      ic: Icon.droplet,
-      title: `Field Saturation ${soilSat}% — ${soilSat >= 70 ? "Waterlogging Risk" : soilSat >= 45 ? "Near Field Capacity" : "Irrigation Needed"}`,
-      desc: `Antecedent rainfall ${geo.antecedent.rain_3d_mm}mm/3d, ${geo.antecedent.rain_7d_mm}mm/7d, ${geo.antecedent.rain_30d_mm}mm/30d from Open-Meteo archive. `
-        + `Soil is ${String(soilInfo ? soilInfo.texture : "unknown").replace("_"," ")} with ${soilInfo ? soilInfo.infiltration_mm_h : "?"} mm/h infiltration. `
-        + (soilSat >= 70 ? "Soils cannot absorb more rain — delay sowing and clear drainage channels."
-          : soilSat >= 45 ? "Soils near field capacity — light irrigation only, avoid waterlogging in low patches."
-          : "Soils dry — proceed with normal irrigation cycle.")
-    }] : []),
-    {
-      type: isRainHigh ? "warn" : isRainMod ? "info" : "good",
-      ic: Icon.droplet,
-      title: isRainHigh ? "Delay Irrigation for 48 Hours" : isRainMod ? "Moderate Soil Moisture Window" : "Standard Irrigation Recommended",
-      desc: isRainHigh 
-        ? `Upcoming forecast of ${p.rainfall_mm}mm rain will adequately saturate fields. Avoid waterlogging in low patches.`
-        : isRainMod
-        ? `Predicted ${p.rainfall_mm}mm rainfall will supplement irrigation. Monitor field capacity.`
-        : `Current soil moisture is stable with dry conditions (${w.humidity}% RH). Regular watering cycle advised.`
-    },
-    {
-      type: isRainHigh ? "warn" : "info",
-      ic: Icon.flame,
-      title: isRainHigh ? "Postpone Pesticide & Foliar Spraying" : "Pesticide Spraying Window: Open",
-      desc: isRainHigh 
-        ? `Rain forecast within ${p.startsInText} will wash away foliar applications. Reschedule spraying.`
-        : `Favorable wind conditions (${w.windSpeed} km/h from ${w.windDirLabel}) and clear weather suitable for targeted spraying.`
-    },
-    {
-      type: isTempHigh ? "warn" : "good",
-      ic: Icon.leaf,
-      title: `Thermal Index Advisory (${w.temperature.toFixed(1)}°C)`,
-      desc: isTempHigh 
-        ? `High ambient temperature (feels like ${w.feels.toFixed(1)}°C). Ensure mulch layer to reduce soil evaporation.`
-        : `Current temperature ${w.temperature.toFixed(1)}°C is in optimal physiological range for vegetative growth.`
-    },
-    {
-      type: soilSat > 70 ? "warn" : "info",
-      ic: Icon.chart,
-      title: `Soil Moisture Status: ${soilSat}%${soilInfo ? " · " + String(soilInfo.texture).replace("_"," ") : ""}`,
-      desc: geo && geo.antecedent
-        ? `${geo.antecedent.rain_7d_mm}mm rain in the last 7 days and ${geo.antecedent.rain_30d_mm}mm in 30 days — fields at ${soilSat}% saturation.${soilInfo ? ` ${String(soilInfo.texture).replace("_"," ")} soil absorbs at ${soilInfo.infiltration_mm_h} mm/h; rain above that rate becomes runoff.` : ""}`
-        : `Atmospheric humidity at ${w.humidity}% and cloud cover at ${w.cloudCover}%. Soil moisture retention is nominal.`
-    },
-    {
-      type: w.humidity > 80 ? "warn" : "good",
-      ic: Icon.siren,
-      title: w.humidity > 80 ? "Fungal / Pest Risk Elevated" : "Pest & Disease Pressure: Low",
-      desc: w.humidity > 80 
-        ? `High humidity (${w.humidity}%) creates favorable conditions for foliar blight. Inspect lower leaves.`
-        : `Moderate atmospheric conditions discourage fungal spore dissemination.`
-    }
-  ];
+  const color = t => t === "warn" ? "#F97316" : t === "info" ? "#22D3EE" : "#10B981";
+  const lvl = l => l === "high" ? "#EF4444" : l === "moderate" ? "#F59E0B" : "#10B981";
+  const fmtDay = d => d ? new Date(d + "T00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric" }) : "";
+  const input = { background: "none", border: "none", outline: "none", color: "var(--text-hi)", flex: 1, fontSize: 13 };
+  const a = adv;
+  const soil = a && a.soil, irr = a && a.irrigation, wl = a && a.waterlogging;
 
   return (
     <div className="screen">
       <div className="screen-title">
         <div>
           <div className="crumb">ADVISORY <b>Farmer Module</b></div>
-          <h1 style={{marginTop:6}}>Precision Agriculture &amp; Weather Advisory — {loc}</h1>
-          <p style={{marginTop:4}}>Live weather-driven recommendations for irrigation, crop protection, sowing &amp; harvest</p>
+          <h1 style={{marginTop:6}}>Precision Agriculture &amp; Weather Advisory — {site.label}</h1>
+          <p style={{marginTop:4}}>Live forecast, soil moisture at three depths, terrain, flood history and the nearest reservoir, reasoned over your crop and growth stage</p>
         </div>
-        <div className="id">CROP AI · LIVE METRICS · {loc.toUpperCase()}</div>
+        <div className="id">CROP AI · {a ? `${a.location.district || site.label} · ${a.data_sources.forecast.split(" ")[0]}` : "LOADING"}</div>
       </div>
 
       {/* Inputs */}
       <div className="panel brackets" style={{marginBottom:16}}>
-        <div className="panel-bd" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:12,alignItems:"end"}}>
-          <div>
-            <div className="k mb2">TARGET LOCATION</div>
+        <div className="panel-bd" style={{display:"grid",gridTemplateColumns:"1.3fr 1fr 1fr auto",gap:12,alignItems:"end"}}>
+          <div style={{position:"relative"}}>
+            <div className="k mb2">FIELD LOCATION</div>
             <div style={{background:"rgba(10,18,28,0.6)",border:"1px solid var(--stroke)",borderRadius:10,padding:"9px 12px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{color:"var(--cyan)"}}>{Icon.pin}</span>
-              <input value={loc} onChange={e=>setLoc(e.target.value)} style={{background:"none",border:"none",outline:"none",color:"var(--text-hi)",flex:1,fontSize:13}}/>
+              <input value={query} placeholder={`${site.label} · type a village, town or "lat, lon"`} onChange={e=>setQuery(e.target.value)} style={input}/>
+              {query && <button className="chip" onClick={()=>{ setQuery(""); setResults([]); }}>×</button>}
             </div>
+            {results.length > 0 && (
+              <div style={{position:"absolute",left:0,right:0,top:"100%",zIndex:20,marginTop:4,border:"1px solid var(--stroke-2)",borderRadius:8,overflow:"hidden",background:"var(--bg-1)"}}>
+                {results.map((r,i)=>(
+                  <div key={i} onClick={()=>{ setSite({ lat:r.lat, lon:r.lon, label:(r.name||"").split(",").slice(0,2).join(",") }); setQuery(""); setResults([]); }}
+                    style={{padding:"7px 10px",fontSize:12,cursor:"pointer",borderBottom:"1px solid var(--stroke)"}}>
+                    {(r.name||"").split(",").slice(0,3).join(",")}{r.district ? <span className="mono" style={{color:"var(--text-lo)"}}> · {r.district}</span> : null}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:4}}>{site.lat != null ? `${site.lat.toFixed(4)}, ${site.lon.toFixed(4)}` : "no location"}{a && a.location.district ? ` · ${a.location.district}, ${a.location.state || ""}` : ""}</div>
           </div>
           <div>
             <div className="k mb2">CROP TYPE</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {["Paddy","Sugarcane","Cotton","Groundnut","Millets","Tomato"].map(c=>(
-                <button key={c} className={"chip"+(crop===c.toLowerCase()?" active":"")} onClick={()=>setCrop(c.toLowerCase())}>{c}</button>
-              ))}
+              {CROPS.map(([k,l])=>(<button key={k} className={"chip"+(crop===k?" active":"")} onClick={()=>setCrop(k)}>{l}</button>))}
             </div>
           </div>
           <div>
             <div className="k mb2">GROWTH STAGE</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {["Sowing","Vegetative","Flowering","Grain-filling","Harvest"].map(s=>(
-                <button key={s} className={"chip"+(stage===s?" active":"")} onClick={()=>setStage(s)}>{s}</button>
-              ))}
+              {STAGES.map(s=>(<button key={s} className={"chip"+(stage===s?" active":"")} onClick={()=>setStage(s)}>{s}</button>))}
             </div>
           </div>
-          <button 
-            className="btn primary" 
-            style={{padding:"10px 18px"}}
-            onClick={()=>{
-              if (window.searchAndLoadLocation && loc !== RIIS.location.city) {
-                window.searchAndLoadLocation(loc);
-              }
-            }}
-          >
-            Sync Weather ⚡
-          </button>
+          <div style={{display:"flex",gap:6}}>
+            <button className="btn ghost" onClick={()=>setSite({ lat:RIIS.location.lat, lon:RIIS.location.lon, label:RIIS.location.city || "Your location" })}>My location</button>
+            <button className="btn primary" style={{padding:"10px 18px"}} onClick={()=>setTick(t=>t+1)}>{state==="loading" ? "Fetching…" : "Refresh ⚡"}</button>
+          </div>
         </div>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:16}}>
-        <div className="panel brackets">
-          <div className="panel-hd">
-            <h3>Live Meteorological Recommendations</h3>
-            <span className="live"><span className="d"/>{dynamicAdvisories.length} ACTIONS</span>
-            <span className="sub">Synced with {RIIS.location.city} weather</span>
+      {state === "error" && <div className="panel" style={{padding:12,marginBottom:16,borderLeft:"3px solid #EF4444",color:"#FCA5A5",fontSize:12.5}}>Advisory unavailable: {err}. Is the backend running?</div>}
+      {state === "loading" && !a && <div className="panel" style={{padding:12,marginBottom:16,color:"var(--text-lo)",fontSize:12.5}}>Fetching forecast, soil moisture, terrain and flood history for this point… first visit to a new place takes up to 30 s.</div>}
+
+      {a && (<>
+        {/* Live strip */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:16}}>
+          {[
+            ["Now", `${a.now.temperature != null ? a.now.temperature.toFixed(1) : "—"}°C`, `feels ${a.now.feels_like != null ? a.now.feels_like.toFixed(1) : "—"}° · RH ${a.now.humidity}%`, "#7DD3FC"],
+            ["Rain now", `${a.now.rain_mm_h || 0} mm/h`, `past 7 d ${a.past_7d.rain_mm} mm`, "#22D3EE"],
+            ["Next 7 days", `${irr.rain_7d_forecast_mm} mm`, `next 3 d ${irr.rain_3d_forecast_mm} mm`, "#3B82F6"],
+            ["Crop water need", `${irr.etc_7d_mm} mm/wk`, `Kc ${irr.kc} · ${a.crop.stage}`, "#10B981"],
+            ["Topsoil moisture", soil.moisture_0_7 != null ? `${soil.moisture_0_7} m³/m³` : "—", `${soil.saturation_pct}% saturated · ${String(soil.texture).replace("_"," ")}`, soil.saturation_pct >= 85 ? "#F59E0B" : "#10B981"],
+            ["Available water", irr.plant_available_water_pct != null ? `${irr.plant_available_water_pct}%` : "—", `root zone ${a.crop.root_depth_cm} cm`, irr.plant_available_water_pct != null && irr.plant_available_water_pct < 35 ? "#F59E0B" : "#10B981"],
+            ["Wind", `${a.now.wind_kmh != null ? Math.round(a.now.wind_kmh) : "—"} km/h`, `gusts to ${a.lodging.gust_max_3d_kmh} km/h (3 d)`, a.lodging.level === "high" ? "#EF4444" : "#7DD3FC"],
+            ["Waterlogging", wl.level.toUpperCase(), `~${wl.ponding_hours_72h} h vs ${wl.tolerance_hours} h tolerance`, lvl(wl.level)],
+          ].map(([k,v,s,c],i)=>(
+            <div key={i} className="panel" style={{padding:"10px 12px",borderLeft:`3px solid ${c}`}}>
+              <div className="k">{k}</div>
+              <div className="num" style={{fontSize:18,fontWeight:700,color:c,marginTop:2}}>{v}</div>
+              <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:2}} className="mono">{s}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:16}}>
+          <div className="vstack" style={{gap:16}}>
+            <div className="panel brackets">
+              <div className="panel-hd">
+                <h3>Recommendations for {a.crop.name} · {a.crop.stage}</h3>
+                <span className="live"><span className="d"/>{a.advisories.length} ACTIONS</span>
+                <span className="sub">{a.location.district || site.label} · computed {new Date(a.computed_at + "Z").toLocaleTimeString()}</span>
+              </div>
+              <div className="panel-bd" style={{display:"flex",flexDirection:"column",gap:10}}>
+                {a.advisories.map((x,i)=>{
+                  const c = color(x.type);
+                  return (
+                    <div key={i} style={{display:"flex",gap:12,padding:14,background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:12,borderLeft:`3px solid ${c}`}}>
+                      <div style={{width:38,height:38,borderRadius:10,background:c+"22",color:c,display:"grid",placeItems:"center",flex:"0 0 auto"}}>{ICONS[x.icon] || Icon.leaf}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13.5,fontWeight:600,color:"var(--text-hi)"}}>{x.title}</div>
+                        <div style={{fontSize:12,color:"var(--text-mid)",marginTop:4,lineHeight:1.5}}>{x.desc}</div>
+                      </div>
+                      <span className="mono" style={{fontSize:10,color:c,letterSpacing:".08em",alignSelf:"start"}}>PRIORITY {x.priority}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="panel brackets">
+              <div className="panel-hd"><h3>7-day field forecast</h3><span className="sub">rain · temperature · ET0 · wind · UV</span></div>
+              <div className="panel-bd">
+                <table className="data">
+                  <thead><tr><th>Day</th><th>Rain</th><th>Prob.</th><th>Tmax / Tmin</th><th>ET0</th><th>Crop need</th><th>Balance</th><th>Gusts</th><th>UV</th></tr></thead>
+                  <tbody>
+                    {a.forecast_7d.map((d,i)=>{ const w = irr.daily[i] || {}; const heat = a.stress.heat_days.includes(d.date), cold = a.stress.cold_days.includes(d.date);
+                      return (
+                        <tr key={d.date}>
+                          <td style={{fontWeight:600}}>{fmtDay(d.date)}</td>
+                          <td className="mono" style={{color:d.rain_mm>=20?"#F59E0B":d.rain_mm>0?"#22D3EE":"var(--text-mid)"}}>{d.rain_mm} mm</td>
+                          <td className="mono" style={{color:"var(--text-mid)"}}>{d.rain_prob != null ? d.rain_prob + "%" : "—"}</td>
+                          <td className="mono" style={{color: heat ? "#EF4444" : cold ? "#7DD3FC" : "var(--text-hi)"}}>{d.tmax}° / {d.tmin}°</td>
+                          <td className="mono">{d.et0_mm != null ? d.et0_mm.toFixed(1) : "—"}</td>
+                          <td className="mono">{w.etc_mm != null ? w.etc_mm : "—"}</td>
+                          <td className="mono" style={{color: (w.balance_mm||0) >= 0 ? "#10B981" : "#F59E0B"}}>{w.balance_mm != null ? (w.balance_mm >= 0 ? "+" : "") + w.balance_mm : "—"}</td>
+                          <td className="mono" style={{color:(d.gust_max||0) >= a.lodging.threshold_kmh ? "#EF4444" : "var(--text-mid)"}}>{d.gust_max != null ? Math.round(d.gust_max) : "—"}</td>
+                          <td className="mono" style={{color:"var(--text-mid)"}}>{d.uv_max != null ? d.uv_max.toFixed(0) : "—"}</td>
+                        </tr>
+                      ); })}
+                  </tbody>
+                </table>
+                <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:6}}>Crop need = Kc × ET0 (FAO-56). Balance = 80% of rain minus crop need. Past 7 days: {a.past_7d.rain_mm} mm rain, {a.past_7d.gdd} growing degree-days; next 7: {a.stress.gdd_next_7d} GDD.</div>
+              </div>
+            </div>
           </div>
-          <div className="panel-bd" style={{display:"flex",flexDirection:"column",gap:10}}>
-            {dynamicAdvisories.map((a,i)=>{
-              const color = a.type==="warn"?"#F97316":a.type==="info"?"#22D3EE":"#10B981";
-              return (
-                <div key={i} style={{display:"flex",gap:12,padding:14,background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:12,borderLeft:`3px solid ${color}`}}>
-                  <div style={{width:38,height:38,borderRadius:10,background:color+"22",color:color,display:"grid",placeItems:"center",flex:"0 0 auto"}}>{a.ic}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:13.5,fontWeight:600,color:"var(--text-hi)"}}>{a.title}</div>
-                    <div style={{fontSize:12,color:"var(--text-mid)",marginTop:4,lineHeight:1.5}}>{a.desc}</div>
+
+          <div className="vstack" style={{gap:16}}>
+            <div className="panel brackets">
+              <div className="panel-hd"><h3>Soil &amp; water</h3><span className="sub">{soil.source === "soilgrids" || soil.source === "soilgrids_nearby" ? "SoilGrids + ERA5-Land" : "regional default + ERA5-Land"}</span></div>
+              <div className="panel-bd">
+                {[
+                  ["Topsoil 0-7 cm", soil.moisture_0_7, "#22D3EE"], ["Subsoil 7-28 cm", soil.moisture_7_28, "#3B82F6"], ["Deep 28-100 cm", soil.moisture_28_100, "#7DD3FC"],
+                ].map(([k,v,c],i)=>(
+                  <div className="crop-gauge" key={i} style={{marginBottom:8}}>
+                    <div className="lbl"><span>{k}</span><b style={{color:c}} className="num">{v != null ? v.toFixed(3) + " m³/m³" : "—"}</b></div>
+                    <div className="track"><div className="fill" style={{width:(v != null ? Math.min(100, v / 0.5 * 100) : 0)+"%",background:c}}/></div>
                   </div>
-                  <span className="mono" style={{fontSize:10,color:color,letterSpacing:".08em",alignSelf:"start"}}>PRIORITY {i<2?1:2}</span>
+                ))}
+                <div className="crop-gauge" style={{marginBottom:8}}>
+                  <div className="lbl"><span>Plant-available water (root zone)</span><b style={{color: irr.plant_available_water_pct < 35 ? "#F59E0B" : "#10B981"}} className="num">{irr.plant_available_water_pct != null ? irr.plant_available_water_pct + "%" : "—"}</b></div>
+                  <div className="track"><div className="fill" style={{width:(irr.plant_available_water_pct||0)+"%",background: irr.plant_available_water_pct < 35 ? "#F59E0B" : "#10B981"}}/></div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <div style={{fontSize:11.5,color:"var(--text-mid)",lineHeight:1.6,marginTop:6}}>
+                  {String(soil.texture).replace("_"," ")} soil · infiltration {soil.infiltration_mm_h} mm/h · field capacity {irr.field_capacity_m3m3} · wilting point {irr.wilting_point_m3m3}<br/>
+                  Soil temperature {soil.soil_temperature_c != null ? soil.soil_temperature_c.toFixed(1) + " °C" : "—"} · VPD {a.now.vpd_kpa != null ? a.now.vpd_kpa.toFixed(2) + " kPa" : "—"}<br/>
+                  Irrigation: <b style={{color:"var(--text-hi)"}}>{irr.recommended_mm > 0 ? `${irr.recommended_mm} mm ${irr.recommended_when}` : "not needed this week"}</b>{irr.days_until_stress != null ? ` · stress in ${irr.days_until_stress} day(s) without water` : ""}
+                </div>
+              </div>
+            </div>
 
-        <div className="vstack" style={{gap:16}}>
-          <div className="panel brackets">
-            <div className="panel-hd"><h3>Microclimate &amp; Crop Health</h3></div>
-            <div className="panel-bd">
-              {[
-                [geo ? "Soil Moisture (3y archive)" : "Est. Soil Moisture", `${soilSat}%`, soilSat > 70 ? "#F59E0B" : "#10B981", soilSat],
-                ["Canopy Temp.", `${w.temperature.toFixed(1)}°C`, "#7DD3FC", Math.min(100, Math.round(w.temperature * 2.2))],
-                ["Vapor Deficit", `${((100-w.humidity)*0.03).toFixed(2)} kPa`, "#22D3EE", Math.max(10, 100-w.humidity)],
-                ["Fungal Infection Risk", w.humidity > 80 ? "ELEVATED" : "LOW", w.humidity > 80 ? "#F59E0B" : "#10B981", w.humidity > 80 ? 70 : 25],
-                ["Pesticide Wash-off Risk", p.rainfall_mm > 5 ? "HIGH" : "MINIMAL", p.rainfall_mm > 5 ? "#EF4444" : "#10B981", p.rainfall_mm > 5 ? 85 : 15],
-              ].map(([k,v,c,pct],i)=>(
-                <div className="crop-gauge" key={i} style={{marginBottom:10}}>
-                  <div className="lbl"><span>{k}</span><b style={{color:c}} className="num">{v}</b></div>
-                  <div className="track"><div className="fill" style={{width:pct+"%",background:c}}/></div>
-                </div>
-              ))}
+            <div className="panel brackets">
+              <div className="panel-hd"><h3>Risks this week</h3></div>
+              <div className="panel-bd" style={{display:"flex",flexDirection:"column",gap:8,fontSize:12}}>
+                {[
+                  ["Waterlogging", wl.level, `${wl.ponding_hours_72h} h ponding on ${irr.rain_3d_forecast_mm} mm / 3 d · HAND ${wl.hand_m != null ? wl.hand_m + " m" : "n/a"} · drains ${wl.drainage_capacity_mm_h} mm/h`],
+                  ["Disease pressure", a.disease.overall, a.disease.list.slice(0,3).map(d=>`${d.name} ${d.favourable_hours_72h} h`).join(" · ") + ` · leaf wetness ${a.disease.leaf_wetness_hours_72h} h`],
+                  ["Heat stress", a.stress.heat_days.length ? (a.stress.heat_days.length >= 3 ? "high" : "moderate") : "low", a.stress.heat_days.length ? `${a.stress.heat_days.length} day(s) ≥ ${a.stress.t_heat} °C` : `no day above ${a.stress.t_heat} °C`],
+                  ["Lodging / wind", a.lodging.level, `gusts to ${a.lodging.gust_max_3d_kmh} km/h vs ${a.lodging.threshold_kmh} km/h threshold`],
+                  ["Flood exposure", a.context.impact_class_72h === "safe" ? "low" : a.context.impact_class_72h === "mod" ? "moderate" : "high", `impact ${a.context.impact_score_72h}/100 on 3-day rain · district floods on record: ${a.context.district_floods != null ? a.context.district_floods : "—"}`],
+                ].map(([k,l,s],i)=>(
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"110px 70px 1fr",gap:8,alignItems:"center",padding:"6px 0",borderBottom:"1px dashed rgba(120,180,255,0.08)"}}>
+                    <span style={{color:"var(--text-hi)",fontWeight:600}}>{k}</span>
+                    <span className="sev" style={{color:lvl(l),background:lvl(l)+"22",fontSize:10,textAlign:"center"}}>{String(l).toUpperCase()}</span>
+                    <span style={{color:"var(--text-mid)",fontSize:11}}>{s}</span>
+                  </div>
+                ))}
+                <div style={{fontSize:11,color:"var(--text-mid)",marginTop:4}}>Pests to watch for {a.crop.name}: {a.disease.pests_to_watch.join(", ")}.</div>
+              </div>
+            </div>
+
+            <div className="panel brackets">
+              <div className="panel-hd"><h3>Work windows</h3><span className="sub">next 48 h sprays · 7 d harvest / sowing</span></div>
+              <div className="panel-bd" style={{fontSize:12,lineHeight:1.7}}>
+                <div><b style={{color:"var(--text-hi)"}}>Spraying:</b> {a.spray_windows.length ? a.spray_windows.slice(0,3).map(w=>`${w.start.slice(5).replace("T"," ")}–${w.end.slice(11)} (${w.hours} h)`).join(" · ") : "no suitable window in 48 h"}</div>
+                <div><b style={{color:"var(--text-hi)"}}>Harvest:</b> {a.field.harvest_window ? `${fmtDay(a.field.harvest_window[0])} to ${fmtDay(a.field.harvest_window[1])} (${a.field.harvest_dry_days_needed} dry days)` : `no ${a.field.harvest_dry_days_needed}-day dry run this week`}</div>
+                <div><b style={{color:"var(--text-hi)"}}>Sowing / transplanting:</b> {a.field.sowing_ok_now ? "conditions favourable now" : "hold — see recommendations"}</div>
+                {a.context.reservoir && <div><b style={{color:"var(--text-hi)"}}>Nearest reservoir:</b> {a.context.reservoir.name} {a.context.reservoir.storage_pct != null ? `${a.context.reservoir.storage_pct}% full` : ""} · {a.context.reservoir.distance_km} km{a.context.reservoir.observed_at ? ` · report ${a.context.reservoir.observed_at}` : " · seeded"}</div>}
+                <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:4}}>Sources: {a.data_sources.forecast}; soil {a.data_sources.soil || "default"}; terrain {a.data_sources.terrain ? "SRTM" : "pending"}; {a.data_sources.flood_history ? "India Flood Inventory" : ""}. Refreshes every 15 min.</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </>)}
     </div>
   );
 }
