@@ -134,6 +134,8 @@ async def fetch_osm(client, bbox) -> dict:
                 f'way["natural"="water"]({s},{w},{n},{e});way["waterway"~"^(river|stream|canal|drain|ditch)$"]({s},{w},{n},{e});'
                 f');out body geom;')
     roads = await _overpass(client, roads_ql, start=0)       # Overpass serialises per IP: run the two sequentially
+    if not roads:
+        raise RuntimeError("Overpass returned no roads (rate limited or all mirrors down); site not saved")
     extra = await _overpass(client, extra_ql, start=1)
     culverts, water = [], []
     for el in extra:

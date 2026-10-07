@@ -58,7 +58,9 @@ DEGRADED_GRACE = 10 * 60
 OVERPASS_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.osm.ch/api/interpreter",
 ]
 UA = "RIIS-Hyperlocal/2.0 (rainfall impact research)"
 ELEV_URL = "https://api.open-meteo.com/v1/elevation"

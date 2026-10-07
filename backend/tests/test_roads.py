@@ -172,3 +172,17 @@ def test_nominatim_throttle(monkeypatch):
     # cached: a repeat is instant and makes no request
     asyncio.run(R.geocode("a", 12.8, 80.0))
     assert len(calls) == 3
+
+
+def test_build_segments_without_node_ids_shares_intersections():
+    """Some mirrors omit `nodes`; coordinate-keyed node ids must still join the ways at A and C."""
+    grid = synthetic_grid()
+    osm = fixture_osm(grid)
+    for w in osm["roads"]:
+        w.pop("nodes")
+    segs = R.build_segments(osm, grid, 50.0)
+    assert len(segs) == 5
+    graph, nodes = R.build_graph({i + 1: s for i, s in enumerate(segs)})
+    assert len(nodes) == 5                      # A, B, C, D, E resolved to shared ids
+    A = next(s["from_node"] for s in segs if s["name"] == "Pit Road")
+    assert graph.out_degree(A) == 2             # A connects to both Pit Road and Detour Road
