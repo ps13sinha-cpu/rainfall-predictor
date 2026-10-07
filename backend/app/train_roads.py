@@ -14,7 +14,9 @@ Usage:
     python -m app.train_roads generate
     python -m app.train_roads train
 """
+import os
 import sys
+import random
 import asyncio
 import time
 from datetime import datetime
@@ -27,6 +29,9 @@ SEED_SITES = [  # name, lat, lon
 ]
 RAIN_GRID = [20, 40, 60, 80, 100, 150, 200]
 DUR_GRID = [1, 3, 6, 12]
+# A dense site has ~4,000 segments; 28 scenarios x 6 sites would be ~670k JSON rows in SQLite.
+# Sample up to this many segments per site (seeded) for the training set; override with RIIS_ROADS_MAX_SEGS.
+MAX_SEGS_PER_SITE = int(os.environ.get("RIIS_ROADS_MAX_SEGS", "800"))
 
 
 async def generate(db, sites=SEED_SITES) -> dict:
@@ -45,22 +50,25 @@ async def generate(db, sites=SEED_SITES) -> dict:
             summary["sites"].append({"name": name, "error": str(e)[:120]})
             continue
         ctx = site_context(b)
+        seg_ids = sorted(b["segments"])
+        if len(seg_ids) > MAX_SEGS_PER_SITE:
+            seg_ids = sorted(random.Random(42).sample(seg_ids, MAX_SEGS_PER_SITE))
         n = 0
         for mm in RAIN_GRID:
             for dur in DUR_GRID:
                 st = await R.score_segments(db, b, mm, dur)
                 key = R.scenario_key(mm, dur)
                 scn = {"rainfall_mm": mm, "duration_h": dur}
-                rows = [RoadRiskSample(segment_id=sid, scenario_key=key, features_json=segment_features(seg, scn, ctx),
+                rows = [RoadRiskSample(segment_id=sid, scenario_key=key, features_json=segment_features(b["segments"][sid], scn, ctx),
                                        label=LABELS[st[sid]["status"]], label_source="sim")
-                        for sid, seg in b["segments"].items() if sid in st]
+                        for sid in seg_ids if sid in st]
                 db.add_all(rows)
                 n += len(rows)
             await db.commit()
         summary["sites"].append({"name": name, "site_id": b["site"]["id"], "segments": len(b["segments"]), "samples": n,
                                  "seconds": round(time.time() - t, 1)})
         summary["samples"] += n
-        print(f"[train_roads] {name}: {len(b['segments'])} segments x 28 scenarios = {n} samples ({time.time()-t:.0f}s)")
+        print(f"[train_roads] {name}: {len(seg_ids)} of {len(b['segments'])} segments x 28 scenarios = {n} samples ({time.time()-t:.0f}s)")
 
     # community reports as observed labels
     await db.execute(delete(RoadRiskSample).where(RoadRiskSample.label_source == "report"))
