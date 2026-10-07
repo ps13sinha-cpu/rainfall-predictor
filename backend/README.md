@@ -71,6 +71,18 @@ Training scripts and results: see [TRAINING.md](TRAINING.md).
 
 Design and data sources: see [HYPERLOCAL_ENGINE.md](HYPERLOCAL_ENGINE.md).
 
+### Safe Routes — `/api/routes` (flood-aware routing)
+- `GET /api/routes/site?lat&lon` — Build or load the road site (~3.6 km SRTM window): OSM roads, culverts, water; cached 7 days
+- `GET /api/routes/roads?lat&lon&rainfall_mm&duration_h&intensity_mm_h&mode` — GeoJSON of every segment with `status` (open | caution | closed_cars | closed_all), `max_depth_m`, `wet_fraction`, `risk_ml`, plus `most_affected`
+- `GET /api/routes/route?from_lat&from_lon&to_lat&to_lon&rainfall_mm&duration_h&mode` — Safe route (closed removed, caution penalised) next to the normal shortest route; `reachable:false` + `blocking_segments` when cut off
+- `GET /api/routes/geocode?q&lat&lon` / `GET /api/routes/reverse?lat&lon` — Nominatim proxies (custom User-Agent, 1 request/s, cached)
+- `POST /api/routes/report` `{lat, lon, status, depth_cm, note}` / `GET /api/routes/reports?lat&lon` — Field reports override the simulation within 25 m for 6 h
+- `GET /api/routes/model` / `POST /api/routes/train` — Road flood-risk surrogate metrics / retrain (admin)
+
+Tables: `road_sites`, `road_segments`, `road_status_cache`, `road_reports`, `route_logs`, `road_risk_samples`.
+Thresholds: closed_all >= 0.60 m, closed_cars >= 0.30 m, caution >= 0.15 m (or >= 0.05 m next to a culvert); underpasses are at least caution and closed to cars when any wet cell is within 60 m; bridges stay open.
+Depth comes from the same `net_ponding_mm` + `depth_grid` the inundation map uses. The road risk model is a **surrogate trained on simulated scenarios** (28 per site, six seed sites, one site held out); `label_source` records which samples are real community reports. See `python -m app.train_roads`.
+
 ### System
 - `GET /api/health` — Health check
 - `GET /api/stats` — System-wide statistics

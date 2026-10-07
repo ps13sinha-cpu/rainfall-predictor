@@ -290,6 +290,20 @@ cached per component (elevation 15 min; water/soil/land use 6 h; archive 6 h; DE
 filled-DEM memoised on the grid object). The `/inundation` route parallelises geofactors +
 antecedent + DEM with three `asyncio` tasks.
 
+### 5.10b Safe Routes — `/api/routes` *(flood-aware navigation)*
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/routes/site?lat&lon` | ensure the road site exists (first call fetches OSM + DEM, ~1 to 4 min cold, cached 7 days) |
+| GET | `/api/routes/roads?lat&lon&rainfall_mm&duration_h&mode` | GeoJSON segments with flood status + `most_affected` named roads |
+| GET | `/api/routes/route?from_lat&from_lon&to_lat&to_lon&rainfall_mm&duration_h&mode` | safe vs normal route, `closed_avoided`, `reachable` |
+| GET | `/api/routes/geocode?q&lat&lon` | Nominatim search proxy, 15 km bounded, max 5 |
+| GET | `/api/routes/reverse?lat&lon` | Nominatim reverse proxy |
+| POST | `/api/routes/report` | road condition report, 6 h override within 25 m |
+| GET | `/api/routes/reports?lat&lon` | active reports near a point |
+| GET | `/api/routes/model` | road risk surrogate metrics |
+| POST | `/api/routes/train` | admin: regenerate samples + retrain |
+
 ### 5.11 System
 
 | Method | Path | Notes |
