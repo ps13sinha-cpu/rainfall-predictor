@@ -31,9 +31,9 @@ function TopBar({ onOpenEmerg, riisUpdateCount }){
   const [query, setQuery] = useState_a("");
   
   const handleLocate = () => {
-    if (window.fetchDeviceLocationAndWeather) {
-      window.fetchDeviceLocationAndWeather();
-    }
+    // Forget the saved location and locate from this device (GPS first, IP guess only as a fallback)
+    if (window.relocateFromDevice) window.relocateFromDevice();
+    else if (window.fetchDeviceLocationAndWeather) window.fetchDeviceLocationAndWeather(true);
   };
 
   const handleSearchSubmit = (e) => {

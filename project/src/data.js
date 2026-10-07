@@ -689,22 +689,29 @@
     });
   };
 
-  window.fetchDeviceLocationAndWeather = function() {
-    // Check if user has a saved location preference
-    const savedLoc = localStorage.getItem('riis_user_location');
-    if (savedLoc) {
-      try {
-        const loc = JSON.parse(savedLoc);
-        console.log('[RIIS] Restoring saved location: ' + loc.city + ' (' + loc.lat + ', ' + loc.lon + ')');
-        window.RIIS.location.lat = loc.lat;
-        window.RIIS.location.lon = loc.lon;
-        window.RIIS.location.city = loc.city;
-        window.RIIS.location.state = loc.state;
-        window.RIIS.location.country = loc.country;
-        window.fetchWeatherForCoordinates(loc.lat, loc.lon, loc.city, loc.state, loc.country);
-        return;
-      } catch(e) {}
+  window.fetchDeviceLocationAndWeather = function(forceDetect) {
+    // A location the user searched for explicitly is honoured. Anything else (an IP-based guess,
+    // or a legacy save without a source) is only a fallback: GPS wins whenever the browser allows it.
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('riis_user_location') || 'null'); } catch(e) { saved = null; }
+    const useSaved = () => {
+      console.log('[RIIS] Restoring saved location: ' + saved.city + ' (' + saved.lat + ', ' + saved.lon + ')');
+      window.RIIS.location.lat = saved.lat;
+      window.RIIS.location.lon = saved.lon;
+      window.RIIS.location.city = saved.city;
+      window.RIIS.location.state = saved.state;
+      window.RIIS.location.country = saved.country;
+      window.fetchWeatherForCoordinates(saved.lat, saved.lon, saved.city, saved.state, saved.country);
+    };
+    if (saved && saved.source === 'search' && !forceDetect) { useSaved(); return; }
+    if (saved && saved.source !== 'search' && !forceDetect && navigator.permissions && navigator.permissions.query) {
+      // legacy or IP-based save: use it only if GPS is not already granted
+      navigator.permissions.query({ name: 'geolocation' }).then(st => {
+        if (st.state === 'granted') window.fetchDeviceLocationAndWeather(true); else useSaved();
+      }).catch(useSaved);
+      return;
     }
+    if (saved && saved.source !== 'search' && !forceDetect) { useSaved(); return; }
 
     if (!navigator.geolocation) {
       window.RIIS.locationError = "Geolocation is not supported by your browser.";
@@ -734,6 +741,7 @@
             const place = addr.suburb || addr.neighbourhood || addr.city || addr.town || addr.village || addr.municipality || addr.county || "My Location";
             const state = addr.state || "";
             const country = addr.country || "";
+            try { localStorage.setItem('riis_user_location', JSON.stringify({lat, lon, city: place, state, country, source: 'gps'})); } catch(e) {}
             window.fetchWeatherForCoordinates(lat, lon, place, state, country);
           })
           .catch(err => {
@@ -782,8 +790,9 @@
           window.RIIS.location.city = loc.city || 'My Location';
           window.RIIS.location.state = loc.state;
           window.RIIS.location.country = loc.country;
-          try { localStorage.setItem('riis_user_location', JSON.stringify({lat: loc.lat, lon: loc.lon, city: loc.city || 'My Location', state: loc.state, country: loc.country})); } catch(e) {}
-          window.fetchWeatherForCoordinates(loc.lat, loc.lon, loc.city || 'My Location', loc.state, loc.country);
+          // IP geolocation resolves to the ISP's exchange, often a different city: show it, never save it
+          window.RIIS.locationApprox = true;
+          window.fetchWeatherForCoordinates(loc.lat, loc.lon, (loc.city || 'My Location') + ' (approx.)', loc.state, loc.country);
         } else {
           tryService(idx + 1);
         }
@@ -793,6 +802,13 @@
     }
     tryService(0);
   }
+
+  // Forget any saved location and locate from the device again (used by the "Use my location" button).
+  window.relocateFromDevice = function() {
+    try { localStorage.removeItem('riis_user_location'); } catch(e) {}
+    window.RIIS.locationApprox = false;
+    window.fetchDeviceLocationAndWeather(true);
+  };
 
   window.searchAndLoadLocation = function(query) {
     if (!query || !query.trim()) return;
@@ -823,7 +839,7 @@
           const state = displayNameParts.length > 2 ? displayNameParts[displayNameParts.length - 2].trim() : "";
           const country = displayNameParts[displayNameParts.length - 1].trim();
           // Save location preference
-          try { localStorage.setItem('riis_user_location', JSON.stringify({lat, lon, city: place, state, country})); } catch(e) {}
+          try { localStorage.setItem('riis_user_location', JSON.stringify({lat, lon, city: place, state, country, source: 'search'})); } catch(e) {}
           window.fetchWeatherForCoordinates(lat, lon, place, state, country);
         } else {
           window.RIIS.locationLoading = false;

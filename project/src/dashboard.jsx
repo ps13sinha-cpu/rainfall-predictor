@@ -114,7 +114,8 @@ function DashboardScreen({ go }){
             <h1 style={{ margin: 0 }}>{l.city} — Rainfall Impact Intelligence</h1>
             <button
               className={`btn locate-badge-btn ${window.RIIS?.locationLoading ? 'loading' : ''} ${window.RIIS?.isDeviceLocation ? 'active' : ''}`}
-              onClick={() => window.fetchDeviceLocationAndWeather && window.fetchDeviceLocationAndWeather()}
+              onClick={() => window.relocateFromDevice ? window.relocateFromDevice() : (window.fetchDeviceLocationAndWeather && window.fetchDeviceLocationAndWeather(true))}
+              title="Forget the saved location and locate from this device"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
