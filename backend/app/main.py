@@ -13,6 +13,10 @@ from app.seed import seed
 async def lifespan(app: FastAPI):
     """Startup: create tables, seed data, start scheduler."""
     await init_db()
+    # Add the live-telemetry columns to an existing reservoirs table before anything selects from it.
+    from app.services.reservoir_live import ensure_schema
+    async with async_session() as db:
+        await ensure_schema(db)
     await seed()
     start_scheduler()
     print(f"[RIIS] Server running on {settings.host}:{settings.port}")

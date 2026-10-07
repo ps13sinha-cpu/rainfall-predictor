@@ -7,9 +7,12 @@ function SimulateScreen(){
   const [rain, setRain] = useState_s(initialRain);
   const cityName = RIIS.location.city || "Local Area";
 
-  // Hyperlocal impact from backend — all 8 factor categories (debounced)
+  // Hyperlocal impact from backend — engine v2, ten factor groups (debounced)
   const [hl, setHl] = useState_s(null);
   const [hlErr, setHlErr] = useState_s(null);
+  const [pattern, setPattern] = useState_s("steady");   // temporal pattern of the event
+  const [duration, setDuration] = useState_s(3);        // hours
+  const [refreshTick, setRefreshTick] = useState_s(0);
   useEffect_s(() => {
     let alive = true;
     setHlErr(null);
@@ -18,13 +21,14 @@ function SimulateScreen(){
       // Read coords at fire time — the saved-location restore runs right after
       // mount, so effect-start coords may still be the defaults.
       const reqLat = RIIS.location.lat, reqLon = RIIS.location.lon;
-      window.RIIS_API.getHyperlocalImpact({
+      (window.RIIS_API.ready || Promise.resolve()).then(() => window.RIIS_API.getHyperlocalImpact({
         lat: reqLat,
         lon: reqLon,
-        rainfall_mm: Math.min(500, rain * 3),   // 3-hour event at slider intensity
-        duration_h: 3,
+        rainfall_mm: Math.min(500, rain * duration),   // event total at slider intensity
+        duration_h: duration,
         intensity_mm_h: rain,
-      }).then(res => {
+        pattern,
+      })).then(res => {
         // Ignore out-of-order responses if the location moved meanwhile.
         const moved = Math.abs(RIIS.location.lat - reqLat) > 1e-6
                    || Math.abs(RIIS.location.lon - reqLon) > 1e-6;
@@ -33,7 +37,14 @@ function SimulateScreen(){
         .catch(e => { if (alive) setHlErr(String(e.message || e)); });
     }, 500);
     return () => { alive = false; clearTimeout(t); };
-  }, [rain, RIIS.location.lat, RIIS.location.lon]);
+  }, [rain, pattern, duration, refreshTick, RIIS.location.lat, RIIS.location.lon]);
+  // Static layers that were still being fetched when the engine answered: ask again in 8 s.
+  const stillLoading = hl && hl.still_loading ? hl.still_loading.join(",") : "";
+  useEffect_s(() => {
+    if (!stillLoading) return;
+    const t = setTimeout(() => setRefreshTick(n => n + 1), 8000);
+    return () => clearTimeout(t);
+  }, [stillLoading]);
 
   const hlClass = hl ? hl.impact.class : null;
   const cHl = hlClass ? riskColor(hlClass) : null;
@@ -89,6 +100,21 @@ function SimulateScreen(){
               <input className="sim" type="range" min="0" max="300" step="5" value={rain} onChange={(e)=>setRain(+e.target.value)}/>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--text-lo)",marginTop:6}} className="mono">
                 <span>0 · Dry</span><span>50 · Light</span><span>100 · Moderate</span><span>150 · Heavy</span><span>200 · Very Heavy</span><span>300 · Cloudburst</span>
+              </div>
+              <div style={{display:"flex",gap:14,alignItems:"center",marginTop:12,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <span className="k" style={{marginRight:4}}>DURATION</span>
+                  {[1,3,6,12,24].map(h=>(
+                    <button key={h} className={"chip "+(duration===h?"active":"")} onClick={()=>setDuration(h)}>{h} h</button>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <span className="k" style={{marginRight:4}}>PATTERN</span>
+                  {[["steady","Steady"],["front","Front-loaded"],["back","Back-loaded"],["burst","Burst"]].map(([v,lbl])=>(
+                    <button key={v} className={"chip "+(pattern===v?"active":"")} onClick={()=>setPattern(v)} title={v==="front"?"60% of the rain in the first third — floods fastest":v==="burst"?"70% in a short burst, cloudburst-style":v==="back"?"peak late in the event":"uniform rate"}>{lbl}</button>
+                  ))}
+                </div>
+                <span className="mono" style={{fontSize:10.5,color:"var(--text-lo)",marginLeft:"auto"}}>event total {Math.min(500, rain*duration)} mm · peak {hl ? hl.impact.peak_intensity_mm_h : rain} mm/h</span>
               </div>
             </div>
           </div>
@@ -148,13 +174,13 @@ function SimulateScreen(){
         </div>
       </div>
 
-      {/* Hyperlocal 8-category factor analysis (backend-driven) */}
+      {/* Hyperlocal ten-factor analysis (backend engine v2) */}
       <div className="panel brackets" style={{marginTop:16}}>
         <div className="panel-hd">
-          <h3>Hyperlocal Factor Analysis — All 8 Categories</h3>
+          <h3>Hyperlocal Factor Analysis — {hl ? `${hl.categories.length} Factor Groups` : "Ten Factor Groups"}</h3>
           <span className="live" style={{background:(cHl||"#22D3EE")+"22",color:cHl||"#22D3EE"}}>
             <span className="d" style={{background:cHl||"#22D3EE"}}/>{hl ? `IMPACT ${hl.impact.score}/100 · ${riskLabel(hl.impact.class)}` : "COMPUTING…"}</span>
-          <span className="sub">{hl ? `confidence ${hl.impact.confidence_pct}% · ${hl.impact.return_period || "return period n/a"}` : "fetching elevation · OSM · soil · 3y archive"}</span>
+          <span className="sub">{hl ? `data confidence ${hl.impact.confidence_pct}% · ${hl.impact.return_period || "return period n/a"} · engine v${hl.engine_version||"2"}${hl.still_loading&&hl.still_loading.length?` · still fetching ${hl.still_loading.join(", ")}`:""}` : "fetching DEM · OSM · soil · tide · reservoirs · flood history"}</span>
         </div>
         <div className="panel-bd">
           {!hl && !hlErr && (
@@ -170,16 +196,28 @@ function SimulateScreen(){
           {hl && (<>
             {/* Location facts */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:8,marginBottom:14}}>
-              {[
-                ["Elevation", hl.location.elevation_m+" m"],
-                ["Slope", hl.location.slope_m_km+" m/km"],
-                ["Nearest Water", hl.location.nearest_water_m!=null ? hl.location.nearest_water_m+" m ("+(hl.location.water_type||"water")+")" : "not mapped"],
-                ["Soil", String(hl.location.soil_texture||"—").replace("_"," ")+" · "+hl.location.infiltration_mm_h+" mm/h"],
-                ["Impervious Surface", hl.location.impervious_pct+"%"],
-                ["Antecedent Rain", hl.antecedent.rain_7d_mm+" mm/7d · "+hl.antecedent.saturation_pct+"% sat"],
-                ["Runoff Coeff. C", hl.runoff.coefficient],
-                ["Drainage Capacity", hl.runoff.drainage_capacity_mm_h+" mm/h"],
-              ].map(([k,v],i)=>(
+              {(() => {
+                const L = hl.location, F = hl.factors || {}, sm = F.soil_moisture || {}, tide = F.tide || {}, up = F.upstream_reservoirs || {}, fh = F.flood_history || {}, fm = F.forecast_models || {};
+                const upNear = (up.reservoirs||[]).filter(r=>r.upstream)[0];
+                return [
+                  ["District", (L.district||"—")+(fh.dfsi!=null?` · DFSI ${fh.dfsi}`:"")],
+                  ["Elevation · Slope", L.elevation_m+" m · "+(L.slope_deg!=null?L.slope_deg+"°":L.slope_m_km+" m/km")],
+                  ["Height above drainage", L.hand_m!=null ? L.hand_m+" m"+(L.closed_depression?" · closed depression":"") : "DEM pending"],
+                  ["Upstream catchment", L.upstream_area_km2!=null ? L.upstream_area_km2+" km²" : "—"],
+                  ["Nearest Water", L.nearest_water_m!=null ? L.nearest_water_m+" m ("+(L.water_type||"water")+")" : "not mapped"],
+                  ["Soil", String(L.soil_texture||"—").replace("_"," ")+" · "+L.infiltration_mm_h+" mm/h"],
+                  ["Soil Moisture", sm.m3_m3_0_7cm!=null ? sm.m3_m3_0_7cm+" m³/m³ · "+sm.saturation_pct+"% sat" : hl.antecedent.saturation_pct+"% sat (est.)"],
+                  ["Antecedent Rain", hl.antecedent.rain_3d_mm+" mm/3d · "+hl.antecedent.rain_7d_mm+" mm/7d"],
+                  ["Land cover", "impervious "+L.impervious_pct+"% · green "+L.green_pct+"%"+(L.wetland_pct?" · wetland "+L.wetland_pct+"%":"")],
+                  ["Buildings", (L.buildings_per_km2||0)+" /km²"],
+                  ["Coast · Tide", L.coast_km!=null ? L.coast_km+" km"+(tide.now_m!=null?` · tide ${tide.now_m>=0?"+":""}${tide.now_m} m`:"") : "inland"],
+                  ["Upstream reservoir", upNear ? `${upNear.name} ${upNear.storage_pct}% · ${upNear.distance_km} km` : (up.upstream_count ? up.upstream_count+" upstream" : "none within 40 km")],
+                  ["Forecast models (6h)", fm.next_6h_mm ? Object.entries(fm.next_6h_mm).map(([k,v])=>`${k.split("_")[0]} ${v}`).join(" · ") : "—"],
+                  ["Runoff Coeff. C", hl.runoff.coefficient],
+                  ["Effective Drainage", hl.runoff.drainage_capacity_mm_h+" mm/h"],
+                  ["Flood history", fh.district ? `${fh.district_events||0} events · ${fh.district_events_since_2010||0} since 2010` : "no district match"],
+                ];
+              })().map(([k,v],i)=>(
                 <div key={i} style={{padding:"8px 10px",background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
                   <div className="k">{k}</div>
                   <div className="num" style={{fontSize:13,fontWeight:600,marginTop:2}}>{v}</div>
@@ -204,6 +242,56 @@ function SimulateScreen(){
               })}
             </div>
 
+            {/* Drainage system, ponding timeline, secondary hazards */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginTop:14}}>
+              <div style={{padding:"10px 12px",background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
+                <div className="k">DRAINAGE SYSTEM</div>
+                {(() => { const d = hl.drainage || {}; const m = d.mapped || {}; return [
+                  ["Design capacity", d.design_capacity_mm_h+" mm/h"],
+                  ["Seasonal blockage", "×"+d.blockage_factor],
+                  ["Outfall (tide / river)", "×"+d.outfall_factor],
+                  ["Structures", "×"+d.structural_factor],
+                  ["Natural conveyance", "+"+(d.natural_conveyance_mm_h||0)+" mm/h"],
+                  ["Effective", d.effective_capacity_mm_h+" mm/h"],
+                  ["Mapped", `${d.drains_mapped||0} drains · ${m.culverts||0} culverts · ${m.embankments||0} embankments · ${m.railways||0} rail · ${m.pumping_stations||0} pumps · ${m.underpasses||0} underpasses`],
+                ].map(([k,v],i)=>(
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:11.5,padding:"3px 0",borderBottom:"1px dashed rgba(120,180,255,0.08)"}}>
+                    <span style={{color:"var(--text-mid)"}}>{k}</span><span className="mono" style={{textAlign:"right",fontWeight:k==="Effective"?700:500}}>{v}</span>
+                  </div>
+                )); })()}
+                {(hl.drainage && hl.drainage.notes || []).map((n,i)=><div key={i} style={{fontSize:10.5,color:"#F59E0B",marginTop:4}}>• {n}</div>)}
+              </div>
+              <div style={{padding:"10px 12px",background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
+                <div className="k">STANDING WATER — HOURLY BALANCE</div>
+                <div style={{display:"flex",alignItems:"end",gap:12,marginTop:6}}>
+                  <Sparkline data={(hl.inundation.storage_series_mm||[0,0]).length>1?hl.inundation.storage_series_mm:[0,0]} w={200} h={54} color={cHl||"#22D3EE"}/>
+                  <div>
+                    <div className="num" style={{fontSize:18,fontWeight:700}}>{hl.inundation.peak_storage_mm} <span style={{fontSize:11,color:"var(--text-mid)"}}>mm peak</span></div>
+                    <div style={{fontSize:11,color:"var(--text-mid)"}}>{hl.inundation.ponding_hours} h above 15 mm</div>
+                  </div>
+                </div>
+                <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:6,lineHeight:1.5}}>
+                  Inflow = runoff ({Math.round(hl.runoff.coefficient*100)}% of rain, {hl.impact.pattern}) + upstream; outflow = drainage decaying as receiving waters fill.
+                  Ponded fraction {Math.round((hl.inundation.ponded_fraction||0)*100)}% of the cell → mean {hl.inundation.depth_mean_m} m, max {hl.inundation.depth_max_m} m.
+                  Score = 0.6 × factor composite ({hl.impact.factor_composite}) + 0.4 × inundation severity ({hl.impact.inundation_severity}).
+                </div>
+              </div>
+              <div style={{padding:"10px 12px",background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
+                <div className="k">SECONDARY HAZARDS</div>
+                {(hl.secondary_hazards||[]).length===0 && <div style={{fontSize:11.5,color:"var(--text-lo)",marginTop:6}}>None triggered for this scenario.</div>}
+                {(hl.secondary_hazards||[]).map((h,i)=>{
+                  const hc = h.level==="high"?"#EF4444":"#F59E0B";
+                  return (
+                    <div key={i} style={{display:"flex",gap:8,alignItems:"start",padding:"5px 0",borderBottom:"1px dashed rgba(120,180,255,0.08)"}}>
+                      <span style={{fontSize:9.5,fontWeight:700,letterSpacing:".08em",color:hc,border:`1px solid ${hc}55`,borderRadius:4,padding:"1px 5px",marginTop:2,flex:"0 0 auto",textTransform:"uppercase"}}>{h.level}</span>
+                      <div><div style={{fontSize:12,fontWeight:600,color:"var(--text-hi)",textTransform:"capitalize"}}>{h.hazard.replace(/_/g," ")}</div>
+                        <div style={{fontSize:10.5,color:"var(--text-mid)",lineHeight:1.4}}>{h.reason}</div></div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Advisories */}
             {hl.advisories.length>0 && (
               <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:6}}>
@@ -215,6 +303,9 @@ function SimulateScreen(){
                 ))}
               </div>
             )}
+            <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:10}}>
+              Data: {Object.entries(hl.data_confidence||{}).map(([k,v])=>`${k} ${v?"✓":"✗"}`).join(" · ")}
+            </div>
           </>)}
         </div>
       </div>
@@ -405,7 +496,60 @@ function FarmerScreen(){
 
 function ReservoirScreen(){
   const [sel, setSel] = useState_s(() => RIIS.reservoirs[0]);
+  const [status, setStatus] = useState_s(null);
+  const [hist, setHist] = useState_s(null);
+  const [syncing, setSyncing] = useState_s(false);
+  const [tick, setTick] = useState_s(0);
   const p = RIIS.prediction;
+  const SRC = { cmwssb: ["CMWSSB", "#22D3EE"], kseb: ["KSEB", "#A78BFA"], manual: ["MANUAL", "#F59E0B"], seed: ["SEEDED", "#64748B"] };
+
+  // Feed status once; history whenever the selection changes
+  useEffect_s(() => {
+    let alive = true;
+    if (!window.RIIS_API) return;
+    (window.RIIS_API.ready || Promise.resolve()).then(() => window.RIIS_API.getReservoirStatus())
+      .then(r => { if (alive) setStatus(r); }).catch(() => {});
+    return () => { alive = false; };
+  }, [tick]);
+  useEffect_s(() => {
+    let alive = true;
+    setHist(null);
+    if (!window.RIIS_API || !sel || sel.source !== "cmwssb") return;
+    window.RIIS_API.getReservoirHistory(sel.id, 14).then(r => { if (alive) setHist(r.history || []); }).catch(() => {});
+    return () => { alive = false; };
+  }, [sel && sel.id, tick]);
+
+  const refresh = () => {
+    if (!window.RIIS_API || syncing) return;
+    setSyncing(true);
+    window.RIIS_API.syncReservoirs()
+      .then(() => window.syncRiisBackendData ? window.syncRiisBackendData() : null)
+      .then(() => { const cur = RIIS.reservoirs.find(r => r.id === (sel && sel.id)) || RIIS.reservoirs[0]; setSel(cur); setTick(t => t + 1); })
+      .catch(() => {}).finally(() => setSyncing(false));
+  };
+
+  // mcft per day gained at the current net inflow (1 mcft = 28,316.8 m³)
+  const netMcftDay = (r) => ((r.inflow || 0) - (r.outflow || 0)) * 86400 / 28316.8;
+  const pctOf = (r) => r.pct != null ? r.pct : Math.round(1000 * r.cur / r.cap) / 10;
+  const daysToFull = (r) => { const n = netMcftDay(r); return n > 0.5 ? Math.round((r.cap - r.cur) / n) : null; };
+
+  // Trajectory: observed daily storage % (CMWSSB) followed by a net-flow projection
+  const traj = (() => {
+    if (!sel) return { labels: [], series: [] };
+    const cap = sel.cap || 1;
+    const obs = (hist && hist.length ? hist : []).map(h => ({ d: h.date.slice(5), pct: h.storage_pct != null ? h.storage_pct : Math.round(1000 * h.storage_mcft / cap) / 10, inflow: h.inflow_cms, outflow: h.outflow_cms }));
+    const basePct = pctOf(sel);
+    const perDay = netMcftDay(sel) / cap * 100;
+    const rainBoost = Math.max(0, (p.rainfall_mm || 0) - 5) * 0.15;   // forecast rain lifts the projection
+    const proj = [1, 2, 3].map(k => Math.max(0, Math.min(100, basePct + perDay * k + rainBoost * k)));
+    const labels = [...obs.map(o => o.d), "today", "+1d", "+2d", "+3d"];
+    const storage = [...obs.map(o => o.pct), basePct, ...proj];
+    const inflow = [...obs.map(o => o.inflow), sel.inflow, sel.inflow, sel.inflow, sel.inflow];
+    return { labels, series: [{ name: "Storage %", color: "#22D3EE", data: storage }, { name: "Inflow m³/s", color: "#3B82F6", data: inflow }], nObs: obs.length };
+  })();
+
+  const feedLine = status && status.sources ? Object.entries(status.sources).map(([k, v]) => `${k.toUpperCase()} ${v.ok ? (v.as_on || "ok") : "offline"}`).join(" · ") : "feed status pending";
+  const liveCount = RIIS.reservoirs.filter(r => r.source && r.source !== "seed").length;
 
   return (
     <div className="screen">
@@ -413,32 +557,38 @@ function ReservoirScreen(){
         <div>
           <div className="crumb">INFRASTRUCTURE <b>Reservoir Intelligence</b></div>
           <h1 style={{marginTop:6}}>Reservoir Network — Hydrological Inflow &amp; Storage</h1>
-          <p style={{marginTop:4}}>Real-time storage, inflow prediction &amp; overflow risk based on active precipitation</p>
+          <p style={{marginTop:4}}>Daily reports from Chennai Metro Water and KSEB · {liveCount} of {RIIS.reservoirs.length} reservoirs on a live feed · {feedLine}</p>
         </div>
-        <div className="id">HYDROLOGY · TELEMETRY · LIVE</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button className="btn ghost" onClick={refresh} disabled={syncing}>{syncing ? "Fetching…" : "Refresh feeds"}</button>
+          <div className="id">HYDROLOGY · {liveCount ? "LIVE REPORTS" : "SEEDED"}</div>
+        </div>
       </div>
 
       {/* Reservoir grid */}
-      <div className="reservoir-grid" style={{gridTemplateColumns:"repeat(5,1fr)"}}>
+      <div className="reservoir-grid" style={{gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))"}}>
         {RIIS.reservoirs.map(r=>{
           const c = riskColor(r.class);
-          const fillPct = Math.round((r.cur/r.cap)*100);
+          const fillPct = Math.round(pctOf(r));
+          const [srcLbl, srcCol] = SRC[r.source] || SRC.seed;
+          const ly = r.last_year_mcft != null && r.cur != null ? Math.round(r.cur - r.last_year_mcft) : null;
           return (
-            <div key={r.id} className="panel brackets" onClick={()=>setSel(r)} style={{cursor:"pointer",padding:14,borderColor:sel.id===r.id?c:undefined}}>
+            <div key={r.id} className="panel brackets" onClick={()=>setSel(r)} style={{cursor:"pointer",padding:14,borderColor:sel&&sel.id===r.id?c:undefined}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
-                  <div className="k">{r.id} · RESERVOIR</div>
+                  <div className="k" style={{display:"flex",gap:6,alignItems:"center"}}>{r.id} · <span style={{color:srcCol,fontWeight:700}}>{srcLbl}</span>{r.observed_at && <span style={{color:"var(--text-lo)"}}>{r.observed_at.slice(5)}</span>}</div>
                   <div style={{fontSize:15,fontWeight:700,marginTop:2}}>{r.name}</div>
                 </div>
-                <span className="sev" style={{color:c,background:c+"22"}}>{riskLabel(r.class)}</span>
+                <span className="sev" style={{color:c,background:c+"22"}}>{r.alert_level ? r.alert_level.toUpperCase()+" ALERT" : riskLabel(r.class)}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10,marginTop:12}}>
                 <CircularGauge value={fillPct} size={90} thickness={8} color={c} label={fillPct+"%"} sublabel="FILL"/>
                 <div style={{fontSize:11,color:"var(--text-mid)",lineHeight:1.6}}>
-                  <div>Cap · <b className="mono" style={{color:"var(--text-hi)"}}>{r.cap} mcft</b></div>
-                  <div>Cur · <b className="mono" style={{color:"var(--text-hi)"}}>{r.cur} mcft</b></div>
-                  <div>In · <b className="mono" style={{color:"#5EEAD4"}}>+{r.inflow} m³/s</b></div>
-                  <div>Out · <b className="mono" style={{color:"#FCA5A5"}}>−{r.outflow} m³/s</b></div>
+                  <div>Cap · <b className="mono" style={{color:"var(--text-hi)"}}>{Math.round(r.cap).toLocaleString()} mcft</b></div>
+                  <div>Cur · <b className="mono" style={{color:"var(--text-hi)"}}>{Math.round(r.cur).toLocaleString()} mcft</b></div>
+                  {r.level_ft != null && <div>Level · <b className="mono" style={{color:"var(--text-hi)"}}>{r.level_ft}</b>{r.full_level_ft != null && <span> / {r.full_level_ft} ft</span>}</div>}
+                  <div>In · <b className="mono" style={{color:"#5EEAD4"}}>+{Math.round(r.inflow*10)/10} m³/s</b> · Out · <b className="mono" style={{color:"#FCA5A5"}}>−{Math.round(r.outflow*10)/10}</b></div>
+                  {ly != null && <div>vs last yr · <b className="mono" style={{color:ly>=0?"#5EEAD4":"#FCA5A5"}}>{ly>=0?"+":""}{ly.toLocaleString()} mcft</b></div>}
                 </div>
               </div>
             </div>
@@ -446,20 +596,21 @@ function ReservoirScreen(){
         })}
       </div>
 
+      {sel && (
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:16}}>
         <div className="panel brackets">
           <div className="panel-hd">
-            <h3>{sel.name} · Level Trajectory</h3>
-            <span className="live"><span className="d"/>LIVE</span>
-            <span className="sub">−24h → +24h</span>
+            <h3>{sel.name} · Storage Trajectory</h3>
+            <span className="live"><span className="d"/>{sel.source === "cmwssb" ? (hist ? `${traj.nObs} OBSERVED DAYS` : "LOADING HISTORY") : (SRC[sel.source] || SRC.seed)[0]}</span>
+            <span className="sub">{sel.source === "cmwssb" ? "CMWSSB daily reports → net-flow projection" : "net-flow projection from today's report"}</span>
           </div>
           <div className="panel-bd">
-            <LineChart w={620} h={220}
-              xLabels={["−24h","−12h","−6h","Now","+6h","+12h","+24h"]}
-              series={[
-                { name:"Storage %", color:"#22D3EE", data:[55, 58, 60, Math.round(sel.cur/sel.cap*100), Math.min(100, Math.round(sel.cur/sel.cap*100 + p.rainfall_mm*0.3)), Math.min(100, Math.round(sel.cur/sel.cap*100 + p.rainfall_mm*0.5)), Math.min(100, Math.round(sel.cur/sel.cap*100 + p.rainfall_mm*0.6))] },
-                { name:"Inflow m³/s", color:"#3B82F6", data:[sel.inflow*0.8, sel.inflow*0.9, sel.inflow, sel.inflow, sel.inflow + p.rainfall_mm*2, sel.inflow + p.rainfall_mm*1.5, sel.inflow] }
-              ]}/>
+            <LineChart w={620} h={220} xLabels={traj.labels} series={traj.series}/>
+            <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:6}}>
+              Projection: storage {pctOf(sel)}% {netMcftDay(sel)>=0?"+":""}{Math.round(netMcftDay(sel)*10)/10} mcft/day at today's net inflow
+              {p.rainfall_mm > 5 ? `, lifted by the ${p.rainfall_mm} mm forecast` : ""}.
+              {daysToFull(sel) != null ? ` About ${daysToFull(sel)} days to full tank at this rate.` : " Not filling at today's rate."}
+            </div>
           </div>
         </div>
 
@@ -474,18 +625,24 @@ function ReservoirScreen(){
               <div style={{flex:1}}>
                 <div className="k">CURRENT RECOMMENDATION</div>
                 <div style={{fontSize:22,fontWeight:700,letterSpacing:"-0.02em",marginTop:2}}>
-                  {sel.class==="extreme" ? "Open 2 Gates × 1.5m" : sel.class==="high" ? "Open 1 Gate × 0.8m" : "Normal Gate Configuration"}
+                  {sel.class==="extreme" ? "Controlled release — open gates" : sel.class==="high" ? "Pre-release ahead of forecast rain" : pctOf(sel) < 40 ? "Conserve storage" : "Normal gate configuration"}
                 </div>
-                <div style={{fontSize:11.5,color:"var(--text-mid)",marginTop:8,lineHeight:1.5}}>
-                  Current inflow: <b className="mono" style={{color:"var(--text-hi)"}}>{sel.inflow} m³/s</b><br/>
-                  Current outflow: <b className="mono" style={{color:"var(--text-hi)"}}>{sel.outflow} m³/s</b><br/>
-                  System Status: <b className="mono" style={{color:"var(--cyan)"}}>Nominal Hydrology</b>
+                <div style={{fontSize:11.5,color:"var(--text-mid)",marginTop:8,lineHeight:1.6}}>
+                  Storage: <b className="mono" style={{color:"var(--text-hi)"}}>{Math.round(sel.cur).toLocaleString()} / {Math.round(sel.cap).toLocaleString()} mcft ({pctOf(sel)}%)</b><br/>
+                  Inflow <b className="mono" style={{color:"#5EEAD4"}}>{Math.round(sel.inflow*10)/10} m³/s</b> · Outflow <b className="mono" style={{color:"#FCA5A5"}}>{Math.round(sel.outflow*10)/10} m³/s</b> · net <b className="mono" style={{color:"var(--text-hi)"}}>{Math.round(netMcftDay(sel)*10)/10} mcft/day</b><br/>
+                  {sel.rainfall_mm != null && <span>Rain at dam: <b className="mono" style={{color:"var(--text-hi)"}}>{sel.rainfall_mm} mm</b> · </span>}
+                  {sel.last_year_mcft != null && <span>Same day last year: <b className="mono" style={{color:"var(--text-hi)"}}>{Math.round(sel.last_year_mcft).toLocaleString()} mcft</b><br/></span>}
+                  {sel.remarks && <span>Operator note: <b style={{color:"var(--text-hi)"}}>{sel.remarks}</b><br/></span>}
+                  Source: <b className="mono" style={{color:(SRC[sel.source]||SRC.seed)[1]}}>{(SRC[sel.source]||SRC.seed)[0]}{sel.observed_at ? ` · report of ${sel.observed_at}` : ""}</b>
+                  {sel.source_url && <span> · <a href={sel.source_url} target="_blank" rel="noreferrer" style={{color:"var(--cyan)"}}>open report</a></span>}
+                  {sel.source === "seed" && <span style={{color:"#F59E0B"}}><br/>No public daily feed for this reservoir yet (CWC weekly bulletin is PDF only); values are placeholders.</span>}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -106,6 +106,18 @@ class Reservoir(Base):
     baseline_inflow = Column(Float, default=0.0)
     baseline_outflow = Column(Float, default=0.0)
 
+    # Live telemetry provenance (filled by services/reservoir_live.py; "seed" when no public feed exists)
+    source = Column(String(16), default="seed")
+    observed_at = Column(String(10), nullable=True)      # report date, YYYY-MM-DD
+    level_ft = Column(Float, nullable=True)
+    full_level_ft = Column(Float, nullable=True)
+    storage_pct = Column(Float, nullable=True)
+    rainfall_mm = Column(Float, nullable=True)
+    last_year_mcft = Column(Float, nullable=True)
+    alert_level = Column(String(8), nullable=True)       # KSEB blue / orange / red
+    remarks = Column(String(200), nullable=True)
+    source_url = Column(String(200), nullable=True)
+
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
@@ -186,6 +198,103 @@ class HistoricalWeather(Base):
     humidity_avg = Column(Float, default=0.0)
     wind_speed_max = Column(Float, default=0.0)
     precipitation_hours = Column(Integer, default=0)
+
+
+# ── Safe Routes: road network, flood status, reports, risk samples ───────────
+class RoadSite(Base):
+    __tablename__ = "road_sites"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    lat = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
+    radius_m = Column(Float, default=1800.0)
+    bbox_json = Column(JSON, default=dict)          # {south, west, north, east}
+    fetched_at = Column(DateTime, default=datetime.utcnow)
+    n_ways = Column(Integer, default=0)
+    n_nodes = Column(Integer, default=0)
+    source = Column(String(32), default="osm_overpass")
+
+
+class RoadSegment(Base):
+    __tablename__ = "road_segments"
+    __table_args__ = (Index("ix_road_segments_site", "site_id"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    site_id = Column(Integer, ForeignKey("road_sites.id"), nullable=False)
+    osm_way_id = Column(Integer, nullable=False)
+    seg_index = Column(Integer, default=0)
+    from_node = Column(Integer, nullable=False)
+    to_node = Column(Integer, nullable=False)
+    name = Column(String(128), default="")
+    highway = Column(String(32), default="")
+    oneway = Column(Boolean, default=False)
+    tunnel = Column(Boolean, default=False)
+    bridge = Column(Boolean, default=False)
+    layer = Column(Integer, default=0)
+    length_m = Column(Float, default=0.0)
+    geom_json = Column(JSON, default=list)          # [[lon, lat], ...]
+    mid_lat = Column(Float, default=0.0)
+    mid_lon = Column(Float, default=0.0)
+    elev_m = Column(Float, nullable=True)
+    hand_m = Column(Float, nullable=True)           # midpoint elev minus 150 m window minimum (cheap HAND proxy)
+    slope_pct = Column(Float, nullable=True)
+    dist_water_m = Column(Float, nullable=True)
+    impervious_pct = Column(Float, nullable=True)
+    culvert_near = Column(Boolean, default=False)
+
+
+class RoadStatusCache(Base):
+    __tablename__ = "road_status_cache"
+    __table_args__ = (Index("ix_road_status_site_key", "site_id", "scenario_key"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    site_id = Column(Integer, ForeignKey("road_sites.id"), nullable=False)
+    scenario_key = Column(String(64), nullable=False)   # "rainfall_mm|duration_h|intensity"
+    computed_at = Column(DateTime, default=datetime.utcnow)
+    status_json = Column(JSON, default=dict)             # segment_id -> {status, max_depth_m, wet_fraction}
+
+
+class RoadReport(Base):
+    __tablename__ = "road_reports"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    segment_id = Column(Integer, ForeignKey("road_segments.id"), nullable=True)
+    lat = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
+    status = Column(String(16), nullable=False)          # open | caution | closed
+    depth_cm = Column(Float, nullable=True)
+    source = Column(String(16), default="user")          # user | admin | sensor
+    note = Column(String(300), default="")
+    scenario_key = Column(String(64), nullable=True)     # scenario active when filed (for training labels)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+
+
+class RouteLog(Base):
+    __tablename__ = "route_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    site_id = Column(Integer, ForeignKey("road_sites.id"), nullable=True)
+    from_lat = Column(Float); from_lon = Column(Float)
+    to_lat = Column(Float); to_lon = Column(Float)
+    scenario_key = Column(String(64), nullable=True)
+    safe_len_m = Column(Float, nullable=True)
+    normal_len_m = Column(Float, nullable=True)
+    closed_avoided = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class RoadRiskSample(Base):
+    __tablename__ = "road_risk_samples"
+    __table_args__ = (Index("ix_road_risk_segment", "segment_id"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    segment_id = Column(Integer, ForeignKey("road_segments.id"), nullable=False)
+    scenario_key = Column(String(64), nullable=False)
+    features_json = Column(JSON, default=dict)
+    label = Column(Integer, default=0)                   # 0 open, 1 caution, 2 closed
+    label_source = Column(String(16), default="sim")     # sim (physics surrogate) | report (observed)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 # ── System Logs ───────────────────────────────────────────────────────────────

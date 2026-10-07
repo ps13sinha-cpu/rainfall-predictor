@@ -31,10 +31,12 @@ and starts polling Open-Meteo for live weather every 5 minutes.
 - `POST /api/weather/refresh` — Trigger immediate weather poll for all districts
 - `POST /api/weather/refresh/{code}` — Refresh one district
 
-### Reservoirs
-- `GET /api/reservoirs/` — List all reservoirs
-- `GET /api/reservoirs/{code}` — Reservoir detail
-- `PUT /api/reservoirs/{code}` — Update reservoir telemetry (admin)
+### Reservoirs (live daily reports)
+- `GET /api/reservoirs/` — All reservoirs; rows carry `source` (`cmwssb`, `kseb`, `manual`, `seed`), `observed_at`, level, storage %, rainfall, last-year storage, KSEB alert level
+- `GET /api/reservoirs/live/status` — Last fetch time and per-source outcome
+- `POST /api/reservoirs/sync` — Fetch Chennai Metro Water (cmwssb.tn.gov.in/lake-level) and KSEB (dams.kseb.in) now; the scheduler does this every 6 h and 5 s after start
+- `GET /api/reservoirs/{code}/history?days=14` — Daily storage history (Chennai Metro Water reservoirs)
+- `GET /api/reservoirs/{code}` / `PUT /api/reservoirs/{code}` — Single reservoir / manual override (marks the row `manual`)
 
 ### Community Reports
 - `POST /api/reports/` — Submit report (requires reporter role)
@@ -51,6 +53,23 @@ and starts polling Open-Meteo for live weather every 5 minutes.
 ### Historical
 - `GET /api/historical/{code}?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD` — Historical data
 - `POST /api/historical/ingest/{code}?start_date=...&end_date=...` — Ingest from Open-Meteo archive
+
+### ML models
+- `GET /api/ml/predict/{code}?model=ensemble_vote` — Next-day rainfall-class prediction (`xgboost`, `random_forest`, `gradient_boost`, `ensemble_vote`)
+- `GET /api/ml/predict-all/{code}` — All four tabular models side by side
+- `GET /api/ml/shap/{code}` — SHAP attributions for the predicted class
+- `GET /api/ml/models` — Registry of every trained model with held-out metrics (also LSTM, Transformer, ConvLSTM, ConvGRU)
+- `GET /api/ml/metrics` — Legacy metrics shape plus the registry summary
+- `POST /api/ml/train` — Retrain the tabular models
+
+Training scripts and results: see [TRAINING.md](TRAINING.md).
+
+### Hyperlocal impact (engine v2)
+- `GET /api/hyperlocal/impact?lat=&lon=&rainfall_mm=&duration_h=&pattern=steady|front|back|burst` — Ten-factor impact score, hourly ponding model, secondary hazards
+- `GET /api/hyperlocal/factors?lat=&lon=` — Every raw input: terrain hydrology, soil and soil moisture, OSM drainage and facilities, tide, upstream reservoirs, flood history, multi-model forecast
+- `GET /api/hyperlocal/geofactors?lat=&lon=` — Static layers and antecedent rain
+
+Design and data sources: see [HYPERLOCAL_ENGINE.md](HYPERLOCAL_ENGINE.md).
 
 ### System
 - `GET /api/health` — Health check

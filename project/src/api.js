@@ -3,7 +3,10 @@
   // The backend runs independently of the static frontend.  Override this at
   // deployment time with `window.RIIS_API_BASE`, or save a URL in localStorage.
   // Port 8001 keeps the RIIS API clear of the common local port-8000 services.
-  const API_BASE = (window.RIIS_API_BASE || localStorage.getItem('riis_api_base') || 'http://127.0.0.1:8000').replace(/\/$/, '');
+  // start-riis.ps1 runs uvicorn on 8001; 8000 is kept as a fallback for a manually started backend.
+  const EXPLICIT_BASE = window.RIIS_API_BASE || localStorage.getItem('riis_api_base');
+  const CANDIDATE_BASES = ['http://127.0.0.1:8001', 'http://127.0.0.1:8000'];
+  let API_BASE = (EXPLICIT_BASE || CANDIDATE_BASES[0]).replace(/\/$/, '');
   window.OPENWEATHER_API_KEY = window.OPENWEATHER_API_KEY || localStorage.getItem('openweather_api_key') || '';
 
   function apiFetch(path, opts = {}) {
@@ -16,6 +19,22 @@
         return r.json();
       });
   }
+
+  // Probe the candidate ports once so the UI finds the backend wherever it was started.
+  const baseReady = EXPLICIT_BASE ? Promise.resolve(API_BASE) : (async () => {
+    for (const base of CANDIDATE_BASES) {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 2500);
+        const r = await fetch(`${base}/api/health`, { signal: ctrl.signal });
+        clearTimeout(t);
+        if (r.ok) { API_BASE = base; break; }
+      } catch (e) { /* try the next port */ }
+    }
+    window.RIIS_API.baseUrl = API_BASE;
+    console.log('[RIIS] backend detected at', API_BASE);
+    return API_BASE;
+  })();
 
   // ── Districts ─────────────────────────────────────────────────────────────
   window.RIIS_API = {
@@ -52,6 +71,21 @@
 
     getReservoir(code) {
       return apiFetch(`/api/reservoirs/${code}`);
+    },
+
+    // Live feed status: when CMWSSB / KSEB were last fetched and which codes are live
+    getReservoirStatus() {
+      return apiFetch('/api/reservoirs/live/status');
+    },
+
+    // Fetch both daily reports now
+    syncReservoirs() {
+      return apiFetch('/api/reservoirs/sync', { method: 'POST' });
+    },
+
+    // Daily storage history (Chennai Metro Water reservoirs)
+    getReservoirHistory(code, days = 14) {
+      return apiFetch(`/api/reservoirs/${code}/history?days=${days}`);
     },
 
     updateReservoir(code, data) {
@@ -169,6 +203,17 @@
       return apiFetch(`/api/ml/shap/${bc}`);
     },
 
+    // Every tabular model's prediction for the district, side by side
+    getPredictAll(districtCode) {
+      const bc = districtCode && !districtCode.startsWith('IN-') ? 'IN-' + districtCode : districtCode;
+      return apiFetch(`/api/ml/predict-all/${bc}`);
+    },
+
+    // Registry of all trained models with held-out metrics
+    getModels() {
+      return apiFetch('/api/ml/models');
+    },
+
     getHistorical(districtCode, startDate, endDate) {
       const bc = districtCode && !districtCode.startsWith('IN-') ? 'IN-' + districtCode : districtCode;
       return apiFetch(`/api/historical/${bc}?start_date=${startDate}&end_date=${endDate}`);
@@ -197,15 +242,21 @@
       return apiFetch(`/api/hyperlocal/inundation?${qs.toString()}`);
     },
 
-    // Full 8-category rainfall impact assessment for a hyperlocal point
+    // Full ten-factor rainfall impact assessment for a hyperlocal point (engine v2)
     getHyperlocalImpact(params = {}) {
       const qs = new URLSearchParams();
       qs.set('lat', params.lat); qs.set('lon', params.lon);
       if (params.rainfall_mm != null) qs.set('rainfall_mm', params.rainfall_mm);
       if (params.duration_h != null) qs.set('duration_h', params.duration_h);
       if (params.intensity_mm_h != null) qs.set('intensity_mm_h', params.intensity_mm_h);
+      if (params.pattern) qs.set('pattern', params.pattern);
       if (params.ml_score != null) qs.set('ml_score', params.ml_score);
       return apiFetch(`/api/hyperlocal/impact?${qs.toString()}`);
+    },
+
+    // Every raw input the engine uses (terrain, soil moisture, OSM, tide, reservoirs, flood history)
+    getHyperlocalFactors(lat, lon) {
+      return apiFetch(`/api/hyperlocal/factors?lat=${lat}&lon=${lon}`);
     },
 
     // ── Stats ───────────────────────────────────────────────────────────────
@@ -225,5 +276,6 @@
   }
 
   window.RIIS_API.baseUrl = API_BASE;
+  window.RIIS_API.ready = baseReady;
   console.log('[RIIS] API client initialized — backend:', API_BASE);
 })();

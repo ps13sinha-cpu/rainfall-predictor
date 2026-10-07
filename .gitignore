@@ -37,3 +37,10 @@ Thumbs.db
 .freebuff/
 project.zip
 uploads/
+
+# ML artifacts too large or regenerable
+backend/app/ml_models/grid_cache/
+backend/app/ml_models/random_forest.pkl
+backend/cache/
+*.db-shm
+*.db-wal

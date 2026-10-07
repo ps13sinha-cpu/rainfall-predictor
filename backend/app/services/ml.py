@@ -1,7 +1,12 @@
-"""ML Service — XGBoost rainfall prediction + SHAP explanations.
+"""ML Service — tabular rainfall-risk models + SHAP explanations.
 
-This module trains a gradient-boosted model on historical weather data
-and serves predictions with feature attribution via SHAP.
+Models are trained by `python -m app.train_tabular` (XGBoost, Random Forest,
+Gradient Boost, soft-voting Ensemble), `python -m app.train_sequence`
+(LSTM-Impact, Transformer) and `python -m app.train_spatial` (ConvLSTM, ConvGRU).
+Every trained model is described in ml_models/model_registry.json.
+
+Live prediction here uses the tabular models: the label is the rainfall class
+of the NEXT day, built from today's weather plus the last 30 days of history.
 """
 import json
 import os
@@ -11,262 +16,170 @@ from pathlib import Path
 
 import numpy as np
 
+from app.services.features import (TABULAR_FEATURES, CLASS_NAMES, DEFAULTS, SoftVote,
+                                   build_live_features)
+
 # Model storage
 MODEL_DIR = Path(__file__).parent.parent / "ml_models"
 MODEL_DIR.mkdir(exist_ok=True)
 
-MODEL_PATH = MODEL_DIR / "risk_model.pkl"
-FEATURE_NAMES = [
-    "rainfall_mm", "temp_max", "temp_min", "humidity_avg",
-    "wind_speed_max", "precipitation_hours",
-    # Derived features
-    "rain_lag1", "temp_range", "rain_squared",
-    "humidity_x_rain", "wind_x_rain"
-]
+MODEL_PATH = MODEL_DIR / "risk_model.pkl"          # legacy alias of xgboost.pkl
+REGISTRY_PATH = MODEL_DIR / "model_registry.json"
+FEATURE_NAMES = TABULAR_FEATURES
+
+TABULAR_MODELS = ["xgboost", "random_forest", "gradient_boost", "ensemble_vote"]
+DISPLAY_NAMES = {
+    "xgboost": "XGBoost", "random_forest": "Random Forest", "gradient_boost": "Gradient Boost",
+    "ensemble_vote": "Ensemble Vote", "lstm_impact": "LSTM-Impact", "transformer": "Transformer",
+    "convlstm": "ConvLSTM", "convgru": "ConvGRU",
+}
+
+_cache = {}
 
 
-def _build_training_data(db_rows):
-    """Convert HistoricalWeather rows into feature matrix + labels."""
-    if len(db_rows) < 30:
-        return None, None
-
-    # Sort by date
-    rows = sorted(db_rows, key=lambda r: r.date)
-    features = []
-    labels = []
-
-    for i in range(1, len(rows)):
-        prev = rows[i - 1]
-        curr = rows[i]
-
-        rain = curr.rainfall_mm or 0
-        tmax = curr.temp_max or 0
-        tmin = curr.temp_min or 0
-        hum = curr.humidity_avg or 70
-        wind = curr.wind_speed_max or 0
-        p_hours = curr.precipitation_hours or 0
-        prev_rain = prev.rainfall_mm or 0
-
-        feat = [
-            rain, tmax, tmin, hum, wind, p_hours,
-            prev_rain,                          # lag-1 rainfall
-            tmax - tmin,                        # temp range
-            rain ** 2,                          # nonlinear rain
-            hum * rain / 100,                   # humidity × rain interaction
-            wind * rain / 100                   # wind × rain interaction
-        ]
-
-        # Label: risk class based on NEXT day rainfall
-        # We use the same threshold logic as the existing system
-        if rain > 50:
-            label = 3  # extreme
-        elif rain > 20:
-            label = 2  # high
-        elif rain > 5:
-            label = 1  # mod
-        else:
-            label = 0  # safe
-
-        features.append(feat)
-        labels.append(label)
-
-    return np.array(features), np.array(labels)
+def _load_pickle(name):
+    if name in _cache:
+        return _cache[name]
+    path = MODEL_DIR / f"{name}.pkl"
+    if not path.exists():
+        return None
+    with open(path, "rb") as f:
+        _cache[name] = pickle.load(f)
+    return _cache[name]
 
 
-def train_model(historical_rows):
-    """Train XGBoost model on historical data. Returns metrics dict."""
-    X, y = _build_training_data(historical_rows)
-    if X is None or len(X) < 30:
-        return {"status": "insufficient_data", "rows": len(historical_rows) if historical_rows else 0}
+def load_model(name="xgboost"):
+    """Load a trained tabular model (defaults to XGBoost)."""
+    if name == "ensemble_vote":
+        if name in _cache:
+            return _cache[name]
+        spec = MODEL_DIR / "ensemble_vote.json"
+        if not spec.exists():
+            return None
+        with open(spec) as f:
+            spec = json.load(f)
+        members = {k: _load_pickle(k) for k in spec["members"]}
+        members = {k: v for k, v in members.items() if v is not None}
+        if not members:
+            return None
+        _cache[name] = SoftVote(members, spec["weights"])
+        return _cache[name]
+    m = _load_pickle(name)
+    if m is None and name == "xgboost" and MODEL_PATH.exists():
+        with open(MODEL_PATH, "rb") as f:
+            _cache["xgboost"] = pickle.load(f)
+        return _cache["xgboost"]
+    return m
 
+
+def get_registry():
+    if REGISTRY_PATH.exists():
+        with open(REGISTRY_PATH) as f:
+            return json.load(f)
+    return {}
+
+
+def train_model(historical_rows=None):
+    """Retrain the tabular models (kept for the POST /api/ml/train route)."""
     try:
-        import xgboost as xgb
-        from sklearn.model_selection import cross_val_score
-
-        model = xgb.XGBClassifier(
-            n_estimators=100,
-            max_depth=4,
-            learning_rate=0.1,
-            objective="multi:softprob",
-            num_class=4,
-            eval_metric="mlogloss",
-            use_label_encoder=False,
-            random_state=42,
-            verbosity=0
-        )
-
-        # Cross-validation for metrics
-        scores = cross_val_score(model, X, y, cv=min(5, len(X) // 10 or 2), scoring="accuracy")
-
-        # Final fit on all data
-        model.fit(X, y)
-
-        # Save model
-        with open(MODEL_PATH, "wb") as f:
-            pickle.dump(model, f)
-
-        metrics = {
-            "status": "trained",
-            "accuracy": float(round(scores.mean(), 4)),
-            "std": float(round(scores.std(), 4)),
-            "n_samples": len(X),
-            "n_features": X.shape[1],
-            "feature_names": FEATURE_NAMES,
-            "trained_at": datetime.utcnow().isoformat(),
-            "model_type": "XGBClassifier",
-            "version": "1.0"
-        }
-
-        # Save metrics
-        with open(MODEL_DIR / "metrics.json", "w") as f:
-            json.dump(metrics, f, indent=2)
-
-        print(f"[RIIS-ML] Model trained — accuracy: {metrics['accuracy']:.2%} ± {metrics['std']:.2%}")
-        return metrics
-
-    except ImportError:
-        return {"status": "error", "message": "xgboost not installed"}
+        from app import train_tabular
+        train_tabular.main()
+        _cache.clear()
+        return get_model_metrics()
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 
-def load_model():
-    """Load the saved XGBoost model."""
-    if not MODEL_PATH.exists():
-        return None
-    with open(MODEL_PATH, "rb") as f:
-        return pickle.load(f)
+def _features(weather_data, history_rain=None, lat=None, lon=None):
+    return build_live_features(
+        weather_data, history_rain or [],
+        lat if lat is not None else 13.08, lon if lon is not None else 80.27)
 
 
-def predict(weather_data: dict) -> dict:
-    """Predict risk class from current weather data.
-    
-    Args:
-        weather_data: dict with keys matching WeatherCache columns
-    Returns:
-        dict with prediction, confidence, class probabilities
-    """
-    model = load_model()
+def predict(weather_data: dict, history_rain=None, lat=None, lon=None, model_name="ensemble_vote") -> dict:
+    """Predict next-day risk class from current weather plus recent rain history."""
+    model = load_model(model_name) or load_model("xgboost")
     if model is None:
-        # Fallback to formula-based prediction
         return _formula_predict(weather_data)
-
     try:
-        rain = weather_data.get("next_6h_rain", 0) or weather_data.get("rainfall_mm", 0)
-        tmax = weather_data.get("temp_max", 28)
-        tmin = weather_data.get("temp_min", 22)
-        hum = weather_data.get("humidity_avg", weather_data.get("humidity", 70))
-        wind = weather_data.get("wind_speed_max", weather_data.get("wind_speed", 10))
-        p_hours = weather_data.get("precipitation_hours", 0)
-        prev_rain = weather_data.get("rain_lag1", 0)
-
-        feat = np.array([[
-            rain, tmax, tmin, hum, wind, p_hours,
-            prev_rain,
-            tmax - tmin,
-            rain ** 2,
-            hum * rain / 100,
-            wind * rain / 100
-        ]])
-
+        feat, row = _features(weather_data, history_rain, lat, lon)
         probs = model.predict_proba(feat)[0]
-        pred_class = int(model.predict(feat)[0])
-
-        class_names = ["safe", "mod", "high", "extreme"]
-        class_probs = {class_names[i]: float(round(probs[i], 4)) for i in range(len(class_names))}
-
+        pred_class = int(np.argmax(probs))
+        class_probs = {CLASS_NAMES[i]: float(round(probs[i], 4)) for i in range(len(CLASS_NAMES))}
+        reg = get_registry().get(model_name, {})
         return {
-            "prediction": class_names[pred_class],
+            "prediction": CLASS_NAMES[pred_class],
             "confidence": float(round(max(probs), 4)),
             "class_probabilities": class_probs,
-            "model_version": "1.0",
-            "method": "xgboost"
+            "heavy_rain_probability": float(round(probs[2] + probs[3], 4)),
+            "model": model_name,
+            "model_name": DISPLAY_NAMES.get(model_name, model_name),
+            "model_version": "2.0",
+            "method": model_name,
+            "horizon": "next_day",
+            "test_accuracy": reg.get("metrics", {}).get("accuracy"),
+            "test_macro_f1": reg.get("metrics", {}).get("macro_f1"),
+            "features_used": {k: round(float(v), 3) for k, v in row.items()},
         }
     except Exception as e:
         print(f"[RIIS-ML] Prediction error: {e}")
         return _formula_predict(weather_data)
 
 
-def get_shap_explanations(weather_data: dict) -> dict:
-    """Get SHAP feature attributions for a prediction."""
-    model = load_model()
+def predict_all(weather_data: dict, history_rain=None, lat=None, lon=None) -> dict:
+    """Run every trained tabular model on the same inputs."""
+    out = {}
+    for name in TABULAR_MODELS:
+        if load_model(name) is not None:
+            out[name] = predict(weather_data, history_rain, lat, lon, model_name=name)
+    return out
 
-    # Only try SHAP if model is trained and shap is available
+
+def get_shap_explanations(weather_data: dict, history_rain=None, lat=None, lon=None) -> dict:
+    """SHAP feature attributions from the XGBoost model."""
+    model = load_model("xgboost")
     if model is not None:
         try:
             import shap
-            rain = weather_data.get("next_6h_rain", 0) or weather_data.get("rainfall_mm", 0)
-            tmax = weather_data.get("temp_max", 28)
-            tmin = weather_data.get("temp_min", 22)
-            hum = weather_data.get("humidity_avg", weather_data.get("humidity", 70))
-            wind = weather_data.get("wind_speed_max", weather_data.get("wind_speed", 10))
-            p_hours = weather_data.get("precipitation_hours", 0)
-            prev_rain = weather_data.get("rain_lag1", 0)
-
-            feat = np.array([[
-                rain, tmax, tmin, hum, wind, p_hours,
-                prev_rain,
-                tmax - tmin,
-                rain ** 2,
-                hum * rain / 100,
-                wind * rain / 100
-            ]])
-
+            feat, row = _features(weather_data, history_rain, lat, lon)
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(feat)
+            probs = model.predict_proba(feat)[0]
+            k = int(np.argmax(probs))
 
-            # Reduce SHAP values to 1D per-feature importance.
-            # Multi-class XGBoost returns 3D (batch, features, classes) or a list of 2D arrays.
+            arr = np.array(shap_values)
             if isinstance(shap_values, list):
-                # List of 2D arrays, one per class; average absolute across classes then take first sample
-                stacked = np.stack([np.abs(sv) for sv in shap_values], axis=-1)  # (1, 11, num_classes)
-                mean_abs = np.mean(stacked, axis=-1)[0]  # (11,)
+                per_class = np.stack([np.asarray(sv)[0] for sv in shap_values], axis=-1)  # (F, C)
+            elif arr.ndim == 3:
+                per_class = arr[0]  # (F, C)
             else:
-                arr = np.array(shap_values)
-                if arr.ndim == 3:
-                    # (batch, features, classes) -> mean abs across classes, take first sample
-                    mean_abs = np.mean(np.abs(arr), axis=-1)[0]  # (11,)
-                elif arr.ndim == 2:
-                    mean_abs = np.abs(arr)[0]  # (11,)
-                else:
-                    mean_abs = np.abs(arr)
-
-            # Ensure 1D
-            mean_abs = np.asarray(mean_abs).flatten()
-
-            # Normalize to 0-1
+                per_class = np.asarray(arr)[0][:, None]
+            signed = per_class[:, min(k, per_class.shape[1] - 1)]  # contribution to the predicted class
+            mean_abs = np.abs(per_class).mean(axis=1)
             max_val = float(mean_abs.max()) if mean_abs.max() > 0 else 1.0
-            normalized = (mean_abs / max_val)
 
             features = []
             for i, name in enumerate(FEATURE_NAMES):
-                val = float(round(normalized[i], 4))
                 features.append({
                     "name": name,
-                    "shap_value": val,
+                    "shap_value": float(round(mean_abs[i] / max_val, 4)),
+                    "signed_shap": float(round(signed[i], 4)),
                     "raw_value": float(round(float(feat[0][i]), 4)),
-                    "direction": "positive" if val > 0.3 else "neutral"
+                    "direction": "positive" if signed[i] > 0.02 else ("negative" if signed[i] < -0.02 else "neutral"),
                 })
-
             features.sort(key=lambda f: f["shap_value"], reverse=True)
 
-            # expected_value is a list for multi-class; take the mean
             ev = explainer.expected_value
-            if isinstance(ev, (list, np.ndarray)):
-                base = float(np.mean(ev))
-            else:
-                base = float(ev)
-
+            base = float(np.mean(ev)) if isinstance(ev, (list, np.ndarray)) else float(ev)
             return {
                 "method": "shap_tree",
+                "explained_class": CLASS_NAMES[k],
                 "features": features,
                 "base_value": round(base, 4),
             }
-
         except Exception as e:
             print(f"[RIIS-ML] SHAP error: {e}")
 
-    # Formula fallback
     return _formula_shap(weather_data)
 
 
@@ -334,9 +247,23 @@ def _formula_shap(weather_data):
 
 
 def get_model_metrics():
-    """Return saved training metrics."""
+    """Return saved training metrics (legacy shape) plus the full registry."""
     metrics_path = MODEL_DIR / "metrics.json"
+    out = {"status": "not_trained", "message": "No model trained yet. POST /api/ml/train to train."}
     if metrics_path.exists():
         with open(metrics_path) as f:
-            return json.load(f)
-    return {"status": "not_trained", "message": "No model trained yet. POST /api/ml/train to train."}
+            out = json.load(f)
+    reg = get_registry()
+    out["models"] = {
+        name: {
+            "name": DISPLAY_NAMES.get(name, name),
+            "family": entry.get("family"),
+            "task": entry.get("task"),
+            "trained_at": entry.get("trained_at"),
+            "train_seconds": entry.get("train_seconds"),
+            "metrics": entry.get("metrics"),
+            "persistence_baseline": entry.get("persistence_baseline"),
+        }
+        for name, entry in reg.items()
+    }
+    return out

@@ -1,0 +1,12 @@
+{
+  "members": [
+    "xgboost",
+    "random_forest",
+    "gradient_boost"
+  ],
+  "weights": {
+    "xgboost": 2.0,
+    "random_forest": 1.0,
+    "gradient_boost": 1.5
+  }
+}

@@ -1,0 +1,976 @@
+{
+  "xgboost": {
+    "family": "tabular",
+    "task": "next_day_rain_class",
+    "train_rows": 31372,
+    "test_rows": 6588,
+    "holdout_from": "2025-07-01",
+    "features": [
+      "rain_today",
+      "precip_hours",
+      "temp_max",
+      "temp_min",
+      "temp_range",
+      "wind_max",
+      "rh_mean",
+      "pressure_mean",
+      "cloud_mean",
+      "soil_moisture",
+      "dewpoint_mean",
+      "gust_max",
+      "rain_lag1",
+      "rain_lag2",
+      "rain_lag3",
+      "rain_sum_3",
+      "rain_sum_7",
+      "rain_sum_14",
+      "rain_sum_30",
+      "wet_days_7",
+      "doy_sin",
+      "doy_cos",
+      "lat",
+      "lon"
+    ],
+    "train_seconds": 19.4,
+    "trained_at": "2026-10-07T11:26:33.241510",
+    "metrics": {
+      "accuracy": 0.7136,
+      "macro_f1": 0.4331,
+      "weighted_f1": 0.7257,
+      "log_loss": 0.642,
+      "heavy_rain_auc": 0.8699,
+      "per_class": {
+        "safe": {
+          "precision": 0.91,
+          "recall": 0.786,
+          "f1": 0.843
+        },
+        "mod": {
+          "precision": 0.449,
+          "recall": 0.664,
+          "f1": 0.536
+        },
+        "high": {
+          "precision": 0.302,
+          "recall": 0.262,
+          "f1": 0.281
+        },
+        "extreme": {
+          "precision": 0.103,
+          "recall": 0.056,
+          "f1": 0.073
+        }
+      },
+      "confusion_matrix": [
+        [
+          3588,
+          905,
+          68,
+          2
+        ],
+        [
+          301,
+          986,
+          187,
+          10
+        ],
+        [
+          52,
+          272,
+          123,
+          23
+        ],
+        [
+          4,
+          34,
+          29,
+          4
+        ]
+      ]
+    },
+    "feature_importance": {
+      "rain_today": 0.3441,
+      "rain_sum_3": 0.1202,
+      "rain_sum_7": 0.0409,
+      "cloud_mean": 0.0332,
+      "rain_sum_14": 0.0306,
+      "lat": 0.0292,
+      "dewpoint_mean": 0.0268,
+      "temp_range": 0.0262,
+      "doy_cos": 0.0259,
+      "wet_days_7": 0.0256,
+      "pressure_mean": 0.0255,
+      "rain_sum_30": 0.0252,
+      "lon": 0.0247,
+      "rain_lag2": 0.0234,
+      "wind_max": 0.0231,
+      "doy_sin": 0.0228,
+      "rain_lag1": 0.0227,
+      "temp_max": 0.0225,
+      "gust_max": 0.0221,
+      "rh_mean": 0.0219,
+      "rain_lag3": 0.0218,
+      "temp_min": 0.0211,
+      "soil_moisture": 0.0205,
+      "precip_hours": 0.0
+    }
+  },
+  "random_forest": {
+    "family": "tabular",
+    "task": "next_day_rain_class",
+    "train_rows": 31372,
+    "test_rows": 6588,
+    "holdout_from": "2025-07-01",
+    "features": [
+      "rain_today",
+      "precip_hours",
+      "temp_max",
+      "temp_min",
+      "temp_range",
+      "wind_max",
+      "rh_mean",
+      "pressure_mean",
+      "cloud_mean",
+      "soil_moisture",
+      "dewpoint_mean",
+      "gust_max",
+      "rain_lag1",
+      "rain_lag2",
+      "rain_lag3",
+      "rain_sum_3",
+      "rain_sum_7",
+      "rain_sum_14",
+      "rain_sum_30",
+      "wet_days_7",
+      "doy_sin",
+      "doy_cos",
+      "lat",
+      "lon"
+    ],
+    "train_seconds": 6.7,
+    "trained_at": "2026-10-07T11:26:40.612667",
+    "metrics": {
+      "accuracy": 0.7312,
+      "macro_f1": 0.4263,
+      "weighted_f1": 0.7335,
+      "log_loss": 0.6235,
+      "heavy_rain_auc": 0.8676,
+      "per_class": {
+        "safe": {
+          "precision": 0.888,
+          "recall": 0.821,
+          "f1": 0.853
+        },
+        "mod": {
+          "precision": 0.467,
+          "recall": 0.647,
+          "f1": 0.542
+        },
+        "high": {
+          "precision": 0.363,
+          "recall": 0.234,
+          "f1": 0.285
+        },
+        "extreme": {
+          "precision": 0.125,
+          "recall": 0.014,
+          "f1": 0.025
+        }
+      },
+      "confusion_matrix": [
+        [
+          3746,
+          769,
+          46,
+          2
+        ],
+        [
+          401,
+          960,
+          122,
+          1
+        ],
+        [
+          68,
+          288,
+          110,
+          4
+        ],
+        [
+          5,
+          40,
+          25,
+          1
+        ]
+      ]
+    }
+  },
+  "gradient_boost": {
+    "family": "tabular",
+    "task": "next_day_rain_class",
+    "train_rows": 31372,
+    "test_rows": 6588,
+    "holdout_from": "2025-07-01",
+    "features": [
+      "rain_today",
+      "precip_hours",
+      "temp_max",
+      "temp_min",
+      "temp_range",
+      "wind_max",
+      "rh_mean",
+      "pressure_mean",
+      "cloud_mean",
+      "soil_moisture",
+      "dewpoint_mean",
+      "gust_max",
+      "rain_lag1",
+      "rain_lag2",
+      "rain_lag3",
+      "rain_sum_3",
+      "rain_sum_7",
+      "rain_sum_14",
+      "rain_sum_30",
+      "wet_days_7",
+      "doy_sin",
+      "doy_cos",
+      "lat",
+      "lon"
+    ],
+    "train_seconds": 25.3,
+    "trained_at": "2026-10-07T11:27:07.069918",
+    "metrics": {
+      "accuracy": 0.7121,
+      "macro_f1": 0.4235,
+      "weighted_f1": 0.7201,
+      "log_loss": 0.6471,
+      "heavy_rain_auc": 0.854,
+      "per_class": {
+        "safe": {
+          "precision": 0.888,
+          "recall": 0.801,
+          "f1": 0.842
+        },
+        "mod": {
+          "precision": 0.446,
+          "recall": 0.615,
+          "f1": 0.517
+        },
+        "high": {
+          "precision": 0.296,
+          "recall": 0.251,
+          "f1": 0.272
+        },
+        "extreme": {
+          "precision": 0.12,
+          "recall": 0.042,
+          "f1": 0.062
+        }
+      },
+      "confusion_matrix": [
+        [
+          3657,
+          827,
+          78,
+          1
+        ],
+        [
+          389,
+          913,
+          173,
+          9
+        ],
+        [
+          67,
+          273,
+          118,
+          12
+        ],
+        [
+          6,
+          33,
+          29,
+          3
+        ]
+      ]
+    }
+  },
+  "ensemble_vote": {
+    "family": "tabular",
+    "task": "next_day_rain_class",
+    "members": [
+      "xgboost",
+      "random_forest",
+      "gradient_boost"
+    ],
+    "weights": {
+      "xgboost": 2.0,
+      "random_forest": 1.0,
+      "gradient_boost": 1.5
+    },
+    "train_rows": 31372,
+    "test_rows": 6588,
+    "holdout_from": "2025-07-01",
+    "features": [
+      "rain_today",
+      "precip_hours",
+      "temp_max",
+      "temp_min",
+      "temp_range",
+      "wind_max",
+      "rh_mean",
+      "pressure_mean",
+      "cloud_mean",
+      "soil_moisture",
+      "dewpoint_mean",
+      "gust_max",
+      "rain_lag1",
+      "rain_lag2",
+      "rain_lag3",
+      "rain_sum_3",
+      "rain_sum_7",
+      "rain_sum_14",
+      "rain_sum_30",
+      "wet_days_7",
+      "doy_sin",
+      "doy_cos",
+      "lat",
+      "lon"
+    ],
+    "train_seconds": 1.7,
+    "trained_at": "2026-10-07T11:27:08.765519",
+    "metrics": {
+      "accuracy": 0.7171,
+      "macro_f1": 0.4282,
+      "weighted_f1": 0.7248,
+      "log_loss": 0.6281,
+      "heavy_rain_auc": 0.8677,
+      "per_class": {
+        "safe": {
+          "precision": 0.895,
+          "recall": 0.801,
+          "f1": 0.845
+        },
+        "mod": {
+          "precision": 0.45,
+          "recall": 0.643,
+          "f1": 0.529
+        },
+        "high": {
+          "precision": 0.314,
+          "recall": 0.243,
+          "f1": 0.274
+        },
+        "extreme": {
+          "precision": 0.136,
+          "recall": 0.042,
+          "f1": 0.065
+        }
+      },
+      "confusion_matrix": [
+        [
+          3653,
+          847,
+          63,
+          0
+        ],
+        [
+          366,
+          954,
+          160,
+          4
+        ],
+        [
+          58,
+          283,
+          114,
+          15
+        ],
+        [
+          5,
+          37,
+          26,
+          3
+        ]
+      ]
+    }
+  },
+  "lstm_impact": {
+    "family": "sequence",
+    "task": "next_6h_rain_class",
+    "input": "last 48h x 20 features",
+    "params": 126468,
+    "device": "cuda",
+    "epochs_run": 12,
+    "train_windows": 318351,
+    "val_windows": 35373,
+    "test_windows": 79380,
+    "holdout_from": "2025-07-01",
+    "train_seconds": 368.0,
+    "trained_at": "2026-10-07T11:16:52.938243",
+    "history": [
+      {
+        "epoch": 1,
+        "loss": 0.597,
+        "val_macro_f1": 0.3704,
+        "val_acc": 0.8775
+      },
+      {
+        "epoch": 2,
+        "loss": 0.5165,
+        "val_macro_f1": 0.3558,
+        "val_acc": 0.8825
+      },
+      {
+        "epoch": 3,
+        "loss": 0.5098,
+        "val_macro_f1": 0.3837,
+        "val_acc": 0.8754
+      },
+      {
+        "epoch": 4,
+        "loss": 0.5047,
+        "val_macro_f1": 0.3949,
+        "val_acc": 0.8723
+      },
+      {
+        "epoch": 5,
+        "loss": 0.5004,
+        "val_macro_f1": 0.3741,
+        "val_acc": 0.8854
+      },
+      {
+        "epoch": 6,
+        "loss": 0.4953,
+        "val_macro_f1": 0.3896,
+        "val_acc": 0.8823
+      },
+      {
+        "epoch": 7,
+        "loss": 0.4897,
+        "val_macro_f1": 0.4268,
+        "val_acc": 0.8711
+      },
+      {
+        "epoch": 8,
+        "loss": 0.4833,
+        "val_macro_f1": 0.4058,
+        "val_acc": 0.8771
+      },
+      {
+        "epoch": 9,
+        "loss": 0.4761,
+        "val_macro_f1": 0.4259,
+        "val_acc": 0.8745
+      },
+      {
+        "epoch": 10,
+        "loss": 0.4683,
+        "val_macro_f1": 0.4205,
+        "val_acc": 0.8701
+      },
+      {
+        "epoch": 11,
+        "loss": 0.4631,
+        "val_macro_f1": 0.4053,
+        "val_acc": 0.8696
+      },
+      {
+        "epoch": 12,
+        "loss": 0.4605,
+        "val_macro_f1": 0.3952,
+        "val_acc": 0.8687
+      }
+    ],
+    "metrics": {
+      "accuracy": 0.9015,
+      "macro_f1": 0.3714,
+      "weighted_f1": 0.8981,
+      "heavy_rain_auc": 0.8768,
+      "rain_auc": 0.8885,
+      "per_class": {
+        "safe": {
+          "precision": 0.944,
+          "recall": 0.954,
+          "f1": 0.949
+        },
+        "mod": {
+          "precision": 0.423,
+          "recall": 0.406,
+          "f1": 0.414
+        },
+        "high": {
+          "precision": 0.293,
+          "recall": 0.077,
+          "f1": 0.122
+        },
+        "extreme": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          68841,
+          3286,
+          34,
+          0
+        ],
+        [
+          3844,
+          2675,
+          70,
+          0
+        ],
+        [
+          205,
+          345,
+          46,
+          0
+        ],
+        [
+          5,
+          22,
+          7,
+          0
+        ]
+      ],
+      "n": 79380
+    }
+  },
+  "convlstm": {
+    "family": "spatial",
+    "task": "next_6h_rain_grid",
+    "input": "last 12 hourly frames, 11x11 grid",
+    "params": 190625,
+    "device": "cuda",
+    "epochs_run": 15,
+    "train_windows": 4509,
+    "val_windows": 504,
+    "test_windows": 816,
+    "test_block": "2024-11-01T00:00:2024-12-05T00:00",
+    "val_block": "2024-10-10T00:00:2024-10-31T00:00",
+    "train_seconds": 208.7,
+    "trained_at": "2026-10-07T11:29:43.507862",
+    "history": [
+      {
+        "epoch": 1,
+        "loss": 0.9745,
+        "val_rmse": 5.293,
+        "val_csi_5mm": 0.329
+      },
+      {
+        "epoch": 2,
+        "loss": 0.8993,
+        "val_rmse": 5.09,
+        "val_csi_5mm": 0.341
+      },
+      {
+        "epoch": 3,
+        "loss": 0.8752,
+        "val_rmse": 5.045,
+        "val_csi_5mm": 0.347
+      },
+      {
+        "epoch": 4,
+        "loss": 0.8371,
+        "val_rmse": 5.059,
+        "val_csi_5mm": 0.339
+      },
+      {
+        "epoch": 5,
+        "loss": 0.7889,
+        "val_rmse": 5.293,
+        "val_csi_5mm": 0.25
+      },
+      {
+        "epoch": 6,
+        "loss": 0.76,
+        "val_rmse": 5.06,
+        "val_csi_5mm": 0.34
+      },
+      {
+        "epoch": 7,
+        "loss": 0.7183,
+        "val_rmse": 5.205,
+        "val_csi_5mm": 0.29
+      },
+      {
+        "epoch": 8,
+        "loss": 0.6771,
+        "val_rmse": 5.303,
+        "val_csi_5mm": 0.278
+      },
+      {
+        "epoch": 9,
+        "loss": 0.6247,
+        "val_rmse": 5.432,
+        "val_csi_5mm": 0.26
+      },
+      {
+        "epoch": 10,
+        "loss": 0.5835,
+        "val_rmse": 5.401,
+        "val_csi_5mm": 0.264
+      },
+      {
+        "epoch": 11,
+        "loss": 0.5383,
+        "val_rmse": 5.469,
+        "val_csi_5mm": 0.274
+      },
+      {
+        "epoch": 12,
+        "loss": 0.5059,
+        "val_rmse": 5.621,
+        "val_csi_5mm": 0.265
+      },
+      {
+        "epoch": 13,
+        "loss": 0.4801,
+        "val_rmse": 5.535,
+        "val_csi_5mm": 0.24
+      },
+      {
+        "epoch": 14,
+        "loss": 0.4649,
+        "val_rmse": 5.599,
+        "val_csi_5mm": 0.237
+      },
+      {
+        "epoch": 15,
+        "loss": 0.4574,
+        "val_rmse": 5.611,
+        "val_csi_5mm": 0.236
+      }
+    ],
+    "metrics": {
+      "rmse_mm": 5.686,
+      "mae_mm": 2.26,
+      "csi_1mm": 0.537,
+      "pod_1mm": 0.923,
+      "csi_5mm": 0.438,
+      "pod_5mm": 0.668,
+      "csi_20mm": 0.256,
+      "pod_20mm": 0.29,
+      "pixel_class_accuracy": 0.8584,
+      "heavy_pixel_recall": 0.291,
+      "wet_fraction_truth": 0.3296
+    },
+    "persistence_baseline": {
+      "rmse_mm": 6.753,
+      "mae_mm": 2.466,
+      "csi_1mm": 0.49,
+      "pod_1mm": 0.657,
+      "csi_5mm": 0.35,
+      "pod_5mm": 0.519,
+      "csi_20mm": 0.318,
+      "pod_20mm": 0.482,
+      "pixel_class_accuracy": 0.8443,
+      "heavy_pixel_recall": 0.481,
+      "wet_fraction_truth": 0.3296
+    },
+    "grid": {
+      "lat_min": 11.0,
+      "lat_max": 13.5,
+      "lon_min": 78.0,
+      "lon_max": 80.5,
+      "step_deg": 0.25,
+      "frames": 5880,
+      "period": [
+        "2024-06-01T00:00",
+        "2025-01-31T23:00"
+      ]
+    }
+  },
+  "convgru": {
+    "family": "spatial",
+    "task": "next_6h_rain_grid",
+    "input": "last 12 hourly frames, 11x11 grid",
+    "params": 146481,
+    "device": "cuda",
+    "epochs_run": 15,
+    "train_windows": 4509,
+    "val_windows": 504,
+    "test_windows": 816,
+    "test_block": "2024-11-01T00:00:2024-12-05T00:00",
+    "val_block": "2024-10-10T00:00:2024-10-31T00:00",
+    "train_seconds": 226.5,
+    "trained_at": "2026-10-07T11:33:30.084821",
+    "history": [
+      {
+        "epoch": 1,
+        "loss": 0.9752,
+        "val_rmse": 5.419,
+        "val_csi_5mm": 0.342
+      },
+      {
+        "epoch": 2,
+        "loss": 0.8948,
+        "val_rmse": 5.207,
+        "val_csi_5mm": 0.345
+      },
+      {
+        "epoch": 3,
+        "loss": 0.8736,
+        "val_rmse": 5.12,
+        "val_csi_5mm": 0.327
+      },
+      {
+        "epoch": 4,
+        "loss": 0.8493,
+        "val_rmse": 5.153,
+        "val_csi_5mm": 0.34
+      },
+      {
+        "epoch": 5,
+        "loss": 0.7973,
+        "val_rmse": 5.304,
+        "val_csi_5mm": 0.3
+      },
+      {
+        "epoch": 6,
+        "loss": 0.7488,
+        "val_rmse": 5.162,
+        "val_csi_5mm": 0.339
+      },
+      {
+        "epoch": 7,
+        "loss": 0.7038,
+        "val_rmse": 5.294,
+        "val_csi_5mm": 0.297
+      },
+      {
+        "epoch": 8,
+        "loss": 0.6567,
+        "val_rmse": 5.336,
+        "val_csi_5mm": 0.258
+      },
+      {
+        "epoch": 9,
+        "loss": 0.6043,
+        "val_rmse": 5.466,
+        "val_csi_5mm": 0.259
+      },
+      {
+        "epoch": 10,
+        "loss": 0.5642,
+        "val_rmse": 5.439,
+        "val_csi_5mm": 0.246
+      },
+      {
+        "epoch": 11,
+        "loss": 0.5226,
+        "val_rmse": 5.397,
+        "val_csi_5mm": 0.276
+      },
+      {
+        "epoch": 12,
+        "loss": 0.4953,
+        "val_rmse": 5.462,
+        "val_csi_5mm": 0.229
+      },
+      {
+        "epoch": 13,
+        "loss": 0.4735,
+        "val_rmse": 5.504,
+        "val_csi_5mm": 0.234
+      },
+      {
+        "epoch": 14,
+        "loss": 0.4606,
+        "val_rmse": 5.524,
+        "val_csi_5mm": 0.209
+      },
+      {
+        "epoch": 15,
+        "loss": 0.4537,
+        "val_rmse": 5.52,
+        "val_csi_5mm": 0.215
+      }
+    ],
+    "metrics": {
+      "rmse_mm": 5.875,
+      "mae_mm": 2.104,
+      "csi_1mm": 0.55,
+      "pod_1mm": 0.907,
+      "csi_5mm": 0.429,
+      "pod_5mm": 0.577,
+      "csi_20mm": 0.052,
+      "pod_20mm": 0.053,
+      "pixel_class_accuracy": 0.8706,
+      "heavy_pixel_recall": 0.053,
+      "wet_fraction_truth": 0.3296
+    },
+    "persistence_baseline": {
+      "rmse_mm": 6.753,
+      "mae_mm": 2.466,
+      "csi_1mm": 0.49,
+      "pod_1mm": 0.657,
+      "csi_5mm": 0.35,
+      "pod_5mm": 0.519,
+      "csi_20mm": 0.318,
+      "pod_20mm": 0.482,
+      "pixel_class_accuracy": 0.8443,
+      "heavy_pixel_recall": 0.481,
+      "wet_fraction_truth": 0.3296
+    },
+    "grid": {
+      "lat_min": 11.0,
+      "lat_max": 13.5,
+      "lon_min": 78.0,
+      "lon_max": 80.5,
+      "step_deg": 0.25,
+      "frames": 5880,
+      "period": [
+        "2024-06-01T00:00",
+        "2025-01-31T23:00"
+      ]
+    }
+  },
+  "transformer": {
+    "family": "sequence",
+    "task": "next_6h_rain_class",
+    "input": "last 48h x 20 features",
+    "params": 75908,
+    "device": "cuda",
+    "epochs_run": 12,
+    "train_windows": 318351,
+    "val_windows": 35373,
+    "test_windows": 79380,
+    "holdout_from": "2025-07-01",
+    "train_seconds": 425.8,
+    "trained_at": "2026-10-07T11:23:58.771214",
+    "history": [
+      {
+        "epoch": 1,
+        "loss": 0.6,
+        "val_macro_f1": 0.3545,
+        "val_acc": 0.8769
+      },
+      {
+        "epoch": 2,
+        "loss": 0.5181,
+        "val_macro_f1": 0.3511,
+        "val_acc": 0.8834
+      },
+      {
+        "epoch": 3,
+        "loss": 0.512,
+        "val_macro_f1": 0.3799,
+        "val_acc": 0.8777
+      },
+      {
+        "epoch": 4,
+        "loss": 0.5089,
+        "val_macro_f1": 0.3759,
+        "val_acc": 0.8779
+      },
+      {
+        "epoch": 5,
+        "loss": 0.5062,
+        "val_macro_f1": 0.3674,
+        "val_acc": 0.8842
+      },
+      {
+        "epoch": 6,
+        "loss": 0.502,
+        "val_macro_f1": 0.3702,
+        "val_acc": 0.8846
+      },
+      {
+        "epoch": 7,
+        "loss": 0.4987,
+        "val_macro_f1": 0.4102,
+        "val_acc": 0.8702
+      },
+      {
+        "epoch": 8,
+        "loss": 0.4945,
+        "val_macro_f1": 0.4027,
+        "val_acc": 0.882
+      },
+      {
+        "epoch": 9,
+        "loss": 0.4898,
+        "val_macro_f1": 0.3982,
+        "val_acc": 0.8725
+      },
+      {
+        "epoch": 10,
+        "loss": 0.486,
+        "val_macro_f1": 0.4154,
+        "val_acc": 0.8728
+      },
+      {
+        "epoch": 11,
+        "loss": 0.4824,
+        "val_macro_f1": 0.4129,
+        "val_acc": 0.8737
+      },
+      {
+        "epoch": 12,
+        "loss": 0.4806,
+        "val_macro_f1": 0.4027,
+        "val_acc": 0.8731
+      }
+    ],
+    "metrics": {
+      "accuracy": 0.9002,
+      "macro_f1": 0.3705,
+      "weighted_f1": 0.8977,
+      "heavy_rain_auc": 0.8796,
+      "rain_auc": 0.89,
+      "per_class": {
+        "safe": {
+          "precision": 0.945,
+          "recall": 0.951,
+          "f1": 0.948
+        },
+        "mod": {
+          "precision": 0.417,
+          "recall": 0.419,
+          "f1": 0.418
+        },
+        "high": {
+          "precision": 0.323,
+          "recall": 0.07,
+          "f1": 0.116
+        },
+        "extreme": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          68650,
+          3490,
+          21,
+          0
+        ],
+        [
+          3770,
+          2762,
+          55,
+          2
+        ],
+        [
+          192,
+          362,
+          42,
+          0
+        ],
+        [
+          5,
+          17,
+          12,
+          0
+        ]
+      ],
+      "n": 79380
+    }
+  }
+}

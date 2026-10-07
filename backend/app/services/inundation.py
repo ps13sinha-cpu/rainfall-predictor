@@ -194,8 +194,40 @@ def _wet_rings(wet: np.ndarray):
     return rings
 
 
-def simulate(dem_grid: dict, net_mm: float) -> dict:
-    """Match net ponding depth against DEM storage and build GeoJSON."""
+def net_ponding_mm(geo: dict, ant: dict, rainfall_mm: float, duration_h: float) -> dict:
+    """Runoff minus drainage for a scenario, from the hyperlocal geofactors.
+
+    Shared by the inundation endpoint and the Safe Routes scorer so the two can
+    never drift. Returns the forcing dict (net_mm plus the intermediate numbers).
+    """
+    soil = geo.get("soil") or {}
+    land = geo.get("landuse") or {}
+    water = geo.get("water") or {}
+    impervious = land.get("impervious_pct", 40.0)
+    sat = ant.get("saturation_pct", 45)
+    drains = (water.get("counts") or {}).get("drain", 0)
+    waterways = (water.get("counts") or {}).get("waterway", 0)
+    runoff_c = max(0.05, min(0.95, 0.18 + 0.55 * (impervious / 100.0)
+                                   + 0.22 * (sat / 100.0) + soil.get("runoff_adj", 0)))
+    drainage_cap = max(8.0, min(45.0, 30.0 + 3.0 * drains - 0.06 * impervious * 30 / 100 * 10))
+    runoff_mm = rainfall_mm * runoff_c
+    drainage_mm = drainage_cap * duration_h
+    net_mm = max(0.0, runoff_mm - drainage_mm)
+    return {
+        "rainfall_mm": rainfall_mm, "duration_h": duration_h,
+        "runoff_coefficient": round(runoff_c, 2), "runoff_mm": round(runoff_mm, 1),
+        "drainage_capacity_mm_h": round(drainage_cap, 1), "drainage_removed_mm": round(min(runoff_mm, drainage_mm), 1),
+        "net_ponding_mm": round(net_mm, 1), "net_mm": net_mm, "saturation_pct": sat,
+        "drains_mapped": drains + waterways,
+    }
+
+
+def depth_grid(dem_grid: dict, net_mm: float) -> dict:
+    """Place `net_mm` of net runoff on the depression-filled DEM.
+
+    Returns {depth (n,n) metres, level, mode, spilled, pit_storage, volume}.
+    `simulate` builds its GeoJSON from this; the roads scorer samples it directly.
+    """
     dem = dem_grid["dem"].astype(np.float64)
     cell_a = dem_grid["cell_w_m"] * dem_grid["cell_h_m"]
     n_cells = dem.size
@@ -235,6 +267,16 @@ def simulate(dem_grid: dict, net_mm: float) -> dict:
         mode = "spilling"
 
     depth = np.where(dem <= 0, 0, depth)          # guard: never flood sea-level voids
+    return {"depth": depth, "level": level, "mode": mode, "spilled": spilled,
+            "pit_storage": pit_storage, "volume": volume, "cell_a": cell_a}
+
+
+def simulate(dem_grid: dict, net_mm: float) -> dict:
+    """Match net ponding depth against DEM storage and build GeoJSON."""
+    dem = dem_grid["dem"].astype(np.float64)
+    dg = depth_grid(dem_grid, net_mm)
+    depth, level, mode, spilled = dg["depth"], dg["level"], dg["mode"], dg["spilled"]
+    pit_storage, volume, cell_a = dg["pit_storage"], dg["volume"], dg["cell_a"]
     wet = depth >= 0.05                           # ponding threshold 5 cm
     wet_area = float(wet.sum() * cell_a / 1e6)    # km²
 

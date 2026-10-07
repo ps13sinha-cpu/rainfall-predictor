@@ -17,8 +17,8 @@ import json
 import httpx
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-START_DATE = "2024-01-01"
-END_DATE = "2025-12-31"
+START_DATE = os.environ.get("RIIS_START_DATE", "2022-01-01")
+END_DATE = os.environ.get("RIIS_END_DATE", "2025-12-31")
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "riis.db")
 OPENMETEO_ARCHIVE = "https://archive-api.open-meteo.com/v1"
 

@@ -1,10 +1,54 @@
 // RIIS — Explainable AI + Timeline with Dynamic Live Data
-const { useState: useState_xt } = React;
+const { useState: useState_xt, useEffect: useEffect_xt } = React;
+
+const XAI_MODEL_COLORS = { ensemble_vote: "#22D3EE", xgboost: "#F59E0B", random_forest: "#7DD3FC", gradient_boost: "#5EEAD4" };
+const XAI_MODEL_NAMES = { ensemble_vote: "Ensemble Vote", xgboost: "XGBoost", random_forest: "Random Forest", gradient_boost: "Gradient Boost" };
+function prettyFeature(name){
+  const map = { rain_today: "Rain today", precip_hours: "Precipitation hours", temp_max: "Max temperature", temp_min: "Min temperature",
+    temp_range: "Diurnal temp range", wind_max: "Max wind", rh_mean: "Relative humidity", pressure_mean: "Pressure", cloud_mean: "Cloud cover",
+    soil_moisture: "Soil moisture", dewpoint_mean: "Dew point", gust_max: "Wind gusts", rain_lag1: "Rain yesterday", rain_lag2: "Rain 2 days ago",
+    rain_lag3: "Rain 3 days ago", rain_sum_3: "Rain last 3 days", rain_sum_7: "Rain last 7 days", rain_sum_14: "Rain last 14 days",
+    rain_sum_30: "Rain last 30 days", wet_days_7: "Wet days (7d)", doy_sin: "Season (sin)", doy_cos: "Season (cos)", lat: "Latitude", lon: "Longitude" };
+  return map[name] || name;
+}
+function localDistrictCode(){
+  if (RIIS.localDistrict) return RIIS.localDistrict.code;
+  const real = (RIIS.districts || []).filter(d => d.code !== "USER-LOC");
+  if (!real.length) return null;
+  const best = real.reduce((a, d) => ((d.lat - RIIS.location.lat) ** 2 + (d.lon - RIIS.location.lon) ** 2)
+    < ((a.lat - RIIS.location.lat) ** 2 + (a.lon - RIIS.location.lon) ** 2) ? d : a, real[0]);
+  return best.code;
+}
 
 function ExplainableScreen(){
   const l = RIIS.location;
   const w = RIIS.live;
   const p = RIIS.prediction;
+
+  // Live SHAP attributions + every tabular model's prediction from the backend
+  const [shap, setShap] = useState_xt(null);
+  const [allPred, setAllPred] = useState_xt(null);
+  useEffect_xt(() => {
+    let alive = true;
+    const code = localDistrictCode();
+    if (!window.RIIS_API || !code) return;
+    (window.RIIS_API.ready || Promise.resolve()).then(() => Promise.allSettled([
+      window.RIIS_API.getShapExplanations(code), window.RIIS_API.getPredictAll(code)]))
+      .then(([s, a]) => {
+        if (!alive) return;
+        if (s.status === "fulfilled" && s.value && s.value.method === "shap_tree") setShap(s.value);
+        if (a.status === "fulfilled" && a.value && a.value.predictions) setAllPred(a.value);
+      });
+    return () => { alive = false; };
+  }, [l.lat, l.lon]);
+
+  const feats = shap
+    ? shap.features.slice(0, 10).map(f => ({ name: `${prettyFeature(f.name)} (${f.raw_value})`, weight: f.shap_value, signed: f.signed_shap }))
+    : p.reasons.map(r => ({ ...r, signed: null }));
+  const preds = allPred ? Object.keys(XAI_MODEL_NAMES).filter(k => allPred.predictions[k]).map(k => ({ key: k, ...allPred.predictions[k] })) : null;
+  const ensemble = preds ? preds.find(x => x.key === "ensemble_vote") || preds[0] : null;
+  const agree = preds && ensemble ? preds.filter(x => x.prediction === ensemble.prediction).length : null;
+  const consensusPct = ensemble ? Math.round(ensemble.confidence * 100) : p.confidence;
 
   return (
     <div className="screen">
@@ -12,29 +56,30 @@ function ExplainableScreen(){
         <div>
           <div className="crumb">AI TRANSPARENCY <b>Explainable AI</b></div>
           <h1 style={{marginTop:6}}>AI Meteorological Inference &amp; SHAP Attribution</h1>
-          <p style={{marginTop:4}}>SHAP-based feature attribution + confidence decomposition for <b style={{color:"var(--text-hi)"}}>{l.city}</b> · Model: <b className="mono" style={{color:"var(--text-hi)"}}>ConvLSTM-v4.2 + XGBoost-Ensemble</b></p>
+          <p style={{marginTop:4}}>SHAP-based feature attribution + confidence decomposition for <b style={{color:"var(--text-hi)"}}>{l.city}</b> · Model: <b className="mono" style={{color:"var(--text-hi)"}}>{shap ? "Ensemble Vote (XGBoost + Random Forest + Gradient Boost) · SHAP TreeExplainer" : "heuristic drivers (backend SHAP pending)"}</b></p>
         </div>
-        <div className="id">MODEL · CONVLSTM-4.2 · LIVE-INFERENCE</div>
+        <div className="id">MODEL · {shap ? "ENSEMBLE-VOTE v2.0" : "HEURISTIC"} · LIVE-INFERENCE</div>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:16}}>
         <div className="panel brackets">
           <div className="panel-hd">
             <h3>Live Feature Importance (SHAP values)</h3>
-            <span className="live"><span className="d"/>{p.reasons.length} ACTIVE FEATURES</span>
-            <span className="sub">Real-time normalized drivers</span>
+            <span className="live"><span className="d"/>{feats.length} {shap ? "SHAP FEATURES" : "ACTIVE FEATURES"}</span>
+            <span className="sub">{shap ? `TreeExplainer on next-day class "${shap.explained_class}" · ${shap.district_name || l.city}` : "Real-time normalized drivers"}</span>
           </div>
           <div className="panel-bd">
-            {p.reasons.map((r,i)=>(
+            {feats.map((r,i)=>(
               <div key={i} className="reason-bar">
                 <div className="lbl">
                   <span style={{display:"inline-block",width:22,height:22,borderRadius:6,background:"rgba(34,211,238,0.12)",color:"var(--cyan)",display:"inline-grid",placeItems:"center",fontSize:11,fontWeight:600,marginRight:8,verticalAlign:"middle"}} className="mono">{String(i+1).padStart(2,"0")}</span>
                   {r.name}
                 </div>
-                <div className="bar"><div className="fill" style={{width:(r.weight*100)+"%"}}/></div>
-                <div className="v">+{r.weight.toFixed(2)}</div>
+                <div className="bar"><div className="fill" style={{width:(r.weight*100)+"%",background:r.signed!=null&&r.signed<0?"#F97316":undefined}}/></div>
+                <div className="v" style={{color:r.signed!=null&&r.signed<0?"#F97316":undefined}}>{r.signed!=null ? (r.signed>=0?"+":"")+r.signed.toFixed(3) : "+"+r.weight.toFixed(2)}</div>
               </div>
             ))}
+            {shap && <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:8}}>Bar = normalised mean |SHAP| across classes · value = signed contribution to the predicted class (orange pushes away from it).</div>}
           </div>
         </div>
 
@@ -53,7 +98,7 @@ function ExplainableScreen(){
                   ["Precip Probability", p.probability + "%"],
                   ["AI Confidence", p.confidence + "%"],
                   ["Uncertainty σ", p.rainfall_mm > 10 ? "±3.2 mm" : "±0.4 mm"],
-                  ["Model Agreement", "6 of 6 models"],
+                  ["Model Agreement", preds ? `${agree} of ${preds.length} models` : "awaiting backend"],
                   ["Storm Movement", p.stormDir]
                 ].map(([k,v],i)=>(
                   <div key={i} style={{padding:10,background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
@@ -71,23 +116,26 @@ function ExplainableScreen(){
             </div>
             <div className="panel-bd" style={{display:"flex",gap:14,alignItems:"center",justifyContent:"space-around"}}>
               <Donut segments={[
-                {v:p.confidence, c:"#22D3EE"},{v:100-p.confidence, c:"rgba(120,180,255,0.15)"}
-              ]} size={120} label={p.confidence + "%"} sublabel="Consensus"/>
+                {v:consensusPct, c:"#22D3EE"},{v:100-consensusPct, c:"rgba(120,180,255,0.15)"}
+              ]} size={120} label={consensusPct + "%"} sublabel={preds ? "Ensemble conf." : "Consensus"}/>
               <div style={{flex:1}}>
-                {[
+                {(preds
+                  ? preds.map(x => [XAI_MODEL_NAMES[x.key], Math.round(x.confidence*100), XAI_MODEL_COLORS[x.key], x.prediction, Math.round((x.heavy_rain_probability||0)*100)])
+                  : [
                   ["ConvLSTM",     p.confidence, "#22D3EE"],
                   ["ConvGRU",      Math.max(70, p.confidence - 3), "#3B82F6"],
                   ["Transformer",  Math.max(70, p.confidence - 5), "#A78BFA"],
                   ["XGBoost",      Math.max(70, p.confidence - 7), "#F59E0B"],
                   ["Random Forest",Math.max(70, p.confidence - 10), "#7DD3FC"],
                   ["Gradient Boost",Math.max(70, p.confidence - 12),"#5EEAD4"],
-                ].map(([n,v,c],i)=>(
-                  <div key={i} style={{display:"grid",gridTemplateColumns:"90px 1fr 32px",gap:8,alignItems:"center",padding:"4px 0"}}>
-                    <span style={{fontSize:11.5}}>{n}</span>
-                    <div style={{height:5,background:"rgba(20,32,48,0.7)",borderRadius:3,overflow:"hidden"}}><div style={{width:v+"%",height:"100%",background:c,boxShadow:`0 0 4px ${c}`}}/></div>
+                ]).map(([n,v,c,cls,heavy],i)=>(
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"96px 1fr 32px",gap:8,alignItems:"center",padding:"4px 0"}}>
+                    <span style={{fontSize:11.5}}>{n}{cls && <span style={{marginLeft:6,fontSize:9.5,color:riskColor(cls),textTransform:"uppercase",letterSpacing:".08em"}}>{cls}</span>}</span>
+                    <div style={{height:5,background:"rgba(20,32,48,0.7)",borderRadius:3,overflow:"hidden"}} title={heavy!=null?`heavy-rain probability ${heavy}%`:undefined}><div style={{width:v+"%",height:"100%",background:c,boxShadow:`0 0 4px ${c}`}}/></div>
                     <span className="mono" style={{fontSize:11,color:"var(--text-mid)",textAlign:"right"}}>{v}%</span>
                   </div>
                 ))}
+                {preds && <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:6}}>Next-day rain class per model · {agree} of {preds.length} agree with the ensemble · heavy-rain p = {Math.round((ensemble.heavy_rain_probability||0)*100)}%</div>}
               </div>
             </div>
           </div>

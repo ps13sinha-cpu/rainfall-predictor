@@ -69,7 +69,7 @@
       dem: { name: "DEM Topography (30m)", status: "nominal" },
       landuse: { name: "Land Use / Soil Saturation", status: "nominal" },
       reservoir: { name: "Reservoir Hydrology", status: "nominal", count: 16 },
-      ai: { name: "ConvLSTM + XGBoost", status: "nominal", latency: 320, version: "v4.2-Live" }
+      ai: { name: "Ensemble Vote + ConvLSTM", status: "nominal", latency: 320, version: "v2.0 · 8 models" }
     },
     prediction: {
       rainfall_mm: 0.0,
@@ -936,6 +936,7 @@
       return currentDistance < closestDistance ? district : closest;
     }, realDistricts[0]);
     if (!localDistrict) return Promise.resolve();
+    window.RIIS.localDistrict = localDistrict;   // used by the XAI and admin screens
 
     return Promise.allSettled([
       window.RIIS_API.getDistrict(localDistrict.code),
@@ -1003,8 +1004,15 @@
         window.RIIS.reservoirs = reservoirsResult.value.map(r => ({
           id: r.code, name: r.name, cap: r.capacity_mcft, cur: r.current_mcft,
           inflow: r.inflow_cms, outflow: r.outflow_cms, over: r.overflow_prob / 100,
-          class: r.risk_class
+          class: r.risk_class,
+          // live provenance from CMWSSB / KSEB daily reports ("seed" = no public feed)
+          source: r.source || "seed", observed_at: r.observed_at || null,
+          pct: r.storage_pct != null ? r.storage_pct : (r.capacity_mcft ? Math.round(1000 * r.current_mcft / r.capacity_mcft) / 10 : 0),
+          level_ft: r.level_ft, full_level_ft: r.full_level_ft, rainfall_mm: r.rainfall_mm,
+          last_year_mcft: r.last_year_mcft, alert_level: r.alert_level, remarks: r.remarks, source_url: r.source_url,
+          lat: r.lat, lon: r.lon,
         }));
+        _reservoirBaseline = null;   // re-baseline the rainfall scaling on fresh live values
       }
       if (alertsResult.status === "fulfilled") {
         window.RIIS.alerts = alertsResult.value.map(a => ({
@@ -1125,6 +1133,8 @@
     window.RIIS.reservoirs.forEach(r => {
       const base = _reservoirBaseline.find(b => b.id === r.id);
       if (!base) return;
+      // Rows backed by a real daily report keep their observed numbers.
+      if (r.source && r.source !== "seed") return;
 
       // Scale inflow based on average rainfall
       const rainMultiplier = Math.max(0.5, Math.min(2.5, 1 + (avgRain - 5) * 0.08));

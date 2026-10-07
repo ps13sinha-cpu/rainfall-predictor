@@ -1,5 +1,29 @@
 // RIIS — Community feedback, Historical analytics, Admin
-const { useState: useState_cha } = React;
+const { useState: useState_cha, useEffect: useEffect_cha } = React;
+
+// Model registry (GET /api/ml/models) → table rows
+const MODEL_NAMES = { xgboost: "XGBoost", random_forest: "Random Forest", gradient_boost: "Gradient Boost",
+  ensemble_vote: "Ensemble Vote", lstm_impact: "LSTM-Impact", transformer: "Transformer", convlstm: "ConvLSTM", convgru: "ConvGRU" };
+function modelAgo(iso){
+  if (!iso) return "—";
+  const h = (Date.now() - new Date(iso.endsWith("Z") ? iso : iso + "Z").getTime()) / 3.6e6;
+  return h < 1 ? `${Math.max(1, Math.round(h * 60))} min ago` : h < 48 ? `${Math.round(h)} h ago` : `${Math.round(h / 24)} d ago`;
+}
+function modelRowsFromRegistry(reg){
+  return Object.keys(MODEL_NAMES).filter(k => reg[k]).map(k => {
+    const e = reg[k], m = e.metrics || {}, spatial = e.family === "spatial";
+    return {
+      key: k, name: MODEL_NAMES[k], family: e.family, task: String(e.task || "").replace(/_/g, " "),
+      primary: spatial ? `${m.rmse_mm} mm RMSE` : `${(m.accuracy * 100).toFixed(1)}%`,
+      primaryPct: spatial ? null : m.accuracy * 100,
+      secondary: spatial ? `CSI₅ ${m.csi_5mm}` : `F1 ${m.macro_f1}`,
+      tertiary: spatial ? `persist. ${((e.persistence_baseline || {}).rmse_mm)} mm` : (m.heavy_rain_auc != null ? m.heavy_rain_auc.toFixed(3) : "—"),
+      rows: Number(e.train_rows || e.train_windows || 0).toLocaleString(),
+      secs: e.train_seconds != null ? `${Math.round(e.train_seconds)} s` : "—",
+      trained: modelAgo(e.trained_at),
+    };
+  });
+}
 
 function CommunityScreen(){
   const nowStr = new Date().toISOString().slice(0,19).replace('T',' ') + ' IST';
@@ -214,6 +238,18 @@ function HistoryScreen(){
 }
 
 function AdminScreen(){
+  const [models, setModels] = useState_cha(null);
+  const [modelsErr, setModelsErr] = useState_cha(null);
+  useEffect_cha(() => {
+    let alive = true;
+    if (!window.RIIS_API) return;
+    (window.RIIS_API.ready || Promise.resolve())
+      .then(() => window.RIIS_API.getModels())
+      .then(r => { if (alive) setModels(r); })
+      .catch(e => { if (alive) setModelsErr(String(e.message || e)); });
+    return () => { alive = false; };
+  }, []);
+  const modelRows = models ? modelRowsFromRegistry(models) : null;
   return (
     <div className="screen">
       <div className="screen-title">
@@ -245,34 +281,39 @@ function AdminScreen(){
 
       <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:16}}>
         <div className="panel brackets">
-          <div className="panel-hd"><h3>Model Performance</h3><span className="live"><span className="d"/>LIVE</span><span className="sub">Rolling 7d</span></div>
+          <div className="panel-hd"><h3>Model Performance</h3>
+            <span className="live"><span className="d"/>{modelRows ? `${modelRows.length} TRAINED` : modelsErr ? "OFFLINE" : "LOADING"}</span>
+            <span className="sub">{modelRows ? "held-out test metrics · ml_models/model_registry.json" : modelsErr ? `backend unreachable (${modelsErr})` : "fetching /api/ml/models"}</span></div>
           <div className="panel-bd">
             <table className="data">
-              <thead><tr><th>Model</th><th>Version</th><th>Accuracy</th><th>Brier Score</th><th>Precision</th><th>Recall</th><th>F1</th><th>Last Trained</th></tr></thead>
+              <thead><tr><th>Model</th><th>Family</th><th>Target</th><th>Accuracy / RMSE</th><th>Macro F1 / CSI</th><th>Heavy-rain AUC / baseline</th><th>Train rows</th><th>Train time</th><th>Trained</th></tr></thead>
               <tbody>
-                {[
-                  ["ConvLSTM","v4.2","96.4%","0.041","0.921","0.938","0.929","2 days ago"],
-                  ["ConvGRU","v3.8","93.1%","0.062","0.897","0.905","0.901","4 days ago"],
-                  ["Transformer","v2.4","91.2%","0.071","0.882","0.889","0.885","3 days ago"],
-                  ["CNN-Nowcast","v5.1","89.7%","0.084","0.861","0.874","0.867","1 day ago"],
-                  ["LSTM-Impact","v3.3","88.4%","0.093","0.850","0.862","0.856","5 days ago"],
-                  ["XGBoost-Ens.","v1.9","88.1%","0.098","0.847","0.858","0.852","6 hrs ago"],
-                  ["RandomForest","v2.1","84.2%","0.118","0.812","0.821","0.816","8 hrs ago"],
-                  ["Ensemble Vote","—","96.8%","0.038","0.928","0.941","0.934","live"]
-                ].map((r,i)=>(
-                  <tr key={i} style={{background:i===7?"rgba(34,211,238,0.05)":undefined}}>
-                    <td style={{fontWeight:i===7?700:500}}>{r[0]}</td>
-                    <td className="mono" style={{color:"var(--text-mid)"}}>{r[1]}</td>
-                    <td className="mono" style={{color:parseFloat(r[2])>93?"#5EEAD4":parseFloat(r[2])>85?"#FCD34D":"#FCA5A5",fontWeight:600}}>{r[2]}</td>
-                    <td className="mono">{r[3]}</td>
-                    <td className="mono">{r[4]}</td>
-                    <td className="mono">{r[5]}</td>
-                    <td className="mono" style={{color:"var(--text-mid)"}}>{r[6]}</td>
-                    <td className="mono" style={{color:"var(--text-lo)"}}>{r[7]}</td>
+                {(modelRows || []).map((r,i)=>(
+                  <tr key={r.key} style={{background:r.key==="ensemble_vote"?"rgba(34,211,238,0.05)":undefined}}>
+                    <td style={{fontWeight:r.key==="ensemble_vote"?700:500}}>{r.name}</td>
+                    <td className="mono" style={{color:"var(--text-mid)"}}>{r.family}</td>
+                    <td style={{color:"var(--text-mid)",fontSize:11}}>{r.task}</td>
+                    <td className="mono" style={{color:r.primaryPct==null?"#7DD3FC":r.primaryPct>85?"#5EEAD4":r.primaryPct>70?"#FCD34D":"#FCA5A5",fontWeight:600}}>{r.primary}</td>
+                    <td className="mono">{r.secondary}</td>
+                    <td className="mono">{r.tertiary}</td>
+                    <td className="mono" style={{color:"var(--text-mid)"}}>{r.rows}</td>
+                    <td className="mono" style={{color:"var(--text-mid)"}}>{r.secs}</td>
+                    <td className="mono" style={{color:"var(--text-lo)"}}>{r.trained}</td>
                   </tr>
                 ))}
+                {!modelRows && (
+                  <tr><td colSpan={9} style={{color:"var(--text-lo)",fontSize:12,padding:"12px 8px"}}>
+                    {modelsErr ? "Start the backend (start-riis.ps1) to load the trained model registry." : "Loading trained models…"}
+                  </td></tr>
+                )}
               </tbody>
             </table>
+            {modelRows && (
+              <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:8,lineHeight:1.5}}>
+                Tabular models predict tomorrow's rain class from today's weather and 30 days of history; sequence models predict the next 6 hours from 48 hourly steps;
+                spatial models predict a 6-hour rain map on an 11×11 grid, compared against persistence. Chronological hold-out, no leakage.
+              </div>
+            )}
           </div>
         </div>
 

@@ -80,7 +80,7 @@ function RiskIndexPanel(){
           <div className="k mb2">CLASSIFICATION</div>
           <div style={{fontSize:22,fontWeight:700,color:riskColor(RIIS.riskClass),letterSpacing:"-0.01em"}}>{riskLabel(RIIS.riskClass)}</div>
           <div style={{fontSize:11.5,color:"var(--text-mid)",marginTop:8,lineHeight:1.5}}>
-            Composite of 9 live impact vectors for <b style={{color:"var(--text-hi)"}}>{RIIS.location.city}</b>. Peak risk window: <b className="mono" style={{color:"var(--text-hi)"}}>{RIIS.prediction.peakRiskWindow}</b>.
+            Composite of ten live factor groups for <b style={{color:"var(--text-hi)"}}>{RIIS.location.city}</b>. Peak risk window: <b className="mono" style={{color:"var(--text-hi)"}}>{RIIS.prediction.peakRiskWindow}</b>.
           </div>
           <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
             <span className="chip active">Local</span>
@@ -256,8 +256,8 @@ function DashboardScreen({ go }){
       <div className="panel brackets" style={{marginTop:16}}>
         <div className="panel-hd">
           <h3>AI Rainfall Impact Intelligence Engine</h3>
-          <span className="live"><span className="d"/>9 LIVE VECTORS</span>
-          <span className="sub">Ensemble · ConvLSTM + XGBoost + SHAP</span>
+          <span className="live"><span className="d"/>10 FACTOR GROUPS</span>
+          <span className="sub">Ensemble Vote · 8 trained models · SHAP</span>
           <div style={{marginLeft:12,display:"flex",gap:6}}>
             <button className="btn ghost">Export Data</button>
             <button className="btn primary" onClick={()=>go("#/simulate")}>Simulate Flood →</button>
