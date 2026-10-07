@@ -49,6 +49,7 @@ from app.routes.alerts import router as alerts_router
 from app.routes.historical import router as historical_router
 from app.routes.weather import router as weather_router
 from app.routes.ml import router as ml_router
+from app.routes.safe_routes import router as safe_routes_router
 from app.routes.uploads import router as uploads_router
 from app.routes.subscriptions import router as subscriptions_router
 from app.routes.hyperlocal import router as hyperlocal_router
@@ -62,6 +63,7 @@ app.include_router(alerts_router)
 app.include_router(historical_router)
 app.include_router(weather_router)
 app.include_router(ml_router)
+app.include_router(safe_routes_router)
 app.include_router(uploads_router)
 app.include_router(subscriptions_router)
 app.include_router(hyperlocal_router)
