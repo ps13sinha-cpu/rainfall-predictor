@@ -50,9 +50,19 @@ async def generate(db, sites=SEED_SITES) -> dict:
             summary["sites"].append({"name": name, "error": str(e)[:120]})
             continue
         ctx = site_context(b)
-        seg_ids = sorted(b["segments"])
-        if len(seg_ids) > MAX_SEGS_PER_SITE:
-            seg_ids = sorted(random.Random(42).sample(seg_ids, MAX_SEGS_PER_SITE))
+        # Stratified segment sample: keep every segment that floods in the heaviest scenario (they are
+        # ~1% of a site and are the whole point of the model), fill the rest with random dry ones.
+        heavy = await R.score_segments(db, b, RAIN_GRID[-1], DUR_GRID[0])   # most rain in the least time = most ponding
+        rng = random.Random(42)
+        affected = sorted(sid for sid, v in heavy.items() if v["status"] != "open")
+        cap_aff = int(MAX_SEGS_PER_SITE * 0.75)
+        if len(affected) > cap_aff:
+            affected = sorted(rng.sample(affected, cap_aff))
+        aff_set = set(affected)
+        rest = [sid for sid in sorted(b["segments"]) if sid not in aff_set]
+        fill = sorted(rng.sample(rest, min(len(rest), MAX_SEGS_PER_SITE - len(affected))))
+        seg_ids = sorted(affected + fill)
+        print(f"[train_roads] {name}: {len(affected)} flood-prone + {len(fill)} dry segments sampled")
         n = 0
         for mm in RAIN_GRID:
             for dur in DUR_GRID:
