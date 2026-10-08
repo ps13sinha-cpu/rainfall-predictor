@@ -703,15 +703,14 @@
       window.RIIS.location.country = saved.country;
       window.fetchWeatherForCoordinates(saved.lat, saved.lon, saved.city, saved.state, saved.country);
     };
-    if (saved && saved.source === 'search' && !forceDetect) { useSaved(); return; }
-    if (saved && saved.source !== 'search' && !forceDetect && navigator.permissions && navigator.permissions.query) {
-      // legacy or IP-based save: use it only if GPS is not already granted
-      navigator.permissions.query({ name: 'geolocation' }).then(st => {
-        if (st.state === 'granted') window.fetchDeviceLocationAndWeather(true); else useSaved();
-      }).catch(useSaved);
+    // Only a GPS fix is worth restoring (instant first paint); then re-detect when the browser allows it.
+    if (saved && saved.source === 'gps' && !forceDetect) {
+      useSaved();
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then(st => { if (st.state === 'granted') window.fetchDeviceLocationAndWeather(true); }).catch(() => {});
+      }
       return;
     }
-    if (saved && saved.source !== 'search' && !forceDetect) { useSaved(); return; }
 
     if (!navigator.geolocation) {
       window.RIIS.locationError = "Geolocation is not supported by your browser.";
@@ -810,48 +809,59 @@
     window.fetchDeviceLocationAndWeather(true);
   };
 
+  // Search looks up a place for the National Risk Matrix only. The Sector View, Flood Simulator
+  // and Safe Routes always use the device location (window.RIIS.location); search never moves it.
   window.searchAndLoadLocation = function(query) {
     if (!query || !query.trim()) return;
     const cleanQ = query.trim();
-
-    // Check if coordinates
-    const coordMatch = cleanQ.match(/^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/);
-    if (coordMatch) {
-      const lat = parseFloat(coordMatch[1]);
-      const lon = parseFloat(coordMatch[3]);
-      window.fetchWeatherForCoordinates(lat, lon, `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`, "", "");
-      return;
-    }
-
-    window.RIIS.locationLoading = true;
-    window.RIIS.locationError = null;
+    window.RIIS.searchLoading = true;
+    window.RIIS.searchError = null;
     if (window.triggerRiisUpdate) window.triggerRiisUpdate();
 
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQ)}&format=json&limit=1`)
-      .then(r => r.json())
-      .then(results => {
-        if (results && results.length > 0) {
-          const item = results[0];
-          const lat = parseFloat(item.lat);
-          const lon = parseFloat(item.lon);
-          const displayNameParts = (item.display_name || cleanQ).split(",");
-          const place = displayNameParts[0].trim();
-          const state = displayNameParts.length > 2 ? displayNameParts[displayNameParts.length - 2].trim() : "";
-          const country = displayNameParts[displayNameParts.length - 1].trim();
-          // Save location preference
-          try { localStorage.setItem('riis_user_location', JSON.stringify({lat, lon, city: place, state, country, source: 'search'})); } catch(e) {}
-          window.fetchWeatherForCoordinates(lat, lon, place, state, country);
-        } else {
-          window.RIIS.locationLoading = false;
-          window.RIIS.locationError = `Could not find location "${cleanQ}"`;
-          if (window.triggerRiisUpdate) window.triggerRiisUpdate();
-        }
-      })
+    const coordMatch = cleanQ.match(/^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/);
+    const resolve = coordMatch
+      ? Promise.resolve({ lat: parseFloat(coordMatch[1]), lon: parseFloat(coordMatch[3]), name: `${parseFloat(coordMatch[1]).toFixed(3)}, ${parseFloat(coordMatch[3]).toFixed(3)}`, state: "" })
+      : (window.RIIS_API ? window.RIIS_API.farmerGeocode(cleanQ).then(r => {
+            const x = (r.results || [])[0];
+            if (!x) throw new Error("No place found for \"" + cleanQ + "\"");
+            return { lat: x.lat, lon: x.lon, name: (x.name || cleanQ).split(",")[0].trim(), state: x.state || x.district || "" };
+          })
+        : fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQ)}&format=json&limit=1`).then(r => r.json()).then(res => {
+            if (!res || !res.length) throw new Error("No place found for \"" + cleanQ + "\"");
+            const parts = (res[0].display_name || cleanQ).split(",");
+            return { lat: parseFloat(res[0].lat), lon: parseFloat(res[0].lon), name: parts[0].trim(), state: parts.length > 2 ? parts[parts.length - 2].trim() : "" };
+          }));
+
+    resolve.then(place => window.addSearchedDistrict(place.lat, place.lon, place.name, place.state))
       .catch(err => {
-        window.RIIS.locationLoading = false;
-        window.RIIS.locationError = "Search service unavailable.";
+        console.warn("[RIIS] Search failed:", err);
+        window.RIIS.searchLoading = false;
+        window.RIIS.searchError = err.message || "Search service unavailable.";
         if (window.triggerRiisUpdate) window.triggerRiisUpdate();
       });
+  };
+
+  // Fetch live weather for a searched place, score it like any district, and show it on the national map
+  window.addSearchedDistrict = function(lat, lon, name, state) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,cloud_cover&hourly=precipitation,precipitation_probability&forecast_days=1&timezone=auto`;
+    return fetch(url).then(r => r.json()).then(w => {
+      const cur = w.current || {}, h = w.hourly || {};
+      const ct = (cur.time || "").slice(0, 13);
+      const i0 = Math.max(0, (h.time || []).findIndex(t => t.slice(0, 13) === ct));
+      const next6 = (h.precipitation || []).slice(i0, i0 + 6).reduce((a, v) => a + (v || 0), 0);
+      const peak = Math.max(0, ...(h.precipitation || []).slice(i0, i0 + 12).map(v => v || 0));
+      const { risk, class: cls } = calcDistrictRisk(next6, peak, cur.relative_humidity_2m || 70, cur.wind_speed_10m || 0, cur.cloud_cover || 0);
+      const d = { code: "SEARCH", name, state, lat, lon, pop: 0, risk, rain: Math.round(next6 * 10) / 10, class: cls, isSearch: true,
+                  temperature: cur.temperature_2m, humidity: cur.relative_humidity_2m, windSpeed: cur.wind_speed_10m };
+      const i = window.RIIS.districts.findIndex(x => x.code === "SEARCH");
+      if (i >= 0) window.RIIS.districts[i] = d; else window.RIIS.districts.push(d);
+      window.RIIS.searchSelection = "SEARCH";
+      window.RIIS.searchStamp = Date.now();
+      window.RIIS.searchLoading = false;
+      if (location.hash.indexOf("#/map") !== 0) location.hash = "#/map";
+      if (window.triggerRiisUpdate) window.triggerRiisUpdate();
+      return d;
+    });
   };
 
   // Batch live weather fetch for ALL districts — updates risk/rain/class from real API data
@@ -944,7 +954,7 @@
     if (!window.RIIS_API) return Promise.resolve();
     // Nearest REAL district (exclude the USER-LOC map marker — it is not a
     // backend district and only produces 404s).
-    const realDistricts = window.RIIS.districts.filter(d => d.code !== "USER-LOC");
+    const realDistricts = window.RIIS.districts.filter(d => d.code !== "USER-LOC" && d.code !== "SEARCH");
     if (realDistricts.length === 0) return Promise.resolve();
     const localDistrict = realDistricts.reduce((closest, district) => {
       const currentDistance = (district.lat - window.RIIS.location.lat) ** 2 + (district.lon - window.RIIS.location.lon) ** 2;
@@ -1055,7 +1065,7 @@
 
   // Direct Open-Meteo fetch (fallback when backend is unavailable)
   function _fetchDistrictsDirect() {
-    const districts = window.RIIS.districts.filter(d => d.code !== "USER-LOC");
+    const districts = window.RIIS.districts.filter(d => d.code !== "USER-LOC" && d.code !== "SEARCH");
     if (districts.length === 0) return;
 
     // Batch fetch: process in groups of 5 to avoid overwhelming the API

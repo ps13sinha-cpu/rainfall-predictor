@@ -73,9 +73,15 @@ function StateRiskPanel({ onPick }){
 }
 
 function MapScreen({ go }){
-  const [selected, setSelected] = useState_mc(() => RIIS.districts[0]);
+  const [selected, setSelected] = useState_mc(() => RIIS.districts.find(d => d.code === RIIS.searchSelection) || RIIS.districts.find(d => d.code === "USER-LOC") || RIIS.districts[0]);
   const [hover, setHover] = useState_mc(null);
   const [filter, setFilter] = useState_mc("all");
+  // a search from the top bar lands here: select the searched place
+  useEffect_mc(() => {
+    if (!RIIS.searchSelection) return;
+    const d = RIIS.districts.find(x => x.code === RIIS.searchSelection);
+    if (d) setSelected(d);
+  }, [RIIS.searchStamp]);
   const filtered = filter==="all" ? RIIS.districts : RIIS.districts.filter(d=>d.class===filter);
 
   return (
@@ -130,7 +136,7 @@ function MapScreen({ go }){
                 return (
                   <tr key={d.code} style={{cursor:"pointer",background:selected?.code===d.code?"rgba(34,211,238,0.05)":undefined}} onClick={()=>setSelected(d)}>
                     <td className="mono" style={{color:"var(--text-lo)"}}>#{String(i+1).padStart(2,"0")}</td>
-                    <td style={{fontWeight:600}}>{d.name} {d.isUser && <span className="chip active" style={{fontSize:9,padding:"1px 5px",marginLeft:4}}>YOU</span>}</td>
+                    <td style={{fontWeight:600}}>{d.name} {d.isUser && <span className="chip active" style={{fontSize:9,padding:"1px 5px",marginLeft:4}}>YOU</span>}{d.isSearch && <span className="chip" style={{fontSize:9,padding:"1px 5px",marginLeft:4}}>SEARCHED</span>}</td>
                     <td style={{color:"var(--text-mid)"}}>{d.code.split("-")[0]}</td>
                     <td>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>

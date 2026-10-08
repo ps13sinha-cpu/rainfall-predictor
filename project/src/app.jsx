@@ -54,7 +54,7 @@ function TopBar({ onOpenEmerg, riisUpdateCount }){
       <div className="search" style={{ position: "relative" }}>
         <span className="ic" onClick={handleSearchSubmit} style={{ cursor: "pointer" }}>{Icon.search}</span>
         <input 
-          placeholder="Search city, district, GPS coordinates (e.g. Mumbai, Delhi, Potheri)..."
+          placeholder="Search a place to view on the national map…"
           value={query}
           onChange={(e)=>setQuery(e.target.value)}
           onKeyDown={handleSearchSubmit}
