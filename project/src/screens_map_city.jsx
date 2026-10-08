@@ -1,6 +1,77 @@
 // RIIS — India Map & Hyperlocal City View with Real-Time Data Sync
 const { useState: useState_mc, useEffect: useEffect_mc } = React;
 
+function StateRiskPanel({ onPick }){
+  const [data, setData] = useState_mc(null);
+  const [err, setErr] = useState_mc(null);
+  const [open, setOpen] = useState_mc(null);
+  useEffect_mc(() => {
+    let alive = true;
+    const load = () => {
+      if (!window.RIIS_API) return;
+      (window.RIIS_API.ready || Promise.resolve()).then(() => window.RIIS_API.getStateRisk())
+        .then(r => { if (alive) { setData(r); setErr(null); } })
+        .catch(e => { if (alive) setErr(e.message); });
+    };
+    load();
+    const iv = setInterval(load, 5 * 60 * 1000);
+    return () => { alive = false; clearInterval(iv); };
+  }, []);
+  const states = data ? data.states : [];
+  const counts = states.reduce((a, s) => { a[s.risk_class] = (a[s.risk_class] || 0) + 1; return a; }, {});
+  return (
+    <div className="panel brackets" style={{marginTop:16}}>
+      <div className="panel-hd">
+        <h3>State Risk Index</h3>
+        <span className="live"><span className="d"/>{data ? `${data.count} STATES · ${data.districts_covered} DISTRICTS` : err ? "OFFLINE" : "LOADING"}</span>
+        <span className="sub">{data ? `${counts.extreme || 0} extreme · ${counts.high || 0} high · ${counts.mod || 0} moderate · ${counts.safe || 0} safe · live Open-Meteo, 5 min` : err ? `backend unreachable (${err})` : "aggregating live district risks"}</span>
+      </div>
+      <div className="panel-bd" style={{padding:0}}>
+        <table className="data">
+          <thead><tr><th>Rank</th><th>State / UT</th><th>Risk Index</th><th>Class</th><th>Worst district</th><th>Max rain 6 h</th><th>Districts</th><th>People</th></tr></thead>
+          <tbody>
+            {states.map(s => {
+              const c = riskColor(s.risk_class);
+              return [
+                <tr key={s.state} style={{cursor:"pointer",background:open===s.state?"rgba(34,211,238,0.05)":undefined}} onClick={()=>setOpen(open===s.state?null:s.state)}>
+                  <td className="mono" style={{color:"var(--text-lo)"}}>#{String(s.rank).padStart(2,"0")}</td>
+                  <td style={{fontWeight:600}}>{s.state}</td>
+                  <td>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:90,height:6,background:"rgba(20,32,48,0.7)",borderRadius:3,overflow:"hidden"}}><div style={{width:s.risk_index+"%",height:"100%",background:c,boxShadow:`0 0 6px ${c}`}}/></div>
+                      <span className="mono" style={{color:c,fontWeight:600}}>{s.risk_index}</span>
+                    </div>
+                  </td>
+                  <td><span className="sev" style={{color:c,background:c+"22"}}>{riskLabel(s.risk_class)}</span></td>
+                  <td style={{color:"var(--text-mid)"}}>{s.worst_district.name} <span className="mono" style={{color:riskColor(s.worst_district_class)}}>{s.worst_district.risk}</span></td>
+                  <td className="mono">{s.rain_max_mm} mm</td>
+                  <td className="mono" style={{color:"var(--text-mid)"}}>{s.districts}</td>
+                  <td className="mono" style={{color:"var(--text-mid)"}}>{(s.population/1e6).toFixed(1)}M</td>
+                </tr>,
+                open===s.state && (
+                  <tr key={s.state+"-d"}>
+                    <td colSpan={8} style={{padding:"6px 14px 10px",background:"rgba(10,18,28,0.5)"}}>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                        {s.district_list.map(d => (
+                          <button key={d.code} className="chip" onClick={(e)=>{ e.stopPropagation(); onPick && onPick(d.code); }} style={{borderColor:riskColor(d.risk_class)+"88"}}>
+                            {d.name} <span className="mono" style={{color:riskColor(d.risk_class),marginLeft:6}}>{d.risk}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              ];
+            })}
+            {!data && !err && <tr><td colSpan={8} style={{color:"var(--text-lo)",padding:"12px 14px"}}>Loading state index…</td></tr>}
+          </tbody>
+        </table>
+        <div style={{fontSize:10.5,color:"var(--text-lo)",padding:"8px 14px"}}>State index = 0.6 × worst district + 0.4 × state mean, from the same live risk formula as the district dots (next-6 h rain, probability, humidity, wind). Click a state to see its districts; click a district to select it on the map.</div>
+      </div>
+    </div>
+  );
+}
+
 function MapScreen({ go }){
   const [selected, setSelected] = useState_mc(() => RIIS.districts[0]);
   const [hover, setHover] = useState_mc(null);
@@ -36,6 +107,8 @@ function MapScreen({ go }){
 
         {selected && <DistrictPanel d={selected} go={go}/>}
       </div>
+
+      <StateRiskPanel onPick={(code)=>{ const short = code.startsWith("IN-") ? code.slice(3) : code; const d = RIIS.districts.find(x=>x.code===short || x.code===code); if (d) setSelected(d); }}/>
 
       {/* Bottom: Top-risk table */}
       <div className="panel brackets" style={{marginTop:16}}>

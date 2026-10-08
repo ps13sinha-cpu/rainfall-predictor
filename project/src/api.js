@@ -40,7 +40,12 @@
   window.RIIS_API = {
     // Get all districts with live risk data from backend
     getDistricts() {
-      return apiFetch('/api/districts/?limit=50');
+      return apiFetch('/api/districts/?limit=100');
+    },
+
+    // Risk index per state, aggregated from live district risks
+    getStateRisk() {
+      return apiFetch('/api/districts/states');
     },
 
     // Get a single district with full weather data

@@ -79,6 +79,41 @@ async def list_districts(
     ]
 
 
+@router.get("/states")
+async def state_risk(db: AsyncSession = Depends(get_db)):
+    """Risk index per state, aggregated from the live district risks.
+
+    index = 0.6 x worst district + 0.4 x mean of the state's districts, so one flooding city lifts
+    its state but a single dry city does not hide a wet one. Class follows the same thresholds."""
+    result = await db.execute(select(District))
+    rows = [d for d in result.scalars().all() if d.state]
+    by_state = {}
+    for d in rows:
+        by_state.setdefault(d.state, []).append(d)
+    order = {"safe": 0, "mod": 1, "high": 2, "extreme": 3}
+    out = []
+    for state, ds in by_state.items():
+        risks = [int(d.risk or 0) for d in ds]
+        worst = max(ds, key=lambda d: int(d.risk or 0))
+        idx = round(0.6 * max(risks) + 0.4 * sum(risks) / len(risks))
+        cls = "extreme" if idx >= 75 else "high" if idx >= 50 else "mod" if idx >= 25 else "safe"
+        worst_cls = max((d.risk_class or "safe" for d in ds), key=lambda c: order.get(c, 0))
+        out.append({
+            "state": state, "code": worst.code.split("-")[1] if worst.code.count("-") >= 2 else worst.code[:2],
+            "risk_index": idx, "risk_class": cls, "worst_district_class": worst_cls,
+            "max_risk": max(risks), "mean_risk": round(sum(risks) / len(risks), 1),
+            "worst_district": {"code": worst.code, "name": worst.name, "risk": int(worst.risk or 0), "rain": worst.rain},
+            "rain_max_mm": round(max(float(d.rain or 0) for d in ds), 1),
+            "population": sum(int(d.pop or 0) for d in ds), "districts": len(ds),
+            "district_list": [{"code": d.code, "name": d.name, "risk": int(d.risk or 0), "risk_class": d.risk_class, "rain": d.rain} for d in sorted(ds, key=lambda x: -int(x.risk or 0))],
+            "updated_at": max((d.updated_at for d in ds if d.updated_at), default=None).isoformat() if any(d.updated_at for d in ds) else None,
+        })
+    out.sort(key=lambda s: -s["risk_index"])
+    for i, s_ in enumerate(out):
+        s_["rank"] = i + 1
+    return {"states": out, "count": len(out), "districts_covered": len(rows)}
+
+
 @router.get("/{district_code}")
 async def get_district(district_code: str, db: AsyncSession = Depends(get_db)):
     """Get a single district with its full weather data."""

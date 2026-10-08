@@ -43,6 +43,19 @@ DISTRICTS = [
     {"code":"IN-KA-HR","name":"Hubli-Dharwad","state":"Karnataka","lat":15.3647,"lon":75.1240,"pop":1100000},
     {"code":"IN-AS-DM","name":"Dibrugarh","state":"Assam","lat":27.4728,"lon":94.9120,"pop":200000},
     {"code":"IN-AS-KM","name":"Kamrup Metro","state":"Assam","lat":26.1700,"lon":91.7400,"pop":1200000},
+    # State capitals / hubs added so every state and major UT carries a risk index
+    {"code":"IN-UK-DD","name":"Dehradun","state":"Uttarakhand","lat":30.3165,"lon":78.0322,"pop":800000},
+    {"code":"IN-UK-NA","name":"Nainital","state":"Uttarakhand","lat":29.3919,"lon":79.4542,"pop":955000},
+    {"code":"IN-HP-SH","name":"Shimla","state":"Himachal Pradesh","lat":31.1048,"lon":77.1734,"pop":200000},
+    {"code":"IN-JK-SR","name":"Srinagar","state":"Jammu and Kashmir","lat":34.0837,"lon":74.7973,"pop":1500000},
+    {"code":"IN-LA-LE","name":"Leh","state":"Ladakh","lat":34.1526,"lon":77.5771,"pop":35000},
+    {"code":"IN-AR-IT","name":"Itanagar","state":"Arunachal Pradesh","lat":27.0844,"lon":93.6053,"pop":60000},
+    {"code":"IN-PY-PY","name":"Puducherry","state":"Puducherry","lat":11.9416,"lon":79.8083,"pop":950000},
+    {"code":"IN-AN-PB","name":"Port Blair","state":"Andaman and Nicobar","lat":11.6234,"lon":92.7265,"pop":140000},
+    {"code":"IN-HR-GU","name":"Gurugram","state":"Haryana","lat":28.4595,"lon":77.0266,"pop":1500000},
+    {"code":"IN-TN-CB","name":"Cuddalore","state":"Tamil Nadu","lat":11.7480,"lon":79.7714,"pop":2600000},
+    {"code":"IN-TN-TJ","name":"Thanjavur","state":"Tamil Nadu","lat":10.7870,"lon":79.1378,"pop":2400000},
+    {"code":"IN-TN-NI","name":"Nilgiris (Ooty)","state":"Tamil Nadu","lat":11.4102,"lon":76.6950,"pop":735000},
 ]
 
 # ── Reservoirs (Tamil Nadu + Kerala major reservoirs) ─────────────────────────

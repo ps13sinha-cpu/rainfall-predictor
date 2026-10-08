@@ -25,6 +25,7 @@ and starts polling Open-Meteo for live weather every 5 minutes.
 - `GET /api/auth/me` — Current user (requires Bearer token)
 
 ### Districts & Weather
+- `GET /api/districts/states` — Risk index per state / UT, aggregated from the live district risks (0.6 x worst district + 0.4 x state mean), with the worst district and the district list
 - `GET /api/districts/` — List all districts with risk indices (query: ?state=X&risk_class=X)
 - `GET /api/districts/{code}` — District detail + full weather data
 - `GET /api/districts/{code}/hourly` — 168-hour hourly forecast for charts
