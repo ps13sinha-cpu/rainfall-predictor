@@ -42,6 +42,18 @@ function RoutesScreen() {
   // Refresh live conditions every 10 minutes
   useEffect_r(() => { const iv = setInterval(() => setTick(t => t + 1), LIVE_REFRESH_MS); return () => clearInterval(iv); }, []);
 
+  // Origin follows the device location: set it once GPS resolves (it may be null at mount), and move it
+  // whenever the device location changes while the origin is still "Your location".
+  const [originIsDevice, setOriginIsDevice] = useState_r(!params.from);
+  useEffect_r(() => {
+    if (RIIS.location.lat == null) return;
+    if (!origin || (originIsDevice && (Math.abs(origin.lat - RIIS.location.lat) > 1e-6 || Math.abs(origin.lon - RIIS.location.lon) > 1e-6))) {
+      setOrigin({ lat: RIIS.location.lat, lon: RIIS.location.lon });
+      setOriginLabel(RIIS.location.city || 'Your location');
+      setOriginIsDevice(true);
+    }
+  }, [RIIS.location.lat, RIIS.location.lon]);
+
   useEffect_r(() => {
     if (!window.RIIS_API) return;
     (window.RIIS_API.ready || Promise.resolve()).then(() => window.RIIS_API.getRoadModel()).then(setModel).catch(() => {});
@@ -109,7 +121,7 @@ function RoutesScreen() {
   }, [routes && routes.source, routes && routes.destination_site, dest && dest.lat, dest && dest.lon, mode, tick]);
   const mergedRoads = roads && destRoads ? { ...roads, features: roads.features.concat(destRoads.features) } : roads;
 
-  const pick = (which, pt) => { if (which === 'origin') setOrigin(pt); else { setDest(pt); setDestLabel(''); } setPicking(null); };
+  const pick = (which, pt) => { if (which === 'origin') { setOrigin(pt); setOriginIsDevice(false); } else { setDest(pt); setDestLabel(''); } setPicking(null); };
   const share = () => {
     const url = `${location.origin}${location.pathname}#/routes?from=${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}${dest ? `&to=${dest.lat.toFixed(5)},${dest.lon.toFixed(5)}` : ''}&mode=${mode}`;
     (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => prompt('Copy this link', url));
@@ -172,7 +184,7 @@ function RoutesScreen() {
           <div className="panel-bd">
             <SafeRouteMap origin={origin} dest={dest} scenario={scenario} mode={mode} roads={mergedRoads} routes={routes} reports={reports}
               picking={picking} flashSegmentId={flashId} state={roadsState} errorText={roadsErr} showNormal={false} onPick={pick}
-              onMoveOrigin={pt => setOrigin(pt)} onMoveDest={pt => { setDest(pt); setDestLabel(''); }} onReport={report}
+              onMoveOrigin={pt => { setOrigin(pt); setOriginIsDevice(false); }} onMoveDest={pt => { setDest(pt); setDestLabel(''); }} onReport={report}
               onRetry={() => setTick(t => t + 1)} />
             {toast && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--cyan)' }}>{toast}</div>}
           </div>
@@ -186,9 +198,9 @@ function RoutesScreen() {
                 <div className="k" style={{ display: 'flex', justifyContent: 'space-between' }}><span>ORIGIN</span>
                   <span style={{ display: 'flex', gap: 6 }}>
                     <button className={'chip ' + (picking === 'origin' ? 'active' : '')} onClick={() => setPicking(picking === 'origin' ? null : 'origin')}>Pick on map</button>
-                    <button className="chip" onClick={() => { setOrigin({ lat: RIIS.location.lat, lon: RIIS.location.lon }); setOriginLabel('Your location'); }}>Your location</button>
+                    <button className="chip" onClick={() => { if (RIIS.location.lat == null) return; setOrigin({ lat: RIIS.location.lat, lon: RIIS.location.lon }); setOriginLabel(RIIS.location.city || 'Your location'); setOriginIsDevice(true); }}>Your location</button>
                   </span></div>
-                <div style={{ fontSize: 12.5, marginTop: 4, color: 'var(--text-hi)' }}>{origin ? (originLabel || `${origin.lat.toFixed(4)}, ${origin.lon.toFixed(4)}`) : 'Not set'}</div>
+                <div style={{ fontSize: 12.5, marginTop: 4, color: 'var(--text-hi)' }}>{origin ? (originLabel || `${origin.lat.toFixed(4)}, ${origin.lon.toFixed(4)}`) : (RIIS.locationLoading ? 'Locating your device…' : 'Location not available — allow location access or pick a point on the map')}</div>
               </div>
               <div style={ctrl}>
                 <div className="k" style={{ display: 'flex', justifyContent: 'space-between' }}><span>DESTINATION</span>
