@@ -92,6 +92,17 @@ Depth comes from the same `net_ponding_mm` + `depth_grid` the inundation map use
 ### System
 - `GET /api/health` — Health check
 - `GET /api/stats` — System-wide statistics
+- `GET /api/health/monitoring` — Counters (Open-Meteo 429s and budget refusals, Overpass empties, scraper parse failures, provider fallbacks, drift), last 50 alerts, Open-Meteo budget status, three-model NWP smoke result, engine canary, model-drift check
+- `GET /api/health/budget` / `GET /api/health/events` / `GET /api/health/retention/dry-run` — Budget windows; rolling monitoring rows; what the daily retention job would touch
+- `POST /api/health/nwp-smoke` / `POST /api/health/canary` — Run the smoke check (3 budget units) / the engine canary now
+
+### Hardening (budget, providers, monitoring, retention)
+- Every Open-Meteo call goes through `app/services/budget.py` (persistent token bucket in `cache/openmeteo_budget.json`: 600/min, 5,000/h, 10,000/day hard, `RIIS_OPENMETEO_DAILY_CAP` soft, default 8000). Bulk scripts (`train_ml`, `ingest_hourly`, `ingest_grid`, `ingest_remaining`) estimate first and refuse to start unless the units fit (`RIIS_BUDGET_OVERRIDE=1` forces).
+- District weather falls back to MET Norway when Open-Meteo fails, 429s or the budget is exhausted (`app/services/forecast_providers.py`; `weather_cache.provider`). Licensing and self-hosted ECMWF / ERA5 paths: [docs/FORECAST_PROVIDERS.md](docs/FORECAST_PROVIDERS.md).
+- Reservoir rows carry `observed_at`, `fetched_at`, `age_h`, `stale`, `live`; rows older than `RIIS_RESERVOIR_MAX_AGE_H` (default 48) and seeded rows are `stale: true, live: false`. Scraper rows are schema-checked, the last good values are kept as fallback, and three consecutive parse failures raise an alert.
+- Alerts are `system_logs` rows with level `alert`, optionally POSTed to `RIIS_ALERT_WEBHOOK`.
+- Daily retention job: coordinates coarsened to ~1 km after `RIIS_RETENTION_COARSEN_DAYS` (30), route logs deleted and report free text / user links stripped after `RIIS_RETENTION_DELETE_DAYS` (365). Policy: [docs/DATA_RETENTION.md](docs/DATA_RETENTION.md).
+- Tests: `python -m pytest tests -q`; `RIIS_LIVE_TESTS=1` adds the live three-model NWP smoke test.
 
 ## Architecture
 

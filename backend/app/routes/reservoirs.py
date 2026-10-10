@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Reservoir
-from app.services.reservoir_live import sync_reservoirs, load_state, cmwssb_history, CMWSSB_MAP, KSEB_MAP
+from app.services.reservoir_live import sync_reservoirs, load_state, cmwssb_history, CMWSSB_MAP, KSEB_MAP, freshness, max_age_h
 
 router = APIRouter(prefix="/api/reservoirs", tags=["reservoirs"])
 
@@ -38,6 +38,12 @@ class ReservoirOut(BaseModel):
     alert_level: Optional[str] = None
     remarks: Optional[str] = None
     source_url: Optional[str] = None
+    # freshness contract (computed at read time; see services/reservoir_live.freshness)
+    fetched_at: Optional[str] = None
+    age_h: Optional[float] = None        # hours since observed_at (None when no observation date)
+    freshness: Optional[float] = None    # same as age_h
+    stale: bool = True                   # older than RIIS_RESERVOIR_MAX_AGE_H, or seeded
+    live: bool = False                   # not stale and from a live source
 
     class Config:
         from_attributes = True
@@ -54,6 +60,8 @@ def _out(r: Reservoir) -> ReservoirOut:
     pct = getattr(r, "storage_pct", None)
     if pct is None and r.capacity_mcft:
         pct = round(100 * r.current_mcft / r.capacity_mcft, 1)
+    fr = freshness(getattr(r, "observed_at", None), getattr(r, "source", None) or "seed")
+    fetched = getattr(r, "fetched_at", None)
     return ReservoirOut(
         id=r.id, code=r.code, name=r.name, lat=r.lat, lon=r.lon,
         capacity_mcft=r.capacity_mcft, current_mcft=r.current_mcft,
@@ -65,6 +73,8 @@ def _out(r: Reservoir) -> ReservoirOut:
         storage_pct=pct, rainfall_mm=getattr(r, "rainfall_mm", None), last_year_mcft=getattr(r, "last_year_mcft", None),
         alert_level=getattr(r, "alert_level", None), remarks=getattr(r, "remarks", None),
         source_url=getattr(r, "source_url", None),
+        fetched_at=fetched.isoformat() if fetched else None,
+        age_h=fr["age_h"], freshness=fr["age_h"], stale=fr["stale"], live=fr["live"],
     )
 
 
@@ -90,6 +100,10 @@ async def live_status():
             "kseb": {"url": "https://dams.kseb.in/?page_id=45", "cadence": "daily", "reservoirs": [v[1] for v in KSEB_MAP.values()]},
         },
         "schedule": "every 6 hours, and 5 s after backend start",
+        "failures": st.get("failures", {}),
+        "last_good": {k: {"as_on": v.get("as_on"), "fetched_at": v.get("fetched_at"), "codes": sorted((v.get("rows") or {}).keys())}
+                      for k, v in (st.get("last_good") or {}).items()},
+        "max_age_h": max_age_h(),
     }
 
 

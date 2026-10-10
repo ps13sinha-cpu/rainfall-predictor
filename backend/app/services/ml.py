@@ -7,8 +7,15 @@ Every trained model is described in ml_models/model_registry.json.
 
 Live prediction here uses the tabular models: the label is the rainfall class
 of the NEXT day, built from today's weather plus the last 30 days of history.
+
+Missing inputs reach the model as NaN (features.build_live_features) and every
+prediction carries a `data_quality` block naming them. When a key input
+(rain_today, rain_sum_3, rain_sum_7, soil_moisture, rh_mean) is missing the served
+class is capped at 'mod' and `cap_reason` says so. Median imputation from
+ml_models/feature_medians.json is used only when a model refuses NaN.
 """
 import json
+import math
 import os
 import pickle
 from datetime import datetime
@@ -16,7 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
-from app.services.features import (TABULAR_FEATURES, CLASS_NAMES, DEFAULTS, SoftVote,
+from app.services.features import (TABULAR_FEATURES, CLASS_NAMES, DEFAULTS, KEY_INPUTS, SoftVote,  # noqa: F401 (DEFAULTS re-exported for older imports)
                                    build_live_features)
 
 # Model storage
@@ -25,6 +32,7 @@ MODEL_DIR.mkdir(exist_ok=True)
 
 MODEL_PATH = MODEL_DIR / "risk_model.pkl"          # legacy alias of xgboost.pkl
 REGISTRY_PATH = MODEL_DIR / "model_registry.json"
+MEDIANS_PATH = MODEL_DIR / "feature_medians.json"
 FEATURE_NAMES = TABULAR_FEATURES
 
 TABULAR_MODELS = ["xgboost", "random_forest", "gradient_boost", "ensemble_vote"]
@@ -33,8 +41,11 @@ DISPLAY_NAMES = {
     "ensemble_vote": "Ensemble Vote", "lstm_impact": "LSTM-Impact", "transformer": "Transformer",
     "convlstm": "ConvLSTM", "convgru": "ConvGRU",
 }
+CLASS_RANK = {c: i for i, c in enumerate(CLASS_NAMES)}
+CAP_CLASS = "mod"
 
 _cache = {}
+_medians_cache = None
 
 
 def _load_pickle(name):
@@ -90,24 +101,103 @@ def train_model(historical_rows=None):
         return {"status": "error", "message": str(e)}
 
 
+# ── Data quality, imputation and the served-class cap ─────────────────────────
 def _features(weather_data, history_rain=None, lat=None, lon=None):
+    """(X, row, imputed) for live prediction."""
     return build_live_features(
         weather_data, history_rain or [],
-        lat if lat is not None else 13.08, lon if lon is not None else 80.27)
+        lat if lat is not None else 13.08, lon if lon is not None else 80.27, with_quality=True)
 
 
-def predict(weather_data: dict, history_rain=None, lat=None, lon=None, model_name="ensemble_vote") -> dict:
-    """Predict next-day risk class from current weather plus recent rain history."""
+def _feature_medians() -> dict | None:
+    global _medians_cache
+    if _medians_cache is None and MEDIANS_PATH.exists():
+        try:
+            with open(MEDIANS_PATH) as f:
+                _medians_cache = json.load(f).get("medians") or {}
+        except Exception as e:
+            print(f"[RIIS-ML] feature_medians.json unreadable: {e}")
+            _medians_cache = {}
+    return _medians_cache or None
+
+
+def data_quality(imputed, imputation="none") -> dict:
+    imputed = list(imputed or [])
+    return {"imputed": imputed, "imputed_count": len(imputed),
+            "key_inputs_imputed": any(f in KEY_INPUTS for f in imputed),
+            "key_inputs": list(KEY_INPUTS), "imputation": imputation}
+
+
+def _apply_cap(result: dict, dq: dict) -> dict:
+    """Cap the served class at CAP_CLASS when a key input was imputed. The probabilities and
+    heavy-rain probability are left as computed; only the headline class moves."""
+    result["data_quality"] = dq
+    result["cap_reason"] = None
+    if dq.get("key_inputs_imputed"):
+        missing = [f for f in dq["imputed"] if f in KEY_INPUTS]
+        if CLASS_RANK.get(result.get("prediction"), 0) > CLASS_RANK[CAP_CLASS]:
+            result["prediction_uncapped"] = result["prediction"]
+            result["prediction"] = CAP_CLASS
+        result["cap_reason"] = (f"key inputs missing ({', '.join(missing)}): served class capped at "
+                                f"'{CAP_CLASS}' until live data is complete")
+    return result
+
+
+def _record(cls):
+    try:
+        from app.services.monitoring import record_prediction
+    except Exception:
+        return
+    try:
+        record_prediction(cls)
+    except Exception as e:
+        print(f"[RIIS-ML] record_prediction failed: {e}")
+
+
+def _predict_proba(model, feat: np.ndarray):
+    """probs, imputation-method. NaN goes straight to the model; only when it raises on
+    missing values are the training-set medians substituted."""
+    has_nan = bool(np.isnan(feat).any())
+    try:
+        return model.predict_proba(feat)[0], ("nan_passthrough" if has_nan else "none")
+    except ValueError as e:
+        if not has_nan:
+            raise
+        med = _feature_medians()
+        if not med:
+            raise RuntimeError(f"model refuses NaN ({e}) and feature_medians.json is missing; "
+                               f"run python -m app.build_feature_medians") from e
+        filled = feat.copy()
+        for i, name in enumerate(TABULAR_FEATURES):
+            if np.isnan(filled[0, i]):
+                filled[0, i] = med.get(name) if med.get(name) is not None else 0.0
+        return model.predict_proba(filled)[0], "median"
+
+
+def _clean(v):
+    """JSON-safe float: NaN -> None (browsers reject bare NaN in JSON)."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if math.isnan(f) or math.isinf(f) else round(f, 3)
+
+
+def predict(weather_data: dict, history_rain=None, lat=None, lon=None, model_name="ensemble_vote",
+            record: bool = True) -> dict:
+    """Predict next-day risk class from current weather plus recent rain history.
+    `record=False` skips monitoring.record_prediction (used by predict_all so a side-by-side
+    comparison does not count as four served predictions)."""
     model = load_model(model_name) or load_model("xgboost")
     if model is None:
-        return _formula_predict(weather_data)
+        return _formula_predict(weather_data, history_rain, lat, lon, record=record)
     try:
-        feat, row = _features(weather_data, history_rain, lat, lon)
-        probs = model.predict_proba(feat)[0]
+        feat, row, imputed = _features(weather_data, history_rain, lat, lon)
+        probs, how = _predict_proba(model, feat)
         pred_class = int(np.argmax(probs))
         class_probs = {CLASS_NAMES[i]: float(round(probs[i], 4)) for i in range(len(CLASS_NAMES))}
         reg = get_registry().get(model_name, {})
-        return {
+        out = {
             "prediction": CLASS_NAMES[pred_class],
             "confidence": float(round(max(probs), 4)),
             "class_probabilities": class_probs,
@@ -119,19 +209,23 @@ def predict(weather_data: dict, history_rain=None, lat=None, lon=None, model_nam
             "horizon": "next_day",
             "test_accuracy": reg.get("metrics", {}).get("accuracy"),
             "test_macro_f1": reg.get("metrics", {}).get("macro_f1"),
-            "features_used": {k: round(float(v), 3) for k, v in row.items()},
+            "features_used": {k: _clean(v) for k, v in row.items()},
         }
+        out = _apply_cap(out, data_quality(imputed, how))
+        if record:
+            _record(out["prediction"])
+        return out
     except Exception as e:
         print(f"[RIIS-ML] Prediction error: {e}")
-        return _formula_predict(weather_data)
+        return _formula_predict(weather_data, history_rain, lat, lon, record=record)
 
 
 def predict_all(weather_data: dict, history_rain=None, lat=None, lon=None) -> dict:
-    """Run every trained tabular model on the same inputs."""
+    """Run every trained tabular model on the same inputs (only the ensemble counts as served)."""
     out = {}
     for name in TABULAR_MODELS:
         if load_model(name) is not None:
-            out[name] = predict(weather_data, history_rain, lat, lon, model_name=name)
+            out[name] = predict(weather_data, history_rain, lat, lon, model_name=name, record=(name == "ensemble_vote"))
     return out
 
 
@@ -141,10 +235,10 @@ def get_shap_explanations(weather_data: dict, history_rain=None, lat=None, lon=N
     if model is not None:
         try:
             import shap
-            feat, row = _features(weather_data, history_rain, lat, lon)
+            feat, row, imputed = _features(weather_data, history_rain, lat, lon)
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(feat)
-            probs = model.predict_proba(feat)[0]
+            probs, how = _predict_proba(model, feat)
             k = int(np.argmax(probs))
 
             arr = np.array(shap_values)
@@ -164,7 +258,8 @@ def get_shap_explanations(weather_data: dict, history_rain=None, lat=None, lon=N
                     "name": name,
                     "shap_value": float(round(mean_abs[i] / max_val, 4)),
                     "signed_shap": float(round(signed[i], 4)),
-                    "raw_value": float(round(float(feat[0][i]), 4)),
+                    "raw_value": _clean(feat[0][i]),
+                    "imputed": name in imputed,
                     "direction": "positive" if signed[i] > 0.02 else ("negative" if signed[i] < -0.02 else "neutral"),
                 })
             features.sort(key=lambda f: f["shap_value"], reverse=True)
@@ -176,6 +271,7 @@ def get_shap_explanations(weather_data: dict, history_rain=None, lat=None, lon=N
                 "explained_class": CLASS_NAMES[k],
                 "features": features,
                 "base_value": round(base, 4),
+                "data_quality": data_quality(imputed, how),
             }
         except Exception as e:
             print(f"[RIIS-ML] SHAP error: {e}")
@@ -183,7 +279,7 @@ def get_shap_explanations(weather_data: dict, history_rain=None, lat=None, lon=N
     return _formula_shap(weather_data)
 
 
-def _formula_predict(weather_data):
+def _formula_predict(weather_data, history_rain=None, lat=None, lon=None, record: bool = True):
     """Fallback formula-based prediction when ML model isn't available."""
     rain = weather_data.get("next_6h_rain", 0) or weather_data.get("rainfall_mm", 0)
     peak = weather_data.get("peak_intensity", 0)
@@ -209,7 +305,11 @@ def _formula_predict(weather_data):
     elif cls == "mod" and risk < 25: risk = 38
     elif cls == "safe" and risk > 30: risk = 22
 
-    return {
+    try:
+        _, _, imputed = _features(weather_data, history_rain, lat, lon)
+    except Exception:
+        imputed = []
+    out = {
         "prediction": cls,
         "confidence": 0.75,
         "class_probabilities": {cls: 0.75},
@@ -217,6 +317,10 @@ def _formula_predict(weather_data):
         "method": "formula_fallback",
         "model_version": "none"
     }
+    out = _apply_cap(out, data_quality(imputed, "formula"))
+    if record:
+        _record(out["prediction"])
+    return out
 
 
 def _formula_shap(weather_data):
@@ -266,4 +370,5 @@ def get_model_metrics():
         }
         for name, entry in reg.items()
     }
+    out["feature_medians_available"] = MEDIANS_PATH.exists()
     return out

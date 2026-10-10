@@ -81,6 +81,8 @@ class WeatherCache(Base):
     # Metadata
     fetched_at = Column(DateTime, default=datetime.utcnow)
     weather_description = Column(String(100), default="")
+    provider = Column(String(16), default="open_meteo")      # open_meteo | met_norway (services/forecast_providers.py)
+    provider_fallback = Column(Boolean, default=False)       # True when the last poll came from the fallback provider
 
     district = relationship("District", back_populates="weather_cache")
 
@@ -108,7 +110,8 @@ class Reservoir(Base):
 
     # Live telemetry provenance (filled by services/reservoir_live.py; "seed" when no public feed exists)
     source = Column(String(16), default="seed")
-    observed_at = Column(String(10), nullable=True)      # report date, YYYY-MM-DD
+    observed_at = Column(String(32), nullable=True)      # ISO date (YYYY-MM-DD) or datetime from the source page
+    fetched_at = Column(DateTime, nullable=True)         # when the sync last wrote this row from a live page
     level_ft = Column(Float, nullable=True)
     full_level_ft = Column(Float, nullable=True)
     storage_pct = Column(Float, nullable=True)

@@ -56,6 +56,7 @@ async def ml_predict(
     if model not in TABULAR_MODELS:
         raise HTTPException(status_code=400, detail=f"model must be one of {TABULAR_MODELS}")
     district, weather_data, history = await _context(district_code, db)
+    # predict() records the served class with monitoring.record_prediction itself
     prediction = predict(weather_data, history, district.lat, district.lon, model_name=model)
     prediction["district"] = district.code
     prediction["district_name"] = district.name

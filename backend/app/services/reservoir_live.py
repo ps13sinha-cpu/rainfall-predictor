@@ -20,10 +20,12 @@ import json
 import html
 import time
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from sqlalchemy import select, text
+
+from app.services import monitoring
 
 CMWSSB_URL = "https://cmwssb.tn.gov.in/lake-level"
 KSEB_INDEX = "https://dams.kseb.in/?page_id=45"
@@ -55,7 +57,128 @@ KEEP_SEED = {"MB", "ML", "BM"}
 # Seeded rows that are duplicates or not identifiable reservoirs (removed on first sync)
 DROP_SEED = {"SH", "KR", "AK", "VB", "PE", "ER", "TK", "HK"}
 
-_state = {"fetched_at": None, "sources": {}, "rows": {}}
+_state = {"fetched_at": None, "sources": {}, "rows": {}, "failures": {}, "last_good": {}}
+MAX_CONSECUTIVE_FAILURES = 3
+
+
+def max_age_h() -> float:
+    """Rows observed longer ago than this are returned with stale=True (RIIS_RESERVOIR_MAX_AGE_H, default 48)."""
+    try:
+        return float(os.environ.get("RIIS_RESERVOIR_MAX_AGE_H", "48"))
+    except ValueError:
+        return 48.0
+
+
+# ── Row contract ──────────────────────────────────────────────────────────────
+# Every parsed CMWSSB / KSEB row must pass this before it can reach the database.
+PLAUSIBLE = {   # field: (min, max) inclusive, applied when the value is present
+    "storage_pct": (0.0, 115.0), "capacity_mcft": (1.0, 500000.0), "storage_mcft": (0.0, 500000.0),
+    "level_ft": (0.0, 10000.0), "full_level_ft": (0.0, 10000.0),
+    "inflow_cms": (0.0, 50000.0), "outflow_cms": (0.0, 50000.0), "rainfall_mm": (0.0, 600.0),
+}
+REQUIRED_NUMERIC = ("storage_pct",)   # plus: at least one of capacity_mcft / storage_mcft
+
+
+class RowSchemaError(ValueError):
+    pass
+
+
+def validate_row(row: dict, scraper: str, today=None) -> dict:
+    """Schema check for one parsed reservoir row. Returns the row; raises RowSchemaError."""
+    if not isinstance(row, dict):
+        raise RowSchemaError(f"{scraper}: row is not a dict")
+    for f in REQUIRED_NUMERIC:
+        v = row.get(f)
+        if not isinstance(v, (int, float)) or v != v:
+            raise RowSchemaError(f"{scraper}: missing numeric {f}")
+    if row.get("capacity_mcft") is None and row.get("storage_mcft") is None:
+        raise RowSchemaError(f"{scraper}: neither capacity_mcft nor storage_mcft present")
+    for f, (lo, hi) in PLAUSIBLE.items():
+        v = row.get(f)
+        if v is None:
+            continue
+        if not isinstance(v, (int, float)) or v != v or v < lo or v > hi:
+            raise RowSchemaError(f"{scraper}: {f}={v!r} outside [{lo}, {hi}]")
+    cap, cur = row.get("capacity_mcft"), row.get("storage_mcft")
+    if cap and cur is not None and cur > cap * 1.15:
+        raise RowSchemaError(f"{scraper}: storage {cur} exceeds capacity {cap}")
+    obs = row.get("observed_at")
+    if obs:
+        try:
+            d = datetime.fromisoformat(str(obs)[:19]).date()
+        except ValueError:
+            raise RowSchemaError(f"{scraper}: observed_at {obs!r} is not ISO")
+        today = today or datetime.utcnow().date()
+        if d > today + timedelta(days=1) or d < today - timedelta(days=60):
+            raise RowSchemaError(f"{scraper}: observed_at {obs} implausible (today {today})")
+    else:
+        raise RowSchemaError(f"{scraper}: observed_at missing (source page date not found)")
+    return row
+
+
+def parse_observed_at(observed_at) -> datetime | None:
+    """ISO string -> aware UTC datetime. A date-only value (what both pages print) is taken
+    as the 08:00 IST morning reading (02:30 UTC)."""
+    if not observed_at:
+        return None
+    s = str(observed_at)
+    try:
+        if len(s) <= 10:
+            d = datetime.strptime(s[:10], "%Y-%m-%d")
+            return d.replace(hour=2, minute=30, tzinfo=timezone.utc)
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def freshness(observed_at, source, now=None, limit_h: float | None = None) -> dict:
+    """{"age_h", "stale", "live"} for one row. Seeded / sourceless rows are never live."""
+    limit_h = max_age_h() if limit_h is None else limit_h
+    now = now or datetime.now(timezone.utc)
+    src = source or "seed"
+    obs = parse_observed_at(observed_at)
+    age = None if obs is None else max(0.0, round((now - obs).total_seconds() / 3600.0, 1))
+    if src == "seed" or obs is None:
+        return {"age_h": age, "stale": True, "live": False, "max_age_h": limit_h}
+    stale = age > limit_h
+    return {"age_h": age, "stale": stale, "live": not stale, "max_age_h": limit_h}
+
+
+def row_to_dict(r, now=None) -> dict:
+    """ORM Reservoir -> plain dict with the freshness contract (observed_at, age_h, stale, live, source)."""
+    pct = getattr(r, "storage_pct", None)
+    if pct is None and r.capacity_mcft:
+        pct = round(100 * r.current_mcft / r.capacity_mcft, 1)
+    src = getattr(r, "source", None) or "seed"
+    fr = freshness(getattr(r, "observed_at", None), src, now=now)
+    fetched = getattr(r, "fetched_at", None)
+    return {
+        "id": r.id, "code": r.code, "name": r.name, "lat": r.lat, "lon": r.lon,
+        "capacity_mcft": r.capacity_mcft, "current_mcft": r.current_mcft, "storage_pct": pct,
+        "inflow_cms": r.inflow_cms, "outflow_cms": r.outflow_cms, "overflow_prob": r.overflow_prob,
+        "risk_class": r.risk_class, "source": src, "observed_at": getattr(r, "observed_at", None),
+        "fetched_at": fetched.isoformat() if fetched else None,
+        "age_h": fr["age_h"], "freshness": fr["age_h"], "stale": fr["stale"], "live": fr["live"],
+        "level_ft": getattr(r, "level_ft", None), "full_level_ft": getattr(r, "full_level_ft", None),
+        "rainfall_mm": getattr(r, "rainfall_mm", None), "alert_level": getattr(r, "alert_level", None),
+    }
+
+
+async def get_reservoir_rows(db=None) -> list[dict]:
+    """All reservoirs as dicts carrying observed_at, age_h, stale, live, source — the contract
+    hyperlocal.get_upstream_reservoirs can pass through. Opens its own session when none given."""
+    from app.models import Reservoir
+    if db is None:
+        from app.database import async_session
+        async with async_session() as db2:
+            rows = (await db2.execute(select(Reservoir).order_by(Reservoir.id))).scalars().all()
+    else:
+        rows = (await db.execute(select(Reservoir).order_by(Reservoir.id))).scalars().all()
+    now = datetime.now(timezone.utc)
+    return [row_to_dict(r, now=now) for r in rows]
 
 
 # ── Parsing ───────────────────────────────────────────────────────────────────
@@ -201,6 +324,7 @@ EXTRA_COLUMNS = {
     "source": "VARCHAR(16) DEFAULT 'seed'", "observed_at": "VARCHAR(10)", "level_ft": "FLOAT",
     "full_level_ft": "FLOAT", "storage_pct": "FLOAT", "rainfall_mm": "FLOAT", "last_year_mcft": "FLOAT",
     "alert_level": "VARCHAR(8)", "remarks": "VARCHAR(200)", "source_url": "VARCHAR(200)",
+    "fetched_at": "DATETIME",
 }
 
 
@@ -238,19 +362,47 @@ async def sync_reservoirs(db) -> dict:
     await ensure_schema(db)
     summary = {"fetched_at": datetime.utcnow().isoformat(), "sources": {}, "updated": [], "added": [], "removed": []}
     live = {}
+    load_state()
+    _state.setdefault("failures", {}); _state.setdefault("last_good", {})
     async with httpx.AsyncClient(timeout=40, follow_redirects=True) as client:
         results = await asyncio.gather(fetch_cmwssb(client), fetch_kseb(client), return_exceptions=True)
     for key, res, mapping, url in (("cmwssb", results[0], CMWSSB_MAP, CMWSSB_URL), ("kseb", results[1], KSEB_MAP, KSEB_INDEX)):
+        good, rejected, error = {}, [], None
         if isinstance(res, Exception):
-            summary["sources"][key] = {"ok": False, "error": str(res)[:160]}
-            continue
-        matched = 0
-        for src_name, (code, disp, lat, lon) in mapping.items():
-            row = res["rows"].get(src_name)
-            if row:
-                live[code] = dict(row, name=disp, lat=lat, lon=lon, source_url=res.get("url", url))
-                matched += 1
-        summary["sources"][key] = {"ok": True, "as_on": res.get("as_on"), "rows_parsed": len(res["rows"]), "matched": matched}
+            error = f"fetch: {str(res)[:160]}"
+        else:
+            for src_name, (code, disp, lat, lon) in mapping.items():
+                row = res["rows"].get(src_name)
+                if not row:
+                    continue
+                try:
+                    validate_row(row, key)
+                except RowSchemaError as e:
+                    rejected.append({"code": code, "reason": str(e)[:160]})
+                    continue
+                good[code] = dict(row, name=disp, lat=lat, lon=lon, source_url=res.get("url", url))
+            if not good:
+                error = "parse: no row matched the name map" + (f" ({rejected[0]['reason']})" if rejected else "")
+        if error is None:
+            _state["failures"][key] = 0
+            _state["last_good"][key] = {"as_on": res.get("as_on"), "fetched_at": summary["fetched_at"], "rows": good}
+            live.update(good)
+            summary["sources"][key] = {"ok": True, "as_on": res.get("as_on"), "rows_parsed": len(res["rows"]),
+                                       "matched": len(good), "rejected": rejected, "consecutive_failures": 0}
+        else:
+            n = _state["failures"].get(key, 0) + 1
+            _state["failures"][key] = n
+            monitoring.incr("scraper_parse_failure", detail={"scraper": key, "error": error, "consecutive": n})
+            fallback = _state["last_good"].get(key) or {}
+            if fallback.get("rows"):
+                for code, row in fallback["rows"].items():
+                    live[code] = dict(row, from_last_good=True)
+            summary["sources"][key] = {"ok": False, "error": error, "rejected": rejected, "consecutive_failures": n,
+                                       "fallback": "last_good" if fallback.get("rows") else None,
+                                       "fallback_as_on": fallback.get("as_on")}
+            if n == MAX_CONSECUTIVE_FAILURES or (n > MAX_CONSECUTIVE_FAILURES and n % 12 == 0):
+                monitoring.alert("scraper_parse_failure", {"scraper": key, "consecutive": n, "error": error,
+                                                           "last_good_as_on": fallback.get("as_on"), "url": url})
 
     existing = {r.code: r for r in (await db.execute(select(Reservoir))).scalars().all()}
     for code in DROP_SEED:
@@ -287,6 +439,8 @@ async def sync_reservoirs(db) -> dict:
         r.full_level_ft = row.get("full_level_ft"); r.storage_pct = pct; r.rainfall_mm = row.get("rainfall_mm")
         r.last_year_mcft = row.get("last_year_mcft"); r.alert_level = row.get("alert_level")
         r.remarks = row.get("remarks"); r.source_url = row.get("source_url")
+        if not row.get("from_last_good"):
+            r.fetched_at = datetime.utcnow()
         r.updated_at = datetime.utcnow()
     for code, r in existing.items():
         if code not in live and not getattr(r, "source", None):
@@ -296,6 +450,7 @@ async def sync_reservoirs(db) -> dict:
 
     _state.update({"fetched_at": summary["fetched_at"], "sources": summary["sources"],
                    "rows": {k: {kk: vv for kk, vv in v.items() if kk != "alert_levels"} for k, v in live.items()}})
+    summary["failures"] = dict(_state["failures"])
     _save_state()
     print(f"[RIIS-Reservoirs] sync: {summary['sources']} updated={len(summary['updated'])} added={summary['added']} removed={summary['removed']}")
     return summary

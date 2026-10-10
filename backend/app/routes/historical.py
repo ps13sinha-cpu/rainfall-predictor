@@ -81,9 +81,16 @@ async def ingest_historical(
         f"&timezone=auto"
     )
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.get(url)
-        data = resp.json()
+    from app.services.budget import budgeted_get, estimate_units, BudgetExhausted, OpenMeteoRateLimited
+    units = estimate_units(start_date, end_date, n_locations=1, n_vars=7)
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await budgeted_get(client, url, units, "historical_ingest")
+            data = resp.json()
+    except BudgetExhausted as e:
+        raise HTTPException(status_code=429, detail=str(e))
+    except OpenMeteoRateLimited as e:
+        raise HTTPException(status_code=429, detail=str(e))
 
     daily = data.get("daily", {})
     dates = daily.get("time", [])

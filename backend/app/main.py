@@ -15,8 +15,12 @@ async def lifespan(app: FastAPI):
     await init_db()
     # Add the live-telemetry columns to an existing reservoirs table before anything selects from it.
     from app.services.reservoir_live import ensure_schema
+    from app.services.schema_extras import ensure_extra_columns
     async with async_session() as db:
         await ensure_schema(db)
+        added = await ensure_extra_columns(db)
+        if added:
+            print(f"[RIIS] Added columns: {', '.join(added)}")
     await seed()
     start_scheduler()
     # Pull today's reservoir reports right away (the scheduler also repeats this every 6 h).
@@ -29,9 +33,35 @@ async def lifespan(app: FastAPI):
     print("[RIIS] Server shutting down")
 
 
+DESCRIPTION = """
+Rainfall prediction, flood-impact and infrastructure intelligence for Indian districts and
+hyperlocal points.
+
+**Validation status.** The hyperlocal impact score (`/api/hyperlocal/impact`) is an expert-set
+ordering that has not yet been validated against observed flood depths or extents; every
+response says so in `validation_status` until `app/data/calibration.json` exists. Each response
+also carries `data_quality` (inputs that came from fallbacks or defaults; the served class is
+capped at `mod` when terrain, forecast or soil moisture is missing), `provenance` (source,
+fetched time, cache age, TTL and licence per input layer) and `cap_reason`. ML predictions
+(`/api/ml/predict`) carry the same `data_quality` block and cap.
+
+**Data attribution.** Weather data by Open-Meteo.com (CC BY 4.0) · Map data © OpenStreetMap
+contributors (ODbL) · Soil data ISRIC SoilGrids (CC BY 4.0) · Flood history India Flood
+Inventory (CC BY 4.0) · Elevation SRTM via AWS Terrain Tiles · Forecast fallback MET Norway
+(CC BY 4.0).
+
+**Licence note.** Open-Meteo's free tier is licensed CC BY 4.0 for non-commercial use;
+OpenStreetMap-derived layers (water, land use, drainage, facilities, coastline, Nominatim
+district names) are ODbL and require this attribution on any derived map or dataset;
+SoilGrids, the India Flood Inventory (IIT Delhi, Zenodo 10.5281/zenodo.4742142) and MET Norway
+are CC BY 4.0; SRTM elevation via AWS Terrain Tiles is public domain; reservoir levels are
+scraped from public CMWSSB and KSEB pages and are reported with their observation date.
+"""
+
 app = FastAPI(
     title="RIIS — Real-time Indian Infrastructure Intelligence System",
     version="1.0.0",
+    description=DESCRIPTION,
     lifespan=lifespan,
 )
 
@@ -59,6 +89,7 @@ from app.routes.uploads import router as uploads_router
 from app.routes.subscriptions import router as subscriptions_router
 from app.routes.hyperlocal import router as hyperlocal_router
 from app.routes.inundation import router as inundation_router
+from app.routes.health import router as health_router
 
 app.include_router(auth_router)
 app.include_router(districts_router)
@@ -74,6 +105,7 @@ app.include_router(uploads_router)
 app.include_router(subscriptions_router)
 app.include_router(hyperlocal_router)
 app.include_router(inundation_router)
+app.include_router(health_router)
 
 # Serve uploaded files
 from fastapi.staticfiles import StaticFiles

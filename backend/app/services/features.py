@@ -5,6 +5,11 @@ Used by both training (app/train_tabular.py) and live prediction
 
 Label: rainfall class of the NEXT day (0 safe <5mm, 1 mod 5-20, 2 high 20-50,
 3 extreme >50). Every feature is known at the end of the current day.
+
+Missing inputs are NaN, never a silent constant. `build_live_features(..., with_quality=True)`
+also returns the names of the features it could not fill, so the prediction can say so.
+XGBoost, HistGradientBoosting and RandomForest (sklearn >= 1.4) all route NaN natively;
+`ml.predict` median-imputes only when a model refuses NaN, and records that it did.
 """
 import math
 from datetime import date as _date
@@ -22,12 +27,20 @@ TABULAR_FEATURES = [
     "wet_days_7", "doy_sin", "doy_cos", "lat", "lon",
 ]
 
-# Defaults used when the live weather cache lacks a value
+# Inputs whose absence makes a next-day prediction unreliable; a prediction made with any of
+# these imputed is capped at class 'mod' (see ml.predict).
+KEY_INPUTS = ("rain_today", "rain_sum_3", "rain_sum_7", "soil_moisture", "rh_mean")
+
+# DEPRECATED (kept importable for older callers and scripts): these constants were silently
+# substituted for missing live inputs until 9 Oct 2026. Nothing in features.py uses them any
+# more; a missing input is NaN and is reported in the prediction's data_quality block.
 DEFAULTS = {
     "rh_mean": 72.0, "pressure_mean": 1009.0, "cloud_mean": 45.0,
     "soil_moisture": 0.25, "dewpoint_mean": 22.0, "gust_max": 25.0,
     "precip_hours": 0.0, "wind_max": 12.0,
 }
+
+NAN = float("nan")
 
 
 def update_registry(path, entries: dict):
@@ -83,47 +96,108 @@ def doy_features(d):
     return math.sin(ang), math.cos(ang)
 
 
-def build_live_features(weather: dict, history_rain: list, lat: float, lon: float, today=None):
+def _num(weather: dict, *keys):
+    """First of `keys` present with a non-None numeric value, as float; None when all are missing.
+    Zero is a value, not a gap (0 mm of rain is a real observation)."""
+    for k in keys:
+        v = weather.get(k)
+        if v is None:
+            continue
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            continue
+        if not math.isnan(f):
+            return f
+    return None
+
+
+def build_live_features(weather: dict, history_rain: list, lat: float, lon: float, today=None,
+                        with_quality: bool = False):
     """Build one feature row for live prediction.
 
     weather: dict from WeatherCache (temperature, humidity, pressure, wind_speed,
              cloud_cover, next_6h_rain, peak_intensity) plus optional daily keys.
     history_rain: list of daily rainfall_mm for the previous days, oldest first
                   (up to 30 values; yesterday is the last element).
+
+    Returns (X, row) by default; with_quality=True returns (X, row, imputed) where
+    `imputed` lists the feature names that had no live input and are NaN (or, for the
+    rolling rain sums, were computed over fewer days than their window).
     """
-    rain_today = float(weather.get("rainfall_mm") or weather.get("next_6h_rain") or 0.0)
-    temp = float(weather.get("temperature") or 28.0)
-    tmax = float(weather.get("temp_max") or temp + 3.0)
-    tmin = float(weather.get("temp_min") or temp - 5.0)
-    hist = [float(x or 0.0) for x in history_rain][-30:]
-    pad = [0.0] * (30 - len(hist)) + hist  # oldest .. yesterday
+    imputed = []
+
+    def pick(name, *keys):
+        v = _num(weather, *keys)
+        if v is None:
+            imputed.append(name)
+            return NAN
+        return v
+
+    rain_today = pick("rain_today", "rainfall_mm", "next_6h_rain")
+    temp = _num(weather, "temperature")
+    tmax = _num(weather, "temp_max")
+    tmin = _num(weather, "temp_min")
+    if tmax is None:
+        imputed.append("temp_max")
+        tmax = NAN
+    if tmin is None:
+        imputed.append("temp_min")
+        tmin = NAN
+    # the daily range needs both ends; the current temperature alone does not give it
+    if math.isnan(tmax) or math.isnan(tmin):
+        imputed.append("temp_range")
+        trange = NAN
+    else:
+        trange = tmax - tmin
+    del temp
+
+    hist = [float(x) if x is not None else 0.0 for x in (history_rain or [])][-30:]
+    n_hist = len(hist)
+    pad = [0.0] * (30 - n_hist) + hist  # oldest .. yesterday
 
     def lag(k):
+        if n_hist < k:
+            imputed.append(f"rain_lag{k}")
+            return NAN
         return pad[-k]
 
     def rsum(k):
+        if n_hist == 0:
+            imputed.append(f"rain_sum_{k}")
+            return NAN
+        if n_hist < k:
+            imputed.append(f"rain_sum_{k}")   # partial window: zero-padded days are an imputation
         return float(sum(pad[-k:]))
+
+    if n_hist < 7:
+        imputed.append("wet_days_7")
+    wet7 = NAN if n_hist == 0 else float(sum(1 for x in pad[-7:] if x > 1.0))
 
     s, c = doy_features(today or _date.today())
     row = {
         "rain_today": rain_today,
-        "precip_hours": float(weather.get("precipitation_hours") or (6.0 if rain_today > 1 else 0.0)),
+        "precip_hours": pick("precip_hours", "precipitation_hours"),
         "temp_max": tmax,
         "temp_min": tmin,
-        "temp_range": tmax - tmin,
-        "wind_max": float(weather.get("wind_speed_max") or weather.get("wind_speed") or DEFAULTS["wind_max"]),
-        "rh_mean": float(weather.get("humidity_avg") or weather.get("humidity") or DEFAULTS["rh_mean"]),
-        "pressure_mean": float(weather.get("pressure") or DEFAULTS["pressure_mean"]),
-        "cloud_mean": float(weather.get("cloud_cover") or DEFAULTS["cloud_mean"]),
-        "soil_moisture": float(weather.get("soil_moisture") or DEFAULTS["soil_moisture"]),
-        "dewpoint_mean": float(weather.get("dew_point") or DEFAULTS["dewpoint_mean"]),
-        "gust_max": float(weather.get("wind_gusts") or DEFAULTS["gust_max"]),
+        "temp_range": trange,
+        "wind_max": pick("wind_max", "wind_speed_max", "wind_speed"),
+        "rh_mean": pick("rh_mean", "humidity_avg", "humidity"),
+        "pressure_mean": pick("pressure_mean", "pressure"),
+        "cloud_mean": pick("cloud_mean", "cloud_cover"),
+        "soil_moisture": pick("soil_moisture", "soil_moisture", "soil_moisture_0_7"),
+        "dewpoint_mean": pick("dewpoint_mean", "dew_point", "dewpoint"),
+        "gust_max": pick("gust_max", "wind_gusts", "wind_gusts_max"),
         "rain_lag1": lag(1), "rain_lag2": lag(2), "rain_lag3": lag(3),
         "rain_sum_3": rsum(3), "rain_sum_7": rsum(7), "rain_sum_14": rsum(14), "rain_sum_30": rsum(30),
-        "wet_days_7": float(sum(1 for x in pad[-7:] if x > 1.0)),
+        "wet_days_7": wet7,
         "doy_sin": s, "doy_cos": c, "lat": float(lat), "lon": float(lon),
     }
-    return np.array([[row[f] for f in TABULAR_FEATURES]], dtype=np.float32), row
+    X = np.array([[row[f] for f in TABULAR_FEATURES]], dtype=np.float32)
+    imputed = [f for f in TABULAR_FEATURES if f in set(imputed)]   # feature order, no duplicates
+    if with_quality:
+        return X, row, imputed
+    return X, row
 
 
 def build_training_frame(daily_df, hourly_daily_df=None):
@@ -134,6 +208,10 @@ def build_training_frame(daily_df, hourly_daily_df=None):
     hourly_daily_df (optional): district_id, date, rh_mean, pressure_mean,
                       cloud_mean, soil_moisture, dewpoint_mean, gust_max
     Returns a DataFrame with TABULAR_FEATURES + 'label' + 'date' + 'district_id'.
+
+    Missing hourly-derived columns, wind and precipitation hours stay NaN so the trees learn
+    a missing-value branch that matches what live prediction feeds them. Only rainfall_mm is
+    filled with 0 (it is the label source and the base of every lag and rolling sum).
     """
     import pandas as pd
 
@@ -144,13 +222,11 @@ def build_training_frame(daily_df, hourly_daily_df=None):
     for col in ["rh_mean", "pressure_mean", "cloud_mean", "soil_moisture", "dewpoint_mean", "gust_max"]:
         if col not in df.columns:
             df[col] = np.nan
-        df[col] = df.groupby("district_id")[col].transform(lambda s: s.fillna(s.median()))
-        df[col] = df[col].fillna(DEFAULTS[col])
 
     g = df.groupby("district_id")["rainfall_mm"]
     df["rain_today"] = df["rainfall_mm"]
-    df["precip_hours"] = df["precipitation_hours"].fillna(0.0)
-    df["wind_max"] = df["wind_speed_max"].fillna(DEFAULTS["wind_max"])
+    df["precip_hours"] = df["precipitation_hours"]
+    df["wind_max"] = df["wind_speed_max"]
     df["temp_range"] = df["temp_max"] - df["temp_min"]
     for k in (1, 2, 3):
         df[f"rain_lag{k}"] = g.shift(k).fillna(0.0)
@@ -167,3 +243,39 @@ def build_training_frame(daily_df, hourly_daily_df=None):
     df = df.dropna(subset=["rain_next"])
     df["label"] = df["rain_next"].apply(rain_class).astype(int)
     return df[["district_id", "date"] + TABULAR_FEATURES + ["label", "rain_next"]].reset_index(drop=True)
+
+
+def compute_feature_medians(db_path: str) -> dict:
+    """Per-feature medians of the training frame built from riis.db (same SQL as
+    app/train_tabular.load_frames). Used by ml.predict only when a model refuses NaN."""
+    import sqlite3
+    import pandas as pd
+
+    conn = sqlite3.connect(db_path, timeout=60)
+    daily = pd.read_sql_query(
+        """SELECT h.district_id, h.date, h.rainfall_mm, h.temp_max, h.temp_min,
+                  h.wind_speed_max, h.precipitation_hours, d.lat, d.lon
+           FROM historical_weather h JOIN districts d ON d.id = h.district_id
+           ORDER BY h.district_id, h.date""", conn)
+    hourly_daily = None
+    has_hourly = conn.execute(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='historical_hourly'").fetchone()[0]
+    if has_hourly:
+        hourly_daily = pd.read_sql_query(
+            """SELECT district_id, substr(time,1,10) AS date,
+                      AVG(relative_humidity_2m) AS rh_mean,
+                      AVG(pressure_msl)         AS pressure_mean,
+                      AVG(cloud_cover)          AS cloud_mean,
+                      AVG(soil_moisture_0_to_7cm) AS soil_moisture,
+                      AVG(dew_point_2m)         AS dewpoint_mean,
+                      MAX(wind_gusts_10m)       AS gust_max
+               FROM historical_hourly GROUP BY district_id, substr(time,1,10)""", conn)
+    conn.close()
+    df = build_training_frame(daily, hourly_daily)
+    medians, coverage = {}, {}
+    for f in TABULAR_FEATURES:
+        col = pd.to_numeric(df[f], errors="coerce")
+        med = col.median(skipna=True)
+        medians[f] = None if pd.isna(med) else float(med)
+        coverage[f] = round(float(col.notna().mean()), 4) if len(col) else 0.0
+    return {"medians": medians, "non_null_share": coverage, "rows": int(len(df))}

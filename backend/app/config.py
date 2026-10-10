@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # Polling intervals (seconds)
     weather_poll_interval: int = 300
-    district_poll_interval: int = 300
+    district_poll_interval: int = 1800   # Open-Meteo refreshes hourly; 5 min x 36 districts x 2 units was ~20k units a day
 
     # Twilio (SMS + WhatsApp)
     twilio_account_sid: str = ""

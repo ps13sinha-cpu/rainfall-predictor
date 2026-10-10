@@ -47,7 +47,13 @@ def wind_dir_label(deg):
 
 # ── Fetch weather for one coordinate ─────────────────────────────────────────
 async def fetch_weather(lat: float, lon: float) -> dict:
-    """Fetch current + hourly + daily + air quality from Open-Meteo."""
+    """Fetch current + hourly + daily + air quality from Open-Meteo.
+
+    Both requests go through the call budget (1 unit each). Raises BudgetExhausted
+    (nothing sent), OpenMeteoRateLimited (429) or httpx errors for the forecast call so
+    callers can fall back to another provider; air quality stays best-effort.
+    """
+    from app.services.budget import budgeted_get, BudgetExhausted
     w_url = (
         f"{settings.openmeteo_base_url}/forecast?"
         f"latitude={lat}&longitude={lon}"
@@ -64,13 +70,23 @@ async def fetch_weather(lat: float, lon: float) -> dict:
 
     async with httpx.AsyncClient(timeout=15) as client:
         w_resp, a_resp = await asyncio.gather(
-            client.get(w_url),
-            client.get(a_url),
+            budgeted_get(client, w_url, 1, "weather_forecast"),
+            budgeted_get(client, a_url, 1, "air_quality"),
             return_exceptions=True,
         )
 
-    w_data = w_resp.json() if hasattr(w_resp, "json") else {}
-    a_data = a_resp.json() if a_resp and hasattr(a_resp, "json") else {}
+    if isinstance(w_resp, BaseException):
+        raise w_resp
+    if w_resp.status_code != 200:
+        raise httpx.HTTPStatusError(f"Open-Meteo forecast HTTP {w_resp.status_code}",
+                                    request=w_resp.request, response=w_resp)
+    w_data = w_resp.json()
+    a_data = {}
+    if not isinstance(a_resp, BaseException) and a_resp.status_code == 200:
+        try:
+            a_data = a_resp.json()
+        except Exception:
+            a_data = {}
 
     return {"weather": w_data, "air_quality": a_data}
 
@@ -175,11 +191,14 @@ def calculate_risk(next_6h_rain: float, peak_intensity: float,
 
 
 # ── Update one district in DB ─────────────────────────────────────────────────
+_CACHE_COLUMNS = {c.name for c in WeatherCache.__table__.columns}
+
+
 async def update_district_weather(db: AsyncSession, district: District):
-    """Fetch live weather for a district and persist to DB."""
+    """Fetch live weather for a district (Open-Meteo, else MET Norway) and persist to DB."""
     try:
-        raw = await fetch_weather(district.lat, district.lon)
-        parsed = parse_weather(raw["weather"], raw["air_quality"])
+        from app.services.forecast_providers import fetch_with_fallback
+        parsed = await fetch_with_fallback(district.lat, district.lon)
 
         # Upsert weather_cache
         result = await db.execute(
@@ -191,15 +210,22 @@ async def update_district_weather(db: AsyncSession, district: District):
             db.add(cache)
 
         for k, v in parsed.items():
-            setattr(cache, k, v)
+            if k in _CACHE_COLUMNS:
+                setattr(cache, k, v)
+        if "provider" in _CACHE_COLUMNS:
+            cache.provider = parsed.get("source", "open_meteo")
+            cache.provider_fallback = bool(parsed.get("provider_fallback", False))
         cache.fetched_at = datetime.utcnow()
 
-        # Update district risk
+        # Update district risk (the fallback provider may leave fields None)
+        next_6h = parsed.get("next_6h_rain") or 0.0
+        peak = parsed.get("peak_intensity") or 0.0
         risk_info = calculate_risk(
-            parsed["next_6h_rain"], parsed["peak_intensity"],
-            parsed["humidity"], parsed["wind_speed"], parsed["cloud_cover"]
+            next_6h, peak,
+            int(parsed.get("humidity") or 0), float(parsed.get("wind_speed") or 0.0),
+            int(parsed.get("cloud_cover") or 0),
         )
-        district.rain = parsed["next_6h_rain"] if parsed["next_6h_rain"] > 0.1 else parsed.get("current_rain", 0)
+        district.rain = next_6h if next_6h > 0.1 else parsed.get("current_rain", 0)
         district.risk = risk_info["risk"]
         district.risk_class = risk_info["risk_class"]
         district.updated_at = datetime.utcnow()
