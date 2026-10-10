@@ -1,0 +1,565 @@
+{
+  "computed_at": "2026-10-09T09:45:02.938448",
+  "window": [
+    "2021-01-01",
+    "2023-12-26"
+  ],
+  "station_source": "TNDMA daily rainfall via OpenCity (public domain), Revenue-department gauges only, unreported days = 0 inside each gauge's active span, district mean of active gauges",
+  "reanalysis_source": "Open-Meteo archive daily precipitation_sum at the RIIS district centroid (ERA5 / ERA5-Land)",
+  "method": "district mean of all reporting gauges per day vs reanalysis at the centroid; bias = era5 - station; contingency at IMD thresholds 2.5 / 64.5 / 115.6 mm",
+  "districts": {
+    "Chennai": {
+      "n_days": 1081,
+      "stations_mean": 11.0,
+      "station_mean_mm_day": 5.138,
+      "era5_mean_mm_day": 4.426,
+      "bias_mm_day": -0.712,
+      "ratio_era5_over_station": 0.861,
+      "annual_total_station_mm": 1876,
+      "annual_total_era5_mm": 1616,
+      "pearson_r_daily": 0.512,
+      "pearson_r_wet_days": 0.428,
+      "mae_mm_day": 5.476,
+      "quantiles_station_mm": {
+        "p50": 0.0,
+        "p90": 15.6,
+        "p95": 27.4,
+        "p99": 78.6
+      },
+      "quantiles_era5_mm": {
+        "p50": 0.6,
+        "p90": 12.8,
+        "p95": 18.7,
+        "p99": 48.9
+      },
+      "quantile_ratio_era5_over_station": {
+        "p50": null,
+        "p90": 0.821,
+        "p95": 0.682,
+        "p99": 0.623
+      },
+      "wet_day": {
+        "threshold_mm": 2.5,
+        "obs_days": 221,
+        "est_days": 342,
+        "hits": 163,
+        "pod": 0.738,
+        "far": 0.523,
+        "csi": 0.407
+      },
+      "heavy_day": {
+        "threshold_mm": 64.5,
+        "obs_days": 16,
+        "est_days": 6,
+        "hits": 3,
+        "pod": 0.188,
+        "far": 0.5,
+        "csi": 0.158
+      },
+      "very_heavy_day": {
+        "threshold_mm": 115.6,
+        "obs_days": 8,
+        "est_days": 2,
+        "hits": 2,
+        "pod": 0.25,
+        "far": 0.0,
+        "csi": 0.25
+      },
+      "station_max_mm_day": 324.4,
+      "era5_max_mm_day": 255.8,
+      "monthly_bias_mm_day": {
+        "1": -3.0,
+        "2": 0.29,
+        "3": -0.05,
+        "4": 0.21,
+        "5": 2.0,
+        "6": -1.12,
+        "7": 0.34,
+        "8": -0.61,
+        "9": 0.05,
+        "10": 1.81,
+        "11": -5.29,
+        "12": -3.63
+      },
+      "district_id": 1,
+      "tndma_name": "Chennai",
+      "lat": 13.0827,
+      "lon": 80.2707
+    },
+    "Kanchipuram": {
+      "n_days": 1080,
+      "stations_mean": 5.4,
+      "station_mean_mm_day": 4.354,
+      "era5_mean_mm_day": 3.875,
+      "bias_mm_day": -0.478,
+      "ratio_era5_over_station": 0.89,
+      "annual_total_station_mm": 1590,
+      "annual_total_era5_mm": 1415,
+      "pearson_r_daily": 0.456,
+      "pearson_r_wet_days": 0.305,
+      "mae_mm_day": 4.829,
+      "quantiles_station_mm": {
+        "p50": 0.0,
+        "p90": 12.4,
+        "p95": 25.7,
+        "p99": 62.1
+      },
+      "quantiles_era5_mm": {
+        "p50": 0.4,
+        "p90": 11.9,
+        "p95": 19.8,
+        "p99": 35.5
+      },
+      "quantile_ratio_era5_over_station": {
+        "p50": null,
+        "p90": 0.96,
+        "p95": 0.772,
+        "p99": 0.572
+      },
+      "wet_day": {
+        "threshold_mm": 2.5,
+        "obs_days": 253,
+        "est_days": 322,
+        "hits": 167,
+        "pod": 0.66,
+        "far": 0.481,
+        "csi": 0.409
+      },
+      "heavy_day": {
+        "threshold_mm": 64.5,
+        "obs_days": 11,
+        "est_days": 3,
+        "hits": 2,
+        "pod": 0.182,
+        "far": 0.333,
+        "csi": 0.167
+      },
+      "very_heavy_day": {
+        "threshold_mm": 115.6,
+        "obs_days": 3,
+        "est_days": 1,
+        "hits": 0,
+        "pod": 0.0,
+        "far": 1.0,
+        "csi": 0.0
+      },
+      "station_max_mm_day": 270.8,
+      "era5_max_mm_day": 115.8,
+      "monthly_bias_mm_day": {
+        "1": -2.14,
+        "2": 0.16,
+        "3": 0.33,
+        "4": 0.16,
+        "5": 1.22,
+        "6": -0.04,
+        "7": -0.04,
+        "8": -0.65,
+        "9": -0.86,
+        "10": 0.12,
+        "11": -1.6,
+        "12": -2.73
+      },
+      "district_id": 2,
+      "tndma_name": "Kancheepuram",
+      "lat": 12.8342,
+      "lon": 79.7036
+    },
+    "Madurai": {
+      "n_days": 1086,
+      "stations_mean": 22.0,
+      "station_mean_mm_day": 2.676,
+      "era5_mean_mm_day": 3.955,
+      "bias_mm_day": 1.279,
+      "ratio_era5_over_station": 1.478,
+      "annual_total_station_mm": 977,
+      "annual_total_era5_mm": 1444,
+      "pearson_r_daily": 0.352,
+      "pearson_r_wet_days": 0.102,
+      "mae_mm_day": 3.981,
+      "quantiles_station_mm": {
+        "p50": 0.0,
+        "p90": 8.4,
+        "p95": 15.3,
+        "p99": 36.6
+      },
+      "quantiles_era5_mm": {
+        "p50": 0.5,
+        "p90": 13.7,
+        "p95": 19.4,
+        "p99": 32.9
+      },
+      "quantile_ratio_era5_over_station": {
+        "p50": null,
+        "p90": 1.623,
+        "p95": 1.265,
+        "p99": 0.9
+      },
+      "wet_day": {
+        "threshold_mm": 2.5,
+        "obs_days": 238,
+        "est_days": 327,
+        "hits": 149,
+        "pod": 0.626,
+        "far": 0.544,
+        "csi": 0.358
+      },
+      "heavy_day": {
+        "threshold_mm": 64.5,
+        "obs_days": 0,
+        "est_days": 2,
+        "hits": 0,
+        "pod": null,
+        "far": 1.0,
+        "csi": 0.0
+      },
+      "very_heavy_day": {
+        "threshold_mm": 115.6,
+        "obs_days": 0,
+        "est_days": 0,
+        "hits": 0,
+        "pod": null,
+        "far": null,
+        "csi": null
+      },
+      "station_max_mm_day": 230.0,
+      "era5_max_mm_day": 87.8,
+      "monthly_bias_mm_day": {
+        "1": -0.86,
+        "2": 0.27,
+        "3": 0.17,
+        "4": 2.31,
+        "5": 1.8,
+        "6": 1.96,
+        "7": -1.13,
+        "8": 0.78,
+        "9": -0.15,
+        "10": 2.8,
+        "11": 7.07,
+        "12": 0.35
+      },
+      "district_id": 32,
+      "tndma_name": "Madurai",
+      "lat": 9.9252,
+      "lon": 78.1198
+    },
+    "Coimbatore": {
+      "n_days": 1089,
+      "stations_mean": 22.2,
+      "station_mean_mm_day": 3.905,
+      "era5_mean_mm_day": 3.817,
+      "bias_mm_day": -0.087,
+      "ratio_era5_over_station": 0.978,
+      "annual_total_station_mm": 1426,
+      "annual_total_era5_mm": 1394,
+      "pearson_r_daily": 0.344,
+      "pearson_r_wet_days": 0.108,
+      "mae_mm_day": 4.344,
+      "quantiles_station_mm": {
+        "p50": 0.8,
+        "p90": 12.2,
+        "p95": 17.2,
+        "p99": 32.0
+      },
+      "quantiles_era5_mm": {
+        "p50": 0.6,
+        "p90": 12.0,
+        "p95": 19.3,
+        "p99": 38.1
+      },
+      "quantile_ratio_era5_over_station": {
+        "p50": 0.733,
+        "p90": 0.988,
+        "p95": 1.125,
+        "p99": 1.193
+      },
+      "wet_day": {
+        "threshold_mm": 2.5,
+        "obs_days": 388,
+        "est_days": 357,
+        "hits": 215,
+        "pod": 0.554,
+        "far": 0.398,
+        "csi": 0.406
+      },
+      "heavy_day": {
+        "threshold_mm": 64.5,
+        "obs_days": 0,
+        "est_days": 1,
+        "hits": 0,
+        "pod": null,
+        "far": 1.0,
+        "csi": 0.0
+      },
+      "very_heavy_day": {
+        "threshold_mm": 115.6,
+        "obs_days": 0,
+        "est_days": 0,
+        "hits": 0,
+        "pod": null,
+        "far": null,
+        "csi": null
+      },
+      "station_max_mm_day": 373.0,
+      "era5_max_mm_day": 67.6,
+      "monthly_bias_mm_day": {
+        "1": -0.15,
+        "2": 0.05,
+        "3": -0.51,
+        "4": -0.24,
+        "5": -0.26,
+        "6": -1.03,
+        "7": -3.33,
+        "8": -0.43,
+        "9": 0.15,
+        "10": 1.91,
+        "11": 2.74,
+        "12": 0.15
+      },
+      "district_id": 33,
+      "tndma_name": "Coimbatore",
+      "lat": 11.0168,
+      "lon": 76.9558
+    },
+    "Cuddalore": {
+      "n_days": 1089,
+      "stations_mean": 24.9,
+      "station_mean_mm_day": 4.377,
+      "era5_mean_mm_day": 4.125,
+      "bias_mm_day": -0.252,
+      "ratio_era5_over_station": 0.942,
+      "annual_total_station_mm": 1599,
+      "annual_total_era5_mm": 1507,
+      "pearson_r_daily": 0.357,
+      "pearson_r_wet_days": 0.198,
+      "mae_mm_day": 4.713,
+      "quantiles_station_mm": {
+        "p50": 0.0,
+        "p90": 12.8,
+        "p95": 22.8,
+        "p99": 54.8
+      },
+      "quantiles_era5_mm": {
+        "p50": 0.6,
+        "p90": 12.4,
+        "p95": 19.0,
+        "p99": 40.2
+      },
+      "quantile_ratio_era5_over_station": {
+        "p50": null,
+        "p90": 0.97,
+        "p95": 0.835,
+        "p99": 0.733
+      },
+      "wet_day": {
+        "threshold_mm": 2.5,
+        "obs_days": 293,
+        "est_days": 325,
+        "hits": 193,
+        "pod": 0.659,
+        "far": 0.406,
+        "csi": 0.454
+      },
+      "heavy_day": {
+        "threshold_mm": 64.5,
+        "obs_days": 8,
+        "est_days": 4,
+        "hits": 1,
+        "pod": 0.125,
+        "far": 0.75,
+        "csi": 0.091
+      },
+      "very_heavy_day": {
+        "threshold_mm": 115.6,
+        "obs_days": 3,
+        "est_days": 1,
+        "hits": 0,
+        "pod": 0.0,
+        "far": 1.0,
+        "csi": 0.0
+      },
+      "station_max_mm_day": 568.0,
+      "era5_max_mm_day": 128.1,
+      "monthly_bias_mm_day": {
+        "1": -4.62,
+        "2": -0.55,
+        "3": 0.42,
+        "4": 0.17,
+        "5": -1.38,
+        "6": 0.45,
+        "7": -0.77,
+        "8": -1.36,
+        "9": -0.01,
+        "10": 3.43,
+        "11": 0.03,
+        "12": 1.27
+      },
+      "district_id": 46,
+      "tndma_name": "Cuddalore",
+      "lat": 11.748,
+      "lon": 79.7714
+    },
+    "Thanjavur": {
+      "n_days": 1089,
+      "stations_mean": 21.0,
+      "station_mean_mm_day": 3.609,
+      "era5_mean_mm_day": 3.892,
+      "bias_mm_day": 0.283,
+      "ratio_era5_over_station": 1.078,
+      "annual_total_station_mm": 1318,
+      "annual_total_era5_mm": 1422,
+      "pearson_r_daily": 0.361,
+      "pearson_r_wet_days": 0.154,
+      "mae_mm_day": 4.357,
+      "quantiles_station_mm": {
+        "p50": 0.0,
+        "p90": 10.2,
+        "p95": 18.4,
+        "p99": 49.7
+      },
+      "quantiles_era5_mm": {
+        "p50": 0.5,
+        "p90": 13.4,
+        "p95": 19.5,
+        "p99": 36.3
+      },
+      "quantile_ratio_era5_over_station": {
+        "p50": null,
+        "p90": 1.317,
+        "p95": 1.06,
+        "p99": 0.729
+      },
+      "wet_day": {
+        "threshold_mm": 2.5,
+        "obs_days": 266,
+        "est_days": 328,
+        "hits": 177,
+        "pod": 0.665,
+        "far": 0.46,
+        "csi": 0.424
+      },
+      "heavy_day": {
+        "threshold_mm": 64.5,
+        "obs_days": 5,
+        "est_days": 1,
+        "hits": 0,
+        "pod": 0.0,
+        "far": 1.0,
+        "csi": 0.0
+      },
+      "very_heavy_day": {
+        "threshold_mm": 115.6,
+        "obs_days": 1,
+        "est_days": 0,
+        "hits": 0,
+        "pod": 0.0,
+        "far": null,
+        "csi": 0.0
+      },
+      "station_max_mm_day": 304.0,
+      "era5_max_mm_day": 71.3,
+      "monthly_bias_mm_day": {
+        "1": -5.0,
+        "2": -0.08,
+        "3": 0.25,
+        "4": 1.1,
+        "5": 0.45,
+        "6": 0.76,
+        "7": -0.38,
+        "8": 1.06,
+        "9": -0.38,
+        "10": 2.44,
+        "11": 2.6,
+        "12": 0.67
+      },
+      "district_id": 47,
+      "tndma_name": "Thanjavur",
+      "lat": 10.787,
+      "lon": 79.1378
+    },
+    "Nilgiris (Ooty)": {
+      "n_days": 1089,
+      "stations_mean": 28.9,
+      "station_mean_mm_day": 5.09,
+      "era5_mean_mm_day": 5.639,
+      "bias_mm_day": 0.548,
+      "ratio_era5_over_station": 1.108,
+      "annual_total_station_mm": 1859,
+      "annual_total_era5_mm": 2059,
+      "pearson_r_daily": 0.382,
+      "pearson_r_wet_days": 0.203,
+      "mae_mm_day": 5.584,
+      "quantiles_station_mm": {
+        "p50": 0.8,
+        "p90": 16.0,
+        "p95": 23.8,
+        "p99": 44.1
+      },
+      "quantiles_era5_mm": {
+        "p50": 2.4,
+        "p90": 16.2,
+        "p95": 23.1,
+        "p99": 37.6
+      },
+      "quantile_ratio_era5_over_station": {
+        "p50": 3.026,
+        "p90": 1.018,
+        "p95": 0.972,
+        "p99": 0.852
+      },
+      "wet_day": {
+        "threshold_mm": 2.5,
+        "obs_days": 428,
+        "est_days": 536,
+        "hits": 319,
+        "pod": 0.745,
+        "far": 0.405,
+        "csi": 0.495
+      },
+      "heavy_day": {
+        "threshold_mm": 64.5,
+        "obs_days": 3,
+        "est_days": 2,
+        "hits": 0,
+        "pod": 0.0,
+        "far": 1.0,
+        "csi": 0.0
+      },
+      "very_heavy_day": {
+        "threshold_mm": 115.6,
+        "obs_days": 0,
+        "est_days": 0,
+        "hits": 0,
+        "pod": null,
+        "far": null,
+        "csi": null
+      },
+      "station_max_mm_day": 382.0,
+      "era5_max_mm_day": 74.9,
+      "monthly_bias_mm_day": {
+        "1": -0.32,
+        "2": 0.61,
+        "3": 0.08,
+        "4": 2.21,
+        "5": 4.92,
+        "6": 2.0,
+        "7": -4.74,
+        "8": 1.38,
+        "9": -1.43,
+        "10": 1.01,
+        "11": 1.18,
+        "12": -0.31
+      },
+      "district_id": 48,
+      "tndma_name": "The Nilgiris",
+      "lat": 11.4102,
+      "lon": 76.695
+    }
+  },
+  "summary": {
+    "n_districts": 7,
+    "median_ratio_era5_over_station": 0.978,
+    "median_p99_ratio": 0.733,
+    "median_heavy_day_pod": 0.125,
+    "reading": "ratio < 1 means the reanalysis under-reports rain; a p99 ratio well under 1 means it flattens the heavy days the impact engine cares about most"
+  }
+}

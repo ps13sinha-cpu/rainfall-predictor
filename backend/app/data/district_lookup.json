@@ -1,0 +1,5772 @@
+{
+ "built_at": "2026-10-09T09:43:40+00:00",
+ "sources": [
+  "India_Flood_Inventory_v3.csv (Districts, District_LGD_Codes, State)",
+  "DFSI.csv (Dist_Name, State_Name)",
+  "District_FloodImpact.csv",
+  "District_FloodedArea.csv",
+  "HAND_ALIASES / NEW_DISTRICTS in app/build_district_lookup.py"
+ ],
+ "event_rows_with_mismatched_code_lists": 50,
+ "count": 935,
+ "districts": {
+  "& Parts of Himachal Pradesh": {
+   "lgd_code": null,
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "& Parts of Uttar Pradesh": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "& various parts of Nagaland": {
+   "lgd_code": null,
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "11 districts": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "14 districts": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "14 districts of Assam": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "19 districts of Orissa": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "21 districts of Assam": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "26 districts of Rajasthan": {
+   "lgd_code": null,
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "29 districts affected": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "3 out of 8 districts": {
+   "lgd_code": null,
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "6 districts": {
+   "lgd_code": null,
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Adilabad": {
+   "lgd_code": "501",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "adjoining areas": {
+   "lgd_code": null,
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Agar Malwa": {
+   "lgd_code": "667",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Agra": {
+   "lgd_code": "118",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ahmadabad": {
+   "lgd_code": "438",
+   "state": "Gujarat",
+   "aliases": [
+    "Ahmedabad"
+   ],
+   "parent": null
+  },
+  "Ahmadnagar": {
+   "lgd_code": "466",
+   "state": "Maharashtra",
+   "aliases": [
+    "Ahmednagar"
+   ],
+   "parent": null
+  },
+  "Aizawl": {
+   "lgd_code": "261",
+   "state": "Mizoram",
+   "aliases": [
+    "Aijal"
+   ],
+   "parent": null
+  },
+  "Ajmer": {
+   "lgd_code": "86",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Akharpur": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Akola": {
+   "lgd_code": "467",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Alappuzha": {
+   "lgd_code": "554",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Aligarh": {
+   "lgd_code": "119",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Alipurduar": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Alirajpur": {
+   "lgd_code": "639",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Almora": {
+   "lgd_code": "45",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Alwar": {
+   "lgd_code": "87",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Ambala": {
+   "lgd_code": "58",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Ambedkar Nagar": {
+   "lgd_code": "121",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Amethi": {
+   "lgd_code": "640",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Amravati": {
+   "lgd_code": "468",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Amreli": {
+   "lgd_code": "439",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Amritsar": {
+   "lgd_code": "27",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Amroha": {
+   "lgd_code": "154",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Anand": {
+   "lgd_code": "440",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Anantapur": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ananthapuramu": {
+   "lgd_code": "502",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ananthapuramuamu": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Anantnag": {
+   "lgd_code": "1",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Anjaw": {
+   "lgd_code": "628",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Anugul": {
+   "lgd_code": "344",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Anuppur": {
+   "lgd_code": "390",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Araria": {
+   "lgd_code": "188",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Aravalli": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Ariyalur": {
+   "lgd_code": "610",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Arvalli": {
+   "lgd_code": "672",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Arwal": {
+   "lgd_code": "611",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Ashoknagar": {
+   "lgd_code": "391",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Auraiya": {
+   "lgd_code": "122",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Aurangabad": {
+   "lgd_code": "189",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Ayodhya": {
+   "lgd_code": "140",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Azamgarh": {
+   "lgd_code": "123",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Badgam": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Bagalkote": {
+   "lgd_code": "524",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bagalkotee": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bagalkotee Ballari": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bagalkotee Belagavi": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bagalkotee Bengaluru Urban": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bagalkotee Udupi": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "BagalkoteeBijapur": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bageshwar": {
+   "lgd_code": "46",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Baghpat": {
+   "lgd_code": "124",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bahraich": {
+   "lgd_code": "125",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Baksa": {
+   "lgd_code": "616",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Balaghat": {
+   "lgd_code": "392",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Balangir": {
+   "lgd_code": "345",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Baleshwar": {
+   "lgd_code": "346",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Ballari": {
+   "lgd_code": "528",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Ballia": {
+   "lgd_code": "126",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Balod": {
+   "lgd_code": "646",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Baloda Bazar": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Balodabazar-Bhatapara": {
+   "lgd_code": "644",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Balrampur": {
+   "lgd_code": "649",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bametara": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Banas Kantha": {
+   "lgd_code": "441",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Banda": {
+   "lgd_code": "456",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bandipora": {
+   "lgd_code": "623",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Bandipore": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Bangalore": {
+   "lgd_code": "525",
+   "state": "Karnataka",
+   "aliases": [
+    "Bengaluru Urban",
+    "Bangalore Urban",
+    "Bengaluru",
+    "Bangalore Urban District"
+   ],
+   "parent": null
+  },
+  "Banka": {
+   "lgd_code": "190",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Bankura": {
+   "lgd_code": "305",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Banswara": {
+   "lgd_code": "88",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Bara Banki": {
+   "lgd_code": "129",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Baramula": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Baramulla": {
+   "lgd_code": "3",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Baran": {
+   "lgd_code": "366",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Bareilly": {
+   "lgd_code": "130",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bargarh": {
+   "lgd_code": "347",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Barmer": {
+   "lgd_code": "90",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Barnala": {
+   "lgd_code": "605",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Barpeta": {
+   "lgd_code": "280",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Barwani": {
+   "lgd_code": "393",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bastar": {
+   "lgd_code": "374",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Basti": {
+   "lgd_code": "131",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bathinda": {
+   "lgd_code": "28",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Baudh": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Beed": {
+   "lgd_code": "470",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Beedar": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Begusarai": {
+   "lgd_code": "191",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Belagavi": {
+   "lgd_code": "527",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bemetara": {
+   "lgd_code": "650",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bengaluru Rural": {
+   "lgd_code": "526",
+   "state": "Karnataka",
+   "aliases": [
+    "Bangalore Rural"
+   ],
+   "parent": null
+  },
+  "Betul": {
+   "lgd_code": "394",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhadohi": {
+   "lgd_code": "179",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhadradri Bhadradri Kothagudem": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhadradri Bhadradri Kothagudem Bhadradri Kothagudem": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhadradri Bhadradri Kothagudem kothagudem": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhadradri Kothagudem": {
+   "lgd_code": "690",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhadrak": {
+   "lgd_code": "348",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhagalpur": {
+   "lgd_code": "192",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhandara": {
+   "lgd_code": "471",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhandara Chandrapur": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Bharatpur": {
+   "lgd_code": "760",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Bharuch": {
+   "lgd_code": "442",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhavnagar": {
+   "lgd_code": "443",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhilwara": {
+   "lgd_code": "92",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhind": {
+   "lgd_code": "395",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhiwani": {
+   "lgd_code": "59",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhojpur": {
+   "lgd_code": "193",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhopal": {
+   "lgd_code": "396",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bhubaneshwar": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Bid": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Bidar": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bijapur": {
+   "lgd_code": "636",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bijapur Surendranagar": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Bijnor": {
+   "lgd_code": "132",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Bikaner": {
+   "lgd_code": "93",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Bilaspur": {
+   "lgd_code": "375",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Birbhum": {
+   "lgd_code": "307",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Bishnupur": {
+   "lgd_code": "252",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Biswanath": {
+   "lgd_code": "705",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Bokaro": {
+   "lgd_code": "322",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Bongaigaon": {
+   "lgd_code": "281",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Botad": {
+   "lgd_code": "676",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Boudh": {
+   "lgd_code": "349",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Budaun": {
+   "lgd_code": "133",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Budgam": {
+   "lgd_code": "2",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Bulandshahr": {
+   "lgd_code": "134",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Buldana": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Buldhana": {
+   "lgd_code": "472",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Bundi": {
+   "lgd_code": "94",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Burhanpur": {
+   "lgd_code": "397",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Buxar": {
+   "lgd_code": "194",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Cachar": {
+   "lgd_code": "282",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Central": {
+   "lgd_code": "77",
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "Central Part of Uttar Kashi Pradesh": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagara": {
+   "lgd_code": "531",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagaraa": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagaraa  Kalaburagi": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagaraa Chikkaballapura": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagaraa Chitradurga": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagaraa Davangere": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagaraa Gadag": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamarajanagaraa Hassan": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamba": {
+   "lgd_code": "16",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Chamoli": {
+   "lgd_code": "47",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Champawat": {
+   "lgd_code": "48",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Champhai": {
+   "lgd_code": "262",
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "Chandauli": {
+   "lgd_code": "135",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Chandel": {
+   "lgd_code": "253",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Chandigarh": {
+   "lgd_code": "44",
+   "state": "Chandigarh",
+   "aliases": [
+    "Chandigarh UT"
+   ],
+   "parent": null
+  },
+  "Chandrapur": {
+   "lgd_code": "473",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Changlang": {
+   "lgd_code": "229",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Charaideo": {
+   "lgd_code": "708",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Charki Dadri": {
+   "lgd_code": "701",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Chatra": {
+   "lgd_code": "323",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Chengalpattu": {
+   "lgd_code": "730",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Chengalpet",
+    "Chingleput"
+   ],
+   "parent": null
+  },
+  "Chennai": {
+   "lgd_code": "568",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Madras",
+    "Greater Chennai"
+   ],
+   "parent": null
+  },
+  "Chhatarpur": {
+   "lgd_code": "398",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Chhatisgarh": {
+   "lgd_code": null,
+   "state": null,
+   "aliases": [],
+   "parent": null
+  },
+  "Chhindwara": {
+   "lgd_code": "399",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Chikkaballapura": {
+   "lgd_code": "630",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chikkamagaluru": {
+   "lgd_code": "532",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chikodi": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chirang": {
+   "lgd_code": "612",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Chitradurga": {
+   "lgd_code": "533",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Chitrakoot": {
+   "lgd_code": "136",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Chittaurgarh": {
+   "lgd_code": null,
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Chittoor": {
+   "lgd_code": "503",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Chittorgarh": {
+   "lgd_code": "95",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Chota Udaipur": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Chumanung": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Churachandpur": {
+   "lgd_code": "254",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Churu": {
+   "lgd_code": "96",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "coastal districts of Andhra Pradesh": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Coimbatore": {
+   "lgd_code": "569",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Kovai"
+   ],
+   "parent": null
+  },
+  "Cooch Behar": {
+   "lgd_code": "308",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Cuddalore": {
+   "lgd_code": "570",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Cuttack": {
+   "lgd_code": "350",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Dadra & Nagar Haveli": {
+   "lgd_code": "465",
+   "state": "Dadra & Nagar Have",
+   "aliases": [],
+   "parent": null
+  },
+  "Dahod": {
+   "lgd_code": "445",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Dakshin Bastar Dantewada": {
+   "lgd_code": "376",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Dakshin Dinajpur": {
+   "lgd_code": "310",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Dakshina Kannada": {
+   "lgd_code": "534",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Daman": {
+   "lgd_code": null,
+   "state": "Daman & Diu",
+   "aliases": [],
+   "parent": null
+  },
+  "Damoh": {
+   "lgd_code": "400",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Dangs": {
+   "lgd_code": "444",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Darbhanga": {
+   "lgd_code": "195",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Darjeelingm": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Darjiling": {
+   "lgd_code": "309",
+   "state": "West Bengal",
+   "aliases": [
+    "Darjeeling",
+    "Siliguri"
+   ],
+   "parent": null
+  },
+  "Darrang": {
+   "lgd_code": "283",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Datia": {
+   "lgd_code": "401",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Dausa": {
+   "lgd_code": "97",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Davanagere": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Davangere": {
+   "lgd_code": "535",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Debagarh": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Dehradun": {
+   "lgd_code": "49",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Deogarh": {
+   "lgd_code": "351",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Deoghar": {
+   "lgd_code": "324",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Deoria": {
+   "lgd_code": "137",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Devbhumi Dwarka": {
+   "lgd_code": "674",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Devbhumi Dwarka Dwarka": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Dewas": {
+   "lgd_code": "402",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhalai": {
+   "lgd_code": "269",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhamtari": {
+   "lgd_code": "377",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhanbad": {
+   "lgd_code": "325",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhar": {
+   "lgd_code": "536",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Dharashiv": {
+   "lgd_code": "488",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Dharmapuri": {
+   "lgd_code": "571",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Dharwad": {
+   "lgd_code": "536",
+   "state": "Karnataka",
+   "aliases": [
+    "Hubli-Dharwad",
+    "Hubballi-Dharwad",
+    "Hubli"
+   ],
+   "parent": null
+  },
+  "Dhaulpur": {
+   "lgd_code": null,
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhemaji": {
+   "lgd_code": "284",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhenkanal": {
+   "lgd_code": "352",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Dholpur": {
+   "lgd_code": "98",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhubri": {
+   "lgd_code": "285",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Dhule": {
+   "lgd_code": "474",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Dibang Valley": {
+   "lgd_code": "230",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Dibrugarh": {
+   "lgd_code": "286",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Different parts of Jammu": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Dima Hasao": {
+   "lgd_code": "299",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Dimapur": {
+   "lgd_code": "244",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Dindigul": {
+   "lgd_code": "572",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Dindugal"
+   ],
+   "parent": null
+  },
+  "Dindori": {
+   "lgd_code": "404",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Districts of Cauvery delta": {
+   "lgd_code": null,
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Districts of Cauvery delta zone": {
+   "lgd_code": null,
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Diu": {
+   "lgd_code": null,
+   "state": "Daman & Diu",
+   "aliases": [],
+   "parent": null
+  },
+  "Doda": {
+   "lgd_code": "461",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Dohad": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Dumka": {
+   "lgd_code": "326",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Dungarpur": {
+   "lgd_code": "99",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Durg": {
+   "lgd_code": "378",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "East & West Godavari": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "East & West Purba Purba Medinipur": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "East District": {
+   "lgd_code": "505",
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "East East Jaintia Hills": {
+   "lgd_code": null,
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "East Garo Hills": {
+   "lgd_code": "273",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "East Godavari": {
+   "lgd_code": "505",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "East Jaintia Hills": {
+   "lgd_code": "657",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "East Kameng": {
+   "lgd_code": "231",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "East Khasi Hills": {
+   "lgd_code": "274",
+   "state": "Meghalaya",
+   "aliases": [
+    "Shillong"
+   ],
+   "parent": null
+  },
+  "East Nimar": {
+   "lgd_code": "405",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "East Siang": {
+   "lgd_code": "232",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "East Uttar Kashi Pradesh": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "East West Singhbhum": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Entire village": {
+   "lgd_code": null,
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Ernakulam": {
+   "lgd_code": "555",
+   "state": "Kerala",
+   "aliases": [
+    "Kochi",
+    "Cochin"
+   ],
+   "parent": null
+  },
+  "Ernakulam ant Thiruvananthapuram": {
+   "lgd_code": null,
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Ernakulam Kannur": {
+   "lgd_code": null,
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Erode": {
+   "lgd_code": "573",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Etah": {
+   "lgd_code": "138",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Etawah": {
+   "lgd_code": "139",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Faizabad": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Faridabad": {
+   "lgd_code": "60",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Faridkot": {
+   "lgd_code": "29",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Farrukhabad": {
+   "lgd_code": "141",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Fatehabad": {
+   "lgd_code": "61",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Fatehgarh Sahib": {
+   "lgd_code": "30",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Fatehpur": {
+   "lgd_code": "142",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Fazilka": {
+   "lgd_code": "651",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Ferozepur": {
+   "lgd_code": "31",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Few districts": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Firozabad": {
+   "lgd_code": "143",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Firozpur": {
+   "lgd_code": null,
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Gadag": {
+   "lgd_code": "537",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Gadchiroli": {
+   "lgd_code": "475",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Gadchiroli Yavotmal": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Gajapati": {
+   "lgd_code": "353",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Ganderbal": {
+   "lgd_code": "626",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Gandhinagar": {
+   "lgd_code": "446",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Ganganagar": {
+   "lgd_code": "100",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Gangtok": {
+   "lgd_code": "225",
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "Ganjam": {
+   "lgd_code": "354",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Garhwa": {
+   "lgd_code": "328",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Garhwal": {
+   "lgd_code": "52",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Gariaband": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Gautam Buddha Nagar": {
+   "lgd_code": "144",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Gaya": {
+   "lgd_code": "196",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Ghat area": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Ghaziabad": {
+   "lgd_code": "145",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ghazipur": {
+   "lgd_code": "146",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ghazipurr": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Gir Somnath": {
+   "lgd_code": "675",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Giridih": {
+   "lgd_code": "329",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Goa": {
+   "lgd_code": "287",
+   "state": "Daman and Diu",
+   "aliases": [],
+   "parent": null
+  },
+  "Goalpara": {
+   "lgd_code": "287",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Godda": {
+   "lgd_code": "330",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Golaghat": {
+   "lgd_code": "288",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Gomati": {
+   "lgd_code": "654",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Gonda": {
+   "lgd_code": "514",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Gondia": {
+   "lgd_code": "476",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Gondiya": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Gopalganj": {
+   "lgd_code": "197",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Gorakhpur": {
+   "lgd_code": "148",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Greater Kolkata area": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Gumla": {
+   "lgd_code": "331",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Guna": {
+   "lgd_code": "406",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Guntur": {
+   "lgd_code": "506",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Gurdaspur": {
+   "lgd_code": "32",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Gurugram": {
+   "lgd_code": "62",
+   "state": "Haryana",
+   "aliases": [
+    "Gurgaon"
+   ],
+   "parent": null
+  },
+  "Gwalior": {
+   "lgd_code": "407",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Gyalshing": {
+   "lgd_code": "228",
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "Hailakandi": {
+   "lgd_code": "289",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Hamirpur": {
+   "lgd_code": "17",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Hanumangarh": {
+   "lgd_code": "101",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Hapur": {
+   "lgd_code": "502",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Harda": {
+   "lgd_code": "336",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Hardoi": {
+   "lgd_code": "150",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Hardwar": {
+   "lgd_code": null,
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Haridwar": {
+   "lgd_code": "50",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Hassan": {
+   "lgd_code": "539",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Hathras": {
+   "lgd_code": "163",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Haveri": {
+   "lgd_code": "540",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Hazaribagh": {
+   "lgd_code": "332",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Heavy rains Hazaribagh": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Hilly areas": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Hingoli": {
+   "lgd_code": "477",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Hisar": {
+   "lgd_code": "204",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Hojai": {
+   "lgd_code": "709",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Hooghly": {
+   "lgd_code": "312",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Hoshangabad": {
+   "lgd_code": null,
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Hoshiarpur": {
+   "lgd_code": "33",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Howrah": {
+   "lgd_code": "313",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Hyderabad": {
+   "lgd_code": "507",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Hyderabad & Parts of Telangana": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Idukki": {
+   "lgd_code": "556",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Imphal East": {
+   "lgd_code": "255",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Imphal West": {
+   "lgd_code": "256",
+   "state": "Manipur",
+   "aliases": [
+    "Imphal"
+   ],
+   "parent": null
+  },
+  "Indore": {
+   "lgd_code": "410",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Itanagar": {
+   "lgd_code": null,
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jabalpur": {
+   "lgd_code": "411",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jagatsinghapur": {
+   "lgd_code": "355",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Jagdalpur": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jagitial": {
+   "lgd_code": "681",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Jaipur": {
+   "lgd_code": "102",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jaisalmer": {
+   "lgd_code": "103",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jajapur": {
+   "lgd_code": "356",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Jalandhar": {
+   "lgd_code": "34",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Jalaun": {
+   "lgd_code": "151",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jalgaon": {
+   "lgd_code": "478",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Jalna": {
+   "lgd_code": "479",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Jalor": {
+   "lgd_code": null,
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jalore": {
+   "lgd_code": "104",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jaloree": {
+   "lgd_code": null,
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jalpaiguri": {
+   "lgd_code": "314",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Jammu": {
+   "lgd_code": "5",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Jamnagar": {
+   "lgd_code": "447",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Jamtara": {
+   "lgd_code": "333",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Jamui": {
+   "lgd_code": "198",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Jangoan": {
+   "lgd_code": "689",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Janjgir - Champa": {
+   "lgd_code": "379",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jashpur": {
+   "lgd_code": "380",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jaunpur": {
+   "lgd_code": "152",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jawad": {
+   "lgd_code": null,
+   "state": null,
+   "aliases": [],
+   "parent": null
+  },
+  "Jayashankar": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Jayashankar Bhupalapally": {
+   "lgd_code": "687",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Jehanabad": {
+   "lgd_code": "199",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhabua": {
+   "lgd_code": "412",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhajjar": {
+   "lgd_code": "64",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhalawar": {
+   "lgd_code": "105",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhansi": {
+   "lgd_code": "153",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhargram": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Jharsuguda": {
+   "lgd_code": "357",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhelum": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhunjhunu": {
+   "lgd_code": "106",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jhunjhunun": {
+   "lgd_code": null,
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jind": {
+   "lgd_code": "65",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Jiribam": {
+   "lgd_code": "713",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Jodhpur": {
+   "lgd_code": "107",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Jogulamba Gadwal": {
+   "lgd_code": "695",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Jorhat": {
+   "lgd_code": "290",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Junagadh": {
+   "lgd_code": "448",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Kabeerdham": {
+   "lgd_code": "382",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kachchh": {
+   "lgd_code": "449",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Kaimur (bhabua)": {
+   "lgd_code": null,
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Kaithal": {
+   "lgd_code": "66",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Kakching": {
+   "lgd_code": "711",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Kalaburagi": {
+   "lgd_code": "538",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Kalahandi": {
+   "lgd_code": "358",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Kalimpong": {
+   "lgd_code": "702",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Kallakurichi": {
+   "lgd_code": "729",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Kallakuruchi"
+   ],
+   "parent": null
+  },
+  "Kamareddy": {
+   "lgd_code": "685",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Kamjong": {
+   "lgd_code": "717",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Kamle": {
+   "lgd_code": "718",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kamrup": {
+   "lgd_code": "291",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Kamrup Metropolitan": {
+   "lgd_code": "618",
+   "state": "Assam",
+   "aliases": [
+    "Kamrup Metro",
+    "Guwahati",
+    "Kamrup (Metro)"
+   ],
+   "parent": null
+  },
+  "Kancheepuram": {
+   "lgd_code": "574",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Kanchipuram",
+    "Kanchipuram District"
+   ],
+   "parent": null
+  },
+  "Kandhamal": {
+   "lgd_code": "359",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Kangpokpi": {
+   "lgd_code": "712",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Kangra": {
+   "lgd_code": "18",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kannauj": {
+   "lgd_code": "155",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kanniyakumari": {
+   "lgd_code": "575",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Kanniyakumariumari",
+    "Kanyakumari",
+    "Kanyakumari District"
+   ],
+   "parent": null
+  },
+  "Kannur": {
+   "lgd_code": "557",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Kanpur Dehat": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kanpur Nagar": {
+   "lgd_code": "157",
+   "state": "Uttar Pradesh",
+   "aliases": [
+    "Kanpur"
+   ],
+   "parent": null
+  },
+  "Kanpur nagar Dehat": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kanpur nagar Nagar": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kapurthala": {
+   "lgd_code": "35",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Karaikal": {
+   "lgd_code": "598",
+   "state": "Puducherry",
+   "aliases": [],
+   "parent": null
+  },
+  "Karauli": {
+   "lgd_code": "108",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Karbi Anglong": {
+   "lgd_code": "292",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Kargil": {
+   "lgd_code": "6",
+   "state": "Ladakh",
+   "aliases": [],
+   "parent": null
+  },
+  "Karimganj": {
+   "lgd_code": "293",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Karimnagar": {
+   "lgd_code": "508",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Karnal": {
+   "lgd_code": "67",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Karur": {
+   "lgd_code": "576",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Kasaragod": {
+   "lgd_code": "558",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Kasganj": {
+   "lgd_code": "633",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kashmir": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Kashmir valley": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Kathua": {
+   "lgd_code": "7",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Katihar": {
+   "lgd_code": "201",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Katni": {
+   "lgd_code": "413",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kaushambi": {
+   "lgd_code": "158",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kendrapara": {
+   "lgd_code": "360",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Kendujhar": {
+   "lgd_code": "361",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Khagaria": {
+   "lgd_code": "202",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Khammam": {
+   "lgd_code": "509",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Khargone (Khargone (West Nimar))": {
+   "lgd_code": null,
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kheda": {
+   "lgd_code": "450",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Kheri": {
+   "lgd_code": "159",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Khordha": {
+   "lgd_code": "362",
+   "state": "Odisha",
+   "aliases": [
+    "Bhubaneswar",
+    "Khurda"
+   ],
+   "parent": null
+  },
+  "Khowai": {
+   "lgd_code": "652",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Khunti": {
+   "lgd_code": "606",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Khurja": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kinnaur": {
+   "lgd_code": "19",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kiphire": {
+   "lgd_code": "614",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Kishanganj": {
+   "lgd_code": "203",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Kishtwar": {
+   "lgd_code": "620",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Kodagu": {
+   "lgd_code": "541",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Kodarma": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Koderma": {
+   "lgd_code": "334",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Kohima": {
+   "lgd_code": "245",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Kokrajhar": {
+   "lgd_code": "294",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Kokrajhar Darrang": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Kolar": {
+   "lgd_code": "542",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Kolasib": {
+   "lgd_code": "263",
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "Kolhapur": {
+   "lgd_code": "480",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Kolkata": {
+   "lgd_code": "315",
+   "state": "West Bengal",
+   "aliases": [
+    "Calcutta"
+   ],
+   "parent": null
+  },
+  "Kollam": {
+   "lgd_code": "559",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Kollam Kozhikode": {
+   "lgd_code": null,
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Kondagaon": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Koppal": {
+   "lgd_code": "543",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Koraput": {
+   "lgd_code": "363",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Korba": {
+   "lgd_code": "383",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Korea": {
+   "lgd_code": "384",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Koriya": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kota": {
+   "lgd_code": "109",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Kottayam": {
+   "lgd_code": "560",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Kozhikode": {
+   "lgd_code": "561",
+   "state": "Kerala",
+   "aliases": [
+    "Calicut"
+   ],
+   "parent": null
+  },
+  "Kra Daadi": {
+   "lgd_code": "677",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Krishna": {
+   "lgd_code": "510",
+   "state": "Andhra Pradesh",
+   "aliases": [
+    "Vijayawada"
+   ],
+   "parent": null
+  },
+  "Krishnagiri": {
+   "lgd_code": "577",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Kulgam": {
+   "lgd_code": "622",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Kullu": {
+   "lgd_code": "20",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kumuram Bheem Asifabad": {
+   "lgd_code": "699",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Kupwara": {
+   "lgd_code": "8",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Kurnool": {
+   "lgd_code": "511",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kurukshetra": {
+   "lgd_code": "68",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Kurung Kumey": {
+   "lgd_code": "233",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Kushinagar": {
+   "lgd_code": "160",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Lahul & Spiti": {
+   "lgd_code": "21",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Lakhimpur": {
+   "lgd_code": "295",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Lakhisarai": {
+   "lgd_code": "204",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Lakshadweep": {
+   "lgd_code": null,
+   "state": "Lakshadweep",
+   "aliases": [],
+   "parent": null
+  },
+  "Lalitpur": {
+   "lgd_code": "161",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Latehar": {
+   "lgd_code": "335",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Latur": {
+   "lgd_code": "481",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Lawngtlai": {
+   "lgd_code": "264",
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "Leh": {
+   "lgd_code": null,
+   "state": "Ladakh",
+   "aliases": [],
+   "parent": null
+  },
+  "Leh ladakh": {
+   "lgd_code": "9",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Lepa Rada": {
+   "lgd_code": "724",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Lohardaga": {
+   "lgd_code": "336",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Lohit": {
+   "lgd_code": "234",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Longding": {
+   "lgd_code": "666",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Longleng": {
+   "lgd_code": "615",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Lower Dibang Valley": {
+   "lgd_code": "235",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Lower Lower Subansiri": {
+   "lgd_code": null,
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Lower Siang": {
+   "lgd_code": "719",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Lower Subansiri": {
+   "lgd_code": "236",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Lucknow": {
+   "lgd_code": "162",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ludhiana": {
+   "lgd_code": "36",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Lunglei": {
+   "lgd_code": "265",
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "Madhepura": {
+   "lgd_code": "205",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Madhubani": {
+   "lgd_code": "206",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Madurai": {
+   "lgd_code": "578",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahabubabad": {
+   "lgd_code": "688",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahabubnagar": {
+   "lgd_code": "512",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahasamund": {
+   "lgd_code": "385",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahe": {
+   "lgd_code": "451",
+   "state": "Puducherry",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahendragarh": {
+   "lgd_code": "69",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahesana": {
+   "lgd_code": "451",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahisagar": {
+   "lgd_code": "669",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahoba": {
+   "lgd_code": "165",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mahrajganj": {
+   "lgd_code": "164",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mainpuri": {
+   "lgd_code": "166",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Majuli": {
+   "lgd_code": "706",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Malappuram": {
+   "lgd_code": "562",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Malda": {
+   "lgd_code": "316",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Maldah": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Malikkeri": {
+   "lgd_code": null,
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Malkangiri": {
+   "lgd_code": "364",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Mamit": {
+   "lgd_code": "266",
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "Manali": {
+   "lgd_code": null,
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mancachar": {
+   "lgd_code": "707",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Mancherial": {
+   "lgd_code": "684",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Mandi": {
+   "lgd_code": "22",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mandla": {
+   "lgd_code": "415",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mandsaur": {
+   "lgd_code": "416",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mandya": {
+   "lgd_code": "544",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Mangalbari": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Mangalore": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Mangan": {
+   "lgd_code": "226",
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "Mansa": {
+   "lgd_code": "37",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Many districts of South Bengal": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Many districts of Tamil Nadu.": {
+   "lgd_code": null,
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Many districts of Uttar Kashi Pradesh": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Many parts": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Many parts of Tamil Nadu.": {
+   "lgd_code": null,
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Many parts of the State": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Marathwada": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Marigaon": {
+   "lgd_code": "296",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Mathura": {
+   "lgd_code": "167",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mau": {
+   "lgd_code": "24",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mayiladuthurai": {
+   "lgd_code": null,
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Mayiladuthurai District",
+    "Mayuram",
+    "Mayavaram"
+   ],
+   "parent": "Nagapattinam"
+  },
+  "Mayurbhanj": {
+   "lgd_code": "365",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Medak": {
+   "lgd_code": "513",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Medchal Malkajgiri": {
+   "lgd_code": "700",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Medinipur West": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Meerut": {
+   "lgd_code": "169",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mirpur": {
+   "lgd_code": "17",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Mirzapur": {
+   "lgd_code": "170",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Moga": {
+   "lgd_code": "38",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Mokokchung": {
+   "lgd_code": "246",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Mon": {
+   "lgd_code": "247",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Moradabad": {
+   "lgd_code": "171",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Morbi": {
+   "lgd_code": "673",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Morena": {
+   "lgd_code": "417",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Morigaon": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Most of the districts": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Most parts": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Most Upper Lower Subansiri": {
+   "lgd_code": null,
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Mudigere": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Mulugu": {
+   "lgd_code": "720",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Mumbai": {
+   "lgd_code": "482",
+   "state": "Maharashtra",
+   "aliases": [
+    "Bombay",
+    "Mumbai City",
+    "South Mumbai"
+   ],
+   "parent": null
+  },
+  "Mumbai (Colaba)": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Mumbai Suburban": {
+   "lgd_code": "483",
+   "state": "Maharashtra",
+   "aliases": [
+    "Bombay Suburban"
+   ],
+   "parent": null
+  },
+  "Mungeli": {
+   "lgd_code": "647",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Munger": {
+   "lgd_code": "207",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Murshidabad": {
+   "lgd_code": "319",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Muzaffarabad": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Muzaffarnagar": {
+   "lgd_code": "172",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Muzaffarpur": {
+   "lgd_code": "208",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Mysuru": {
+   "lgd_code": "545",
+   "state": "Karnataka",
+   "aliases": [
+    "Mysore"
+   ],
+   "parent": null
+  },
+  "Nabarangapur": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Nabarangpur": {
+   "lgd_code": "366",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Nadia": {
+   "lgd_code": "320",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Nagaon": {
+   "lgd_code": "297",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Nagapattinam": {
+   "lgd_code": "579",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Nagapatnam"
+   ],
+   "parent": null
+  },
+  "Nagarkoil": {
+   "lgd_code": null,
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Nagarkurnool": {
+   "lgd_code": "694",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Nagaur": {
+   "lgd_code": "110",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Nagpur": {
+   "lgd_code": "484",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Nainital": {
+   "lgd_code": "51",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Nalanda": {
+   "lgd_code": "209",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Nalbari": {
+   "lgd_code": "298",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Nalgonda": {
+   "lgd_code": "514",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Namakkal": {
+   "lgd_code": "580",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Namchi": {
+   "lgd_code": "227",
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "Namsai": {
+   "lgd_code": "678",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Nanded": {
+   "lgd_code": "485",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Nandurbar": {
+   "lgd_code": "486",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Narayanpet": {
+   "lgd_code": "721",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Narayanpur": {
+   "lgd_code": "637",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Narmada": {
+   "lgd_code": "452",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Narmadapuram": {
+   "lgd_code": "409",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Narsimhapur": {
+   "lgd_code": "418",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Nashik": {
+   "lgd_code": "487",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Navsari": {
+   "lgd_code": "453",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Nawada": {
+   "lgd_code": "210",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Nayagarh": {
+   "lgd_code": "367",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Neemuch": {
+   "lgd_code": "419",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "neighborhood": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "neighbourhood": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "New Delhi": {
+   "lgd_code": "79",
+   "state": "Delhi",
+   "aliases": [
+    "Delhi"
+   ],
+   "parent": null
+  },
+  "New New Delhi": {
+   "lgd_code": null,
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "Nicobars": {
+   "lgd_code": null,
+   "state": "Andaman & Nicobar",
+   "aliases": [],
+   "parent": null
+  },
+  "Nirmal": {
+   "lgd_code": "680",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Niwari": {
+   "lgd_code": "722",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Nizamabad": {
+   "lgd_code": "516",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Noney": {
+   "lgd_code": "714",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "North": {
+   "lgd_code": "632",
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "North  & Middle Andaman": {
+   "lgd_code": "632",
+   "state": "Andaman & Nicobar",
+   "aliases": [],
+   "parent": null
+  },
+  "North 24 Parganas": {
+   "lgd_code": "303",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "North Bengal": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "North East": {
+   "lgd_code": "81",
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "North Garo Hills": {
+   "lgd_code": "656",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "North Goa": {
+   "lgd_code": "551",
+   "state": "Goa",
+   "aliases": [
+    "Panaji",
+    "Panjim"
+   ],
+   "parent": null
+  },
+  "North Tripura": {
+   "lgd_code": "270",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "North Twenty Four Pargan*": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "North West": {
+   "lgd_code": "82",
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "North westduar": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "North westdusar": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Northern parts": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Ntr": {
+   "lgd_code": "749",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Nuapada": {
+   "lgd_code": "368",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Nuh": {
+   "lgd_code": "604",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Osmanabad": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Pak": {
+   "lgd_code": "723",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Pakke Kessang": {
+   "lgd_code": "723",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Pakur": {
+   "lgd_code": "337",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Palakkad": {
+   "lgd_code": "563",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Palampur": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Palamu": {
+   "lgd_code": "338",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Palghar": {
+   "lgd_code": "665",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Pali": {
+   "lgd_code": "111",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Palnadu": {
+   "lgd_code": "751",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Palwal": {
+   "lgd_code": "619",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Panch Mahals": {
+   "lgd_code": "454",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Panchkula": {
+   "lgd_code": "70",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Panipat": {
+   "lgd_code": "71",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Panna": {
+   "lgd_code": "420",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Papum Pare": {
+   "lgd_code": "237",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Parbhani": {
+   "lgd_code": "489",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Andhra Pradesh": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Himachal Pradesh": {
+   "lgd_code": null,
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Jammu": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Jharkhand": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Karnataka": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Lahul & Spitti": {
+   "lgd_code": null,
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Maharashtra": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Meghalaya": {
+   "lgd_code": null,
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Nagaland": {
+   "lgd_code": null,
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Orissa": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Rajasthan": {
+   "lgd_code": null,
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Sikkim": {
+   "lgd_code": null,
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Telangana": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Uttar Kashiakhand": {
+   "lgd_code": null,
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of Uttar Pradesh": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Parts of West Bengal": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Paschim Bardhaman": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Paschim Medinipur": {
+   "lgd_code": "318",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Paschim Purba Bardhaman": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Paschim Purba Medinipur": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Pashchim Champaran": {
+   "lgd_code": "211",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Pashchimi Singhbhum": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Pashchimi West Singhbhum": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Patan": {
+   "lgd_code": "455",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Pathanamthitta": {
+   "lgd_code": "564",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Pathankot": {
+   "lgd_code": "662",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Patiala": {
+   "lgd_code": "41",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Patna": {
+   "lgd_code": "520",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Peddapalli": {
+   "lgd_code": "682",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Perambalur": {
+   "lgd_code": "581",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Peren": {
+   "lgd_code": "613",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Phek": {
+   "lgd_code": "248",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Pherzawl": {
+   "lgd_code": "715",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Pilibhit": {
+   "lgd_code": "173",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Pithoragarh": {
+   "lgd_code": "53",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Poonch": {
+   "lgd_code": "10",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Porbandar": {
+   "lgd_code": "456",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Prakasam": {
+   "lgd_code": "517",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Pratapgarh": {
+   "lgd_code": "629",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Prayagraj": {
+   "lgd_code": "120",
+   "state": "Uttar Pradesh",
+   "aliases": [
+    "Allahabad"
+   ],
+   "parent": null
+  },
+  "Puducherry": {
+   "lgd_code": "600",
+   "state": "Puducherry",
+   "aliases": [
+    "Pondicherry"
+   ],
+   "parent": null
+  },
+  "Pudukkottai": {
+   "lgd_code": "582",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Pudukottai"
+   ],
+   "parent": null
+  },
+  "Pulwama": {
+   "lgd_code": "11",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Punch": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Pune": {
+   "lgd_code": "490",
+   "state": "Maharashtra",
+   "aliases": [
+    "Poona"
+   ],
+   "parent": null
+  },
+  "Purba Bardhaman": {
+   "lgd_code": "306",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Purba Champaran": {
+   "lgd_code": null,
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Purba Medinipur": {
+   "lgd_code": "317",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Purba Purba Bardhaman": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Purba Purba Medinipur": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Purbi Champaran": {
+   "lgd_code": "213",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Purbi Singhbhum": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Purbi West Singhbhum": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Puri": {
+   "lgd_code": "432",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Purnia": {
+   "lgd_code": "214",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Purulia": {
+   "lgd_code": "321",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Puruliya": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Rae Bareli": {
+   "lgd_code": "175",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Raichur": {
+   "lgd_code": "546",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Raigad": {
+   "lgd_code": "491",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Raigarh": {
+   "lgd_code": "386",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Raipur": {
+   "lgd_code": "387",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Raisen": {
+   "lgd_code": "421",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Rajanna Sircilla": {
+   "lgd_code": "683",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Rajgarh": {
+   "lgd_code": "422",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Rajkot": {
+   "lgd_code": "457",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Rajnandgaon": {
+   "lgd_code": "388",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Rajouri": {
+   "lgd_code": "12",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Rajsamand": {
+   "lgd_code": "112",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Ramagiri": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Ramanagara": {
+   "lgd_code": "631",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Ramanathapuram": {
+   "lgd_code": "583",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Ramnad"
+   ],
+   "parent": null
+  },
+  "Ramban": {
+   "lgd_code": "621",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Ramgarh": {
+   "lgd_code": "607",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Rampur": {
+   "lgd_code": "649",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ranchi": {
+   "lgd_code": "339",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Ranga Reddy": {
+   "lgd_code": "518",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Ranipet": {
+   "lgd_code": "731",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Ranipettai"
+   ],
+   "parent": null
+  },
+  "Ratlam": {
+   "lgd_code": "423",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ratnagiri": {
+   "lgd_code": "492",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Rayagada": {
+   "lgd_code": "370",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Reasi": {
+   "lgd_code": "627",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Rewa": {
+   "lgd_code": "72",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Rewari": {
+   "lgd_code": "72",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Ribhoi": {
+   "lgd_code": "276",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "Rohtak": {
+   "lgd_code": "73",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Rohtas": {
+   "lgd_code": "215",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Rudraprayag": {
+   "lgd_code": "54",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Rugi": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Rupnagar": {
+   "lgd_code": "42",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Rural": {
+   "lgd_code": "526",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "S.A.S Nagar": {
+   "lgd_code": "608",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Sabar Kantha": {
+   "lgd_code": "458",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Sagar": {
+   "lgd_code": "300",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Saharanpur": {
+   "lgd_code": "177",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Saharsa": {
+   "lgd_code": "216",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Sahebganj": {
+   "lgd_code": "340",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Sahibganj": {
+   "lgd_code": null,
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Sahibzada Ajit Singh Nag*": {
+   "lgd_code": null,
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Saiha": {
+   "lgd_code": null,
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "Salem": {
+   "lgd_code": "584",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Samastipur": {
+   "lgd_code": "217",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Samba": {
+   "lgd_code": "624",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Sambalpur": {
+   "lgd_code": "371",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Sambhal": {
+   "lgd_code": "659",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sangareddy": {
+   "lgd_code": "691",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Sangli": {
+   "lgd_code": "493",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Sangrur": {
+   "lgd_code": "43",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Sant Kabir Nagar": {
+   "lgd_code": "178",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Santal Pargan": {
+   "lgd_code": null,
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Saraikela-kharsawan": {
+   "lgd_code": "341",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Saran": {
+   "lgd_code": "218",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Satara": {
+   "lgd_code": "494",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Satna": {
+   "lgd_code": "426",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sawai Madhopur": {
+   "lgd_code": "113",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Sehore": {
+   "lgd_code": "427",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Senapati": {
+   "lgd_code": "257",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Seoni": {
+   "lgd_code": "428",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sepahijala": {
+   "lgd_code": "653",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Serchhip": {
+   "lgd_code": "268",
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "several other district (Andhra Pradesh)": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shahdara": {
+   "lgd_code": "671",
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "Shahdol": {
+   "lgd_code": "429",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shahid Bhagat Singh Nagar": {
+   "lgd_code": "40",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Shahjahanpur": {
+   "lgd_code": "180",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shajapur": {
+   "lgd_code": "430",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shamli": {
+   "lgd_code": "660",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sheikhpura": {
+   "lgd_code": "219",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Sheohar": {
+   "lgd_code": "220",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Sheopur": {
+   "lgd_code": "431",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shi Yomi": {
+   "lgd_code": "725",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shimla": {
+   "lgd_code": "23",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shivamogga": {
+   "lgd_code": "547",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Shivpuri": {
+   "lgd_code": "432",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shopian": {
+   "lgd_code": "625",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Shrawasti": {
+   "lgd_code": "181",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Shupiyan": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Siaha": {
+   "lgd_code": "267",
+   "state": "Mizoram",
+   "aliases": [],
+   "parent": null
+  },
+  "Siang": {
+   "lgd_code": "232",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Siddharthnagar": {
+   "lgd_code": "182",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Siddipet": {
+   "lgd_code": "692",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Sidhi": {
+   "lgd_code": "433",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sikar": {
+   "lgd_code": "114",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Silchar": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Simdega": {
+   "lgd_code": "342",
+   "state": "Jharkhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Sindhudurg": {
+   "lgd_code": "495",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Singrauli": {
+   "lgd_code": "638",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sipahijala": {
+   "lgd_code": null,
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Sirmaur": {
+   "lgd_code": "24",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sirohi": {
+   "lgd_code": "115",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Sirsa": {
+   "lgd_code": "74",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Sitamarhi": {
+   "lgd_code": "221",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Sitapur": {
+   "lgd_code": "183",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sivaganga": {
+   "lgd_code": "585",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Sivagangai"
+   ],
+   "parent": null
+  },
+  "Sivasagar": {
+   "lgd_code": "300",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Sivasagar amd Sonitpur": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Siwan": {
+   "lgd_code": "222",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Solan": {
+   "lgd_code": "25",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Solapur": {
+   "lgd_code": "496",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Some districts of Punjab": {
+   "lgd_code": null,
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Some parts": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Sonbhadra": {
+   "lgd_code": "184",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sonipat": {
+   "lgd_code": "75",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Sonitpur": {
+   "lgd_code": "301",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "South 24 Parganas": {
+   "lgd_code": "304",
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "South Andaman": {
+   "lgd_code": null,
+   "state": "Andaman & Nicobar",
+   "aliases": [],
+   "parent": null
+  },
+  "South Andamans": {
+   "lgd_code": "602",
+   "state": "Andaman & Nicobar Islands",
+   "aliases": [],
+   "parent": null
+  },
+  "South Assam": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "South District": {
+   "lgd_code": "602",
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "South East": {
+   "lgd_code": "670",
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "South Garo Hills": {
+   "lgd_code": "277",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "South Goa": {
+   "lgd_code": "552",
+   "state": "Goa",
+   "aliases": [],
+   "parent": null
+  },
+  "South Gujarat": {
+   "lgd_code": null,
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "South Kashmir": {
+   "lgd_code": null,
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "South Salmara Mancachar": {
+   "lgd_code": "707",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "South Salmara Mancachar - Mankachar": {
+   "lgd_code": null,
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "South Tripura": {
+   "lgd_code": "271",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "South Twenty Four Pargan*": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "South West": {
+   "lgd_code": "84",
+   "state": "Delhi",
+   "aliases": [],
+   "parent": null
+  },
+  "South West Garo Hills": {
+   "lgd_code": "663",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "South West Khasi Hills": {
+   "lgd_code": "658",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "Southern parts": {
+   "lgd_code": null,
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Sri Muktsar Sahib": {
+   "lgd_code": "39",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Sri Potti Sriramulu Nell*": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sri Potti Sriramulu Nellore": {
+   "lgd_code": "515",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sri Sri Muktsar Sahib Sahib": {
+   "lgd_code": null,
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Srikakulam": {
+   "lgd_code": "519",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Srinagar": {
+   "lgd_code": "13",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "SShrawasti": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "SShrawasti & Parts of East U.P.": {
+   "lgd_code": null,
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Subarnapur": {
+   "lgd_code": null,
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Suburbans": {
+   "lgd_code": null,
+   "state": "Madras",
+   "aliases": [],
+   "parent": null
+  },
+  "Sukma": {
+   "lgd_code": "642",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sultanpur": {
+   "lgd_code": "185",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Sundargarh": {
+   "lgd_code": "373",
+   "state": "Odisha",
+   "aliases": [],
+   "parent": null
+  },
+  "Supaul": {
+   "lgd_code": "223",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Surajpur": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Surat": {
+   "lgd_code": "459",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Surendranagar": {
+   "lgd_code": "460",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Surguja": {
+   "lgd_code": "389",
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Suryapet": {
+   "lgd_code": "696",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Tamenglong": {
+   "lgd_code": "258",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Tapi": {
+   "lgd_code": "641",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Tarn Taran": {
+   "lgd_code": "609",
+   "state": "Punjab",
+   "aliases": [],
+   "parent": null
+  },
+  "Tawang": {
+   "lgd_code": "238",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Tehri Garhwal": {
+   "lgd_code": "55",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Tengnoupal": {
+   "lgd_code": "716",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Tenkasi": {
+   "lgd_code": "733",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Thane": {
+   "lgd_code": "497",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Thanjavur": {
+   "lgd_code": "586",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Tanjore",
+    "Tanjavur"
+   ],
+   "parent": null
+  },
+  "The Dangs": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "The Nilgiris": {
+   "lgd_code": "587",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Nilgiris",
+    "Nilgiri",
+    "Nilgiris District",
+    "Udhagamandalam"
+   ],
+   "parent": null
+  },
+  "Theni": {
+   "lgd_code": "588",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Thiruvallur": {
+   "lgd_code": "589",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Tiruvallur",
+    "Tiruvallur District"
+   ],
+   "parent": null
+  },
+  "Thiruvananthapuram": {
+   "lgd_code": "565",
+   "state": "Kerala",
+   "aliases": [
+    "Trivandrum"
+   ],
+   "parent": null
+  },
+  "Thiruvarur": {
+   "lgd_code": "590",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Tiruvarur"
+   ],
+   "parent": null
+  },
+  "Thoothukkudi": {
+   "lgd_code": "594",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Tuticorin",
+    "Thoothukudi",
+    "Tuticorin District"
+   ],
+   "parent": null
+  },
+  "Thoubal": {
+   "lgd_code": "259",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Thrissur": {
+   "lgd_code": "566",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "Tikamgarh": {
+   "lgd_code": "434",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Tinsukia": {
+   "lgd_code": "302",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Tirap": {
+   "lgd_code": "239",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Tiruchirappalli": {
+   "lgd_code": "591",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Trichy",
+    "Tiruchirapalli",
+    "Tiruchchirappalli",
+    "Thiruchirappalli",
+    "Trichinopoly"
+   ],
+   "parent": null
+  },
+  "Tirunelveli": {
+   "lgd_code": "592",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Nellai",
+    "Thirunelveli"
+   ],
+   "parent": null
+  },
+  "Tirupathur": {
+   "lgd_code": "732",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Tirupattur",
+    "Thirupathur"
+   ],
+   "parent": null
+  },
+  "Tiruppur": {
+   "lgd_code": "634",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Tirupur"
+   ],
+   "parent": null
+  },
+  "Tiruvannamalai": {
+   "lgd_code": "593",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Thiruvannamalai"
+   ],
+   "parent": null
+  },
+  "Tonk": {
+   "lgd_code": "116",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Tripura": {
+   "lgd_code": "270",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Tuensang": {
+   "lgd_code": "249",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Tumakuru": {
+   "lgd_code": "548",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Udaipur": {
+   "lgd_code": "117",
+   "state": "Rajasthan",
+   "aliases": [],
+   "parent": null
+  },
+  "Udaiur": {
+   "lgd_code": null,
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Udalguri": {
+   "lgd_code": "617",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "Udam Singh Nagar": {
+   "lgd_code": "56",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Udham Singh Nagar": {
+   "lgd_code": null,
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Udhampur": {
+   "lgd_code": "14",
+   "state": "Jammu and Kashmir",
+   "aliases": [],
+   "parent": null
+  },
+  "Udupi": {
+   "lgd_code": "549",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Ujjain": {
+   "lgd_code": "435",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Ukhrul": {
+   "lgd_code": "260",
+   "state": "Manipur",
+   "aliases": [],
+   "parent": null
+  },
+  "Umaria": {
+   "lgd_code": "436",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Una": {
+   "lgd_code": "448",
+   "state": "Himachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Unakoti": {
+   "lgd_code": "655",
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Unnao": {
+   "lgd_code": "186",
+   "state": "Uttar Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Unokoti": {
+   "lgd_code": null,
+   "state": "Tripura",
+   "aliases": [],
+   "parent": null
+  },
+  "Upper Dibang Valley": {
+   "lgd_code": null,
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Upper Lower Subansiri": {
+   "lgd_code": null,
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Upper Siang": {
+   "lgd_code": "240",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Upper Subansiri": {
+   "lgd_code": null,
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Urban": {
+   "lgd_code": "525",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttar Bastar Kanker": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttar Dinajpur": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttar Kashi Bastar Kanker": {
+   "lgd_code": null,
+   "state": "Chhattisgarh",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttar Kashi Dinajpur": {
+   "lgd_code": null,
+   "state": "West Bengal",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttar Kashi Kashi": {
+   "lgd_code": null,
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttar Kashia": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttar Kashia Kannada": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttara Kannada": {
+   "lgd_code": null,
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Uttarkashi": {
+   "lgd_code": "57",
+   "state": "Uttarakhand",
+   "aliases": [],
+   "parent": null
+  },
+  "Vadodara": {
+   "lgd_code": "461",
+   "state": "Gujarat",
+   "aliases": [
+    "Baroda"
+   ],
+   "parent": null
+  },
+  "Vaishali": {
+   "lgd_code": "224",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "Valsad": {
+   "lgd_code": "462",
+   "state": "Gujarat",
+   "aliases": [],
+   "parent": null
+  },
+  "Varanasi": {
+   "lgd_code": "187",
+   "state": "Uttar Pradesh",
+   "aliases": [
+    "Benares",
+    "Banaras"
+   ],
+   "parent": null
+  },
+  "Vellore": {
+   "lgd_code": "595",
+   "state": "Tamil Nadu",
+   "aliases": [],
+   "parent": null
+  },
+  "Vidisha": {
+   "lgd_code": "437",
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Vijayapura": {
+   "lgd_code": "530",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Vikarabad": {
+   "lgd_code": "698",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Viluppuram": {
+   "lgd_code": "596",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Villupuram",
+    "Vilupuram"
+   ],
+   "parent": null
+  },
+  "Virudhunagar": {
+   "lgd_code": "597",
+   "state": "Tamil Nadu",
+   "aliases": [
+    "Virudunagar"
+   ],
+   "parent": null
+  },
+  "Visakhapatnam": {
+   "lgd_code": "520",
+   "state": "Andhra Pradesh",
+   "aliases": [
+    "Vizag",
+    "Vishakhapatnam"
+   ],
+   "parent": null
+  },
+  "Vizianagaram": {
+   "lgd_code": "521",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Wanaparthy": {
+   "lgd_code": "693",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Warangal": {
+   "lgd_code": "522",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Warangal Rural": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Warangal Urban": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Wardha": {
+   "lgd_code": "498",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Washim": {
+   "lgd_code": "499",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Wayanad": {
+   "lgd_code": "567",
+   "state": "Kerala",
+   "aliases": [],
+   "parent": null
+  },
+  "West District": {
+   "lgd_code": "523",
+   "state": "Sikkim",
+   "aliases": [],
+   "parent": null
+  },
+  "West East Jaintia Hills": {
+   "lgd_code": null,
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "West Garo Hills": {
+   "lgd_code": "278",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "West Godavari": {
+   "lgd_code": "523",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "West Jaintia Hills": {
+   "lgd_code": null,
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "West Kameng": {
+   "lgd_code": "242",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "West Karbi Anglong": {
+   "lgd_code": "710",
+   "state": "Assam",
+   "aliases": [],
+   "parent": null
+  },
+  "West Khasi Hills": {
+   "lgd_code": "740",
+   "state": "Meghalaya",
+   "aliases": [],
+   "parent": null
+  },
+  "West Madhya Pradesh": {
+   "lgd_code": null,
+   "state": null,
+   "aliases": [],
+   "parent": null
+  },
+  "West Nimar": {
+   "lgd_code": null,
+   "state": "Madhya Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "West Siang": {
+   "lgd_code": "243",
+   "state": "Arunachal Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "West Singhbhum": {
+   "lgd_code": "343",
+   "state": "Bihar",
+   "aliases": [],
+   "parent": null
+  },
+  "West Tripura": {
+   "lgd_code": "272",
+   "state": "Tripura",
+   "aliases": [
+    "Agartala"
+   ],
+   "parent": null
+  },
+  "Wokha": {
+   "lgd_code": "250",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  },
+  "Y.S.R.": {
+   "lgd_code": "504",
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Yadadri Bhuvanagiri": {
+   "lgd_code": "697",
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Yadadri Yadadri Bhuvanagiri": {
+   "lgd_code": null,
+   "state": "Telangana",
+   "aliases": [],
+   "parent": null
+  },
+  "Yadadri Yadadri Bhuvanagiri Yadadri Bhuvanagiri": {
+   "lgd_code": null,
+   "state": "Andhra Pradesh",
+   "aliases": [],
+   "parent": null
+  },
+  "Yadgir": {
+   "lgd_code": "635",
+   "state": "Karnataka",
+   "aliases": [],
+   "parent": null
+  },
+  "Yamunanagar": {
+   "lgd_code": "76",
+   "state": "Haryana",
+   "aliases": [],
+   "parent": null
+  },
+  "Yanam": {
+   "lgd_code": "601",
+   "state": "Puducherry",
+   "aliases": [],
+   "parent": null
+  },
+  "Yavatmal": {
+   "lgd_code": "500",
+   "state": "Maharashtra",
+   "aliases": [],
+   "parent": null
+  },
+  "Zunheboto": {
+   "lgd_code": "251",
+   "state": "Nagaland",
+   "aliases": [],
+   "parent": null
+  }
+ }
+}

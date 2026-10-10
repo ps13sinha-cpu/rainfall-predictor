@@ -2,24 +2,30 @@
 (IFI-Impacts v4, IIT Delhi, Zenodo 10.5281/zenodo.4742142), stored in app/data/.
 
 Gives, for a point:
-  - events within a radius (from georeferenced IFI events)
   - district-level event count, fatalities, mean duration, DFSI severity index,
     and satellite-derived percent flooded area, matched by district name.
+
+District names come from Nominatim (or the RIIS seed) in any spelling; they are resolved
+to the inventory's spelling and LGD code through app/data/district_lookup.json
+(services/district_lookup.py), never by substring or fuzzy matching. A name the table
+does not know is reported as a `district_miss` and the context degrades to None.
 """
 import os
 import math
-import difflib
 from functools import lru_cache
 
 import pandas as pd
 
+from app.services.district_lookup import normalise, resolve
+
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
-# RIIS seeds cities; IFI is by administrative district.
+# RIIS seeds cities; IFI is by administrative district.  Kept for older imports; the same
+# mappings live in district_lookup.json as aliases, which is what lookup() uses.
 CITY_TO_DISTRICT = {
     "bangalore urban": "Bangalore", "hubli-dharwad": "Dharwad", "kamrup metro": "Kamrup Metropolitan",
-    "guwahati": "Kamrup Metropolitan", "siliguri": "Darjeeling", "panaji": "North Goa", "gangtok": "Gangtok",
-    "vijayawada": "Krishna", "mumbai": "Mumbai Suburban", "bhubaneswar": "Khordha", "agartala": "West Tripura",
+    "guwahati": "Kamrup Metropolitan", "siliguri": "Darjiling", "panaji": "North Goa", "gangtok": "Gangtok",
+    "vijayawada": "Krishna", "mumbai": "Mumbai", "bhubaneswar": "Khordha", "agartala": "West Tripura",
     "imphal": "Imphal West", "shillong": "East Khasi Hills", "mysuru": "Mysuru", "delhi": "New Delhi",
     "chandigarh": "Chandigarh", "aizawl": "Aizawl", "kohima": "Kohima", "dibrugarh": "Dibrugarh",
 }
@@ -41,12 +47,15 @@ def _load():
         ev["lat"] = pd.to_numeric(ev["Latitude"], errors="coerce")
         ev["lon"] = pd.to_numeric(ev["Longitude"], errors="coerce")
         ev["fatal"] = pd.to_numeric(ev["Human fatality"], errors="coerce").fillna(0)
+        # normalised district tokens per event, for exact (not substring) matching
+        ev["district_keys"] = ev["Districts"].apply(
+            lambda d: frozenset(normalise(x) for x in str(d).split(",") if x.strip()) if pd.notna(d) else frozenset())
         imp = pd.read_csv(os.path.join(DATA_DIR, "District_FloodImpact.csv"))
         dfsi = pd.read_csv(os.path.join(DATA_DIR, "DFSI.csv"))
         dfsi = dfsi.rename(columns={dfsi.columns[0]: "Dist_Name"})
         area = pd.read_csv(os.path.join(DATA_DIR, "District_FloodedArea.csv"))
         dist = imp.merge(dfsi, on="Dist_Name", how="outer").merge(area, on="Dist_Name", how="outer")
-        dist["key"] = dist["Dist_Name"].astype(str).str.strip().str.lower()
+        dist["key"] = dist["Dist_Name"].astype(str).map(normalise)
         return ev, dist
     except Exception as e:  # files missing -> engine degrades gracefully
         print(f"[RIIS-flood-history] unavailable: {e}")
@@ -54,28 +63,35 @@ def _load():
 
 
 def _district_events(ev: pd.DataFrame, name: str) -> pd.DataFrame:
-    pat = name.lower()
-    mask = ev["Districts"].astype(str).str.lower().str.contains(pat, regex=False, na=False)
+    key = normalise(name)
+    mask = ev["district_keys"].apply(lambda s: key in s)
     return ev[mask]
 
 
-def lookup(district_name: str | None) -> dict:
+def lookup(district_name: str | None, state: str | None = None) -> dict:
     ev, dist = _load()
     if ev is None:
         return {"source": "unavailable"}
 
-    out = {"source": "india_flood_inventory_v4"}
+    out = {"source": "india_flood_inventory_v4", "district_code": None,
+           "district_match": {"query": district_name, "canonical": None, "method": "none"}}
 
-    # IFI v4 has no event coordinates; everything is by district name.
-    # 2. district match
+    # IFI v4 has no event coordinates; everything is by district name, resolved by alias.
     name = (district_name or "").strip()
-    name = CITY_TO_DISTRICT.get(name.lower(), name)
+    res = resolve(name, state) if name else None
     match = None
-    if name:
-        keys = dist["key"].tolist()
-        cand = [k for k in keys if k == name.lower()] or                [k for k in keys if k.startswith(name.lower()) or name.lower().startswith(k)] or                difflib.get_close_matches(name.lower(), keys, n=1, cutoff=0.75)
-        if cand:
-            match = dist[dist["key"] == cand[0]].iloc[0]
+    if res:
+        out["district_code"] = res.get("lgd_code")
+        out["district_match"].update({"canonical": res["district"], "state": res.get("state"),
+                                      "matched_alias": res.get("matched_alias"), "method": "lookup"})
+        candidates = [res["district"]] + ([res["parent"]] if res.get("parent") else [])
+        for i, cand in enumerate(candidates):
+            rows = dist[dist["key"] == normalise(cand)]
+            if len(rows):
+                match = rows.iloc[0]
+                if i:
+                    out["district_match"].update({"method": "parent", "record_of": cand})
+                break
     if match is not None:
         de = _district_events(ev, str(match["Dist_Name"]))
         years = de["year"].dropna()
@@ -95,7 +111,7 @@ def lookup(district_name: str | None) -> dict:
     else:
         out["district"] = None
 
-    # 3. one normalised 0..1 "flood-prone" score
+    # one normalised 0..1 "flood-prone" score
     s = 0.0
     if out.get("dfsi") is not None:
         s += 0.50 * min(out["dfsi"] / 15.0, 1.0)           # DFSI tops out near 19

@@ -1,0 +1,512 @@
+{
+  "computed_at": "2026-10-09T09:45:52.500314",
+  "method": "India Flood Inventory TN events (district, date, duration) joined to TNDMA Revenue-gauge district-day means 1991-2023 (unreported days = dry); flood day = day before through end of a recorded event; +/-4 day buffer excluded from negatives; rank AUC of rain totals and of the engine accumulation score; isotonic P(flood|1-day rain) rescaled to 0..100",
+  "n_events": 141,
+  "n_events_in_inventory": 147,
+  "n_district_days": 395630,
+  "n_flood_days": 3416,
+  "base_flood_rate": 0.00863,
+  "auc": 0.8434,
+  "auc_by_feature": {
+    "r1": 0.7929,
+    "r1max": 0.7829,
+    "r3": 0.8381,
+    "r5": 0.8479,
+    "r7": 0.8469,
+    "acc_score": 0.8434,
+    "acc_score_unscaled3": 0.8381,
+    "r3_plus_ant30": 0.8447
+  },
+  "class_flood_rates": {
+    "safe": {
+      "district_days": 394280,
+      "flood_days": 3160,
+      "flood_rate": 0.008,
+      "lift_over_base": 0.9
+    },
+    "mod": {
+      "district_days": 1091,
+      "flood_days": 188,
+      "flood_rate": 0.1723,
+      "lift_over_base": 20.0
+    },
+    "high": {
+      "district_days": 232,
+      "flood_days": 62,
+      "flood_rate": 0.2672,
+      "lift_over_base": 31.0
+    },
+    "extreme": {
+      "district_days": 27,
+      "flood_days": 6,
+      "flood_rate": 0.2222,
+      "lift_over_base": 25.7
+    }
+  },
+  "flood_day_recall_at_class_floor": {
+    "safe": 1.0,
+    "mod": 0.075,
+    "high": 0.02,
+    "extreme": 0.002
+  },
+  "imd_threshold_flood_rates": {
+    "64.5": {
+      "district_days": 1060,
+      "flood_rate": 0.1877
+    },
+    "115.6": {
+      "district_days": 233,
+      "flood_rate": 0.2704
+    },
+    "204.5": {
+      "district_days": 27,
+      "flood_rate": 0.2222
+    }
+  },
+  "hand_set_accumulation_curve": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      64.5,
+      25.0
+    ],
+    [
+      115.6,
+      50.0
+    ],
+    [
+      204.5,
+      75.0
+    ],
+    [
+      350.0,
+      100.0
+    ]
+  ],
+  "calibrated_accumulation_curve": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      5.8
+    ],
+    [
+      0.2,
+      6.0
+    ],
+    [
+      0.2,
+      6.3
+    ],
+    [
+      0.4,
+      7.1
+    ],
+    [
+      0.5,
+      7.8
+    ],
+    [
+      0.6,
+      8.8
+    ],
+    [
+      1.1,
+      9.5
+    ],
+    [
+      1.7,
+      10.2
+    ],
+    [
+      2.1,
+      10.8
+    ],
+    [
+      2.4,
+      12.4
+    ],
+    [
+      2.7,
+      12.7
+    ],
+    [
+      4.1,
+      13.8
+    ],
+    [
+      4.6,
+      15.0
+    ],
+    [
+      6.3,
+      15.2
+    ],
+    [
+      7.1,
+      17.8
+    ],
+    [
+      8.9,
+      18.4
+    ],
+    [
+      10.1,
+      19.3
+    ],
+    [
+      11.4,
+      21.1
+    ],
+    [
+      13.0,
+      22.8
+    ],
+    [
+      14.9,
+      24.9
+    ],
+    [
+      17.4,
+      30.3
+    ],
+    [
+      20.7,
+      32.5
+    ],
+    [
+      25.5,
+      41.9
+    ],
+    [
+      33.6,
+      45.6
+    ],
+    [
+      64.6,
+      100.0
+    ]
+  ],
+  "per_district": [
+    {
+      "district": "Chennai",
+      "years": 32.5,
+      "flood_days": 247,
+      "flood_days_per_decade": 75.9,
+      "heavy_days_per_year": 1.72,
+      "flood_rate_on_heavy_days": 0.429
+    },
+    {
+      "district": "Nagapattinam",
+      "years": 33.0,
+      "flood_days": 172,
+      "flood_days_per_decade": 52.2,
+      "heavy_days_per_year": 2.7,
+      "flood_rate_on_heavy_days": 0.27
+    },
+    {
+      "district": "Kanniyakumari",
+      "years": 32.9,
+      "flood_days": 146,
+      "flood_days_per_decade": 44.4,
+      "heavy_days_per_year": 1.49,
+      "flood_rate_on_heavy_days": 0.224
+    },
+    {
+      "district": "Tiruvannamalai",
+      "years": 32.7,
+      "flood_days": 144,
+      "flood_days_per_decade": 44.0,
+      "heavy_days_per_year": 0.98,
+      "flood_rate_on_heavy_days": 0.156
+    },
+    {
+      "district": "Villupuram",
+      "years": 32.7,
+      "flood_days": 141,
+      "flood_days_per_decade": 43.2,
+      "heavy_days_per_year": 0.7,
+      "flood_rate_on_heavy_days": 0.217
+    },
+    {
+      "district": "Coimbatore",
+      "years": 33.0,
+      "flood_days": 142,
+      "flood_days_per_decade": 43.1,
+      "heavy_days_per_year": 0.03,
+      "flood_rate_on_heavy_days": 0.0
+    },
+    {
+      "district": "Cuddalore",
+      "years": 33.0,
+      "flood_days": 138,
+      "flood_days_per_decade": 41.8,
+      "heavy_days_per_year": 2.09,
+      "flood_rate_on_heavy_days": 0.333
+    },
+    {
+      "district": "Thanjavur",
+      "years": 19.2,
+      "flood_days": 78,
+      "flood_days_per_decade": 40.6,
+      "heavy_days_per_year": 1.3,
+      "flood_rate_on_heavy_days": 0.48
+    },
+    {
+      "district": "Tirunelveli",
+      "years": 32.7,
+      "flood_days": 131,
+      "flood_days_per_decade": 40.0,
+      "heavy_days_per_year": 0.24,
+      "flood_rate_on_heavy_days": 0.0
+    },
+    {
+      "district": "Thoothukudi",
+      "years": 32.7,
+      "flood_days": 126,
+      "flood_days_per_decade": 38.5,
+      "heavy_days_per_year": 0.31,
+      "flood_rate_on_heavy_days": 0.0
+    },
+    {
+      "district": "Madurai",
+      "years": 26.7,
+      "flood_days": 99,
+      "flood_days_per_decade": 37.1,
+      "heavy_days_per_year": 0.15,
+      "flood_rate_on_heavy_days": 0.25
+    },
+    {
+      "district": "The Nilgiris",
+      "years": 33.0,
+      "flood_days": 122,
+      "flood_days_per_decade": 37.0,
+      "heavy_days_per_year": 0.36,
+      "flood_rate_on_heavy_days": 0.167
+    },
+    {
+      "district": "Tiruvallur",
+      "years": 33.0,
+      "flood_days": 121,
+      "flood_days_per_decade": 36.7,
+      "heavy_days_per_year": 1.91,
+      "flood_rate_on_heavy_days": 0.159
+    },
+    {
+      "district": "Dindigul",
+      "years": 33.0,
+      "flood_days": 116,
+      "flood_days_per_decade": 35.2,
+      "heavy_days_per_year": 0.52,
+      "flood_rate_on_heavy_days": 0.235
+    },
+    {
+      "district": "Krishnagiri",
+      "years": 19.2,
+      "flood_days": 62,
+      "flood_days_per_decade": 32.3,
+      "heavy_days_per_year": 0.42,
+      "flood_rate_on_heavy_days": 0.25
+    },
+    {
+      "district": "Thiruchirappalli",
+      "years": 19.2,
+      "flood_days": 59,
+      "flood_days_per_decade": 30.7,
+      "heavy_days_per_year": 0.36,
+      "flood_rate_on_heavy_days": 0.571
+    },
+    {
+      "district": "Thiruvarur",
+      "years": 25.1,
+      "flood_days": 77,
+      "flood_days_per_decade": 30.7,
+      "heavy_days_per_year": 2.31,
+      "flood_rate_on_heavy_days": 0.276
+    },
+    {
+      "district": "Pudukkottai",
+      "years": 33.0,
+      "flood_days": 101,
+      "flood_days_per_decade": 30.6,
+      "heavy_days_per_year": 0.52,
+      "flood_rate_on_heavy_days": 0.294
+    },
+    {
+      "district": "Erode",
+      "years": 27.7,
+      "flood_days": 81,
+      "flood_days_per_decade": 29.2,
+      "heavy_days_per_year": 0.07,
+      "flood_rate_on_heavy_days": 0.5
+    },
+    {
+      "district": "Vellore",
+      "years": 32.7,
+      "flood_days": 94,
+      "flood_days_per_decade": 28.7,
+      "heavy_days_per_year": 1.16,
+      "flood_rate_on_heavy_days": 0.158
+    },
+    {
+      "district": "Kancheepuram",
+      "years": 33.0,
+      "flood_days": 93,
+      "flood_days_per_decade": 28.2,
+      "heavy_days_per_year": 2.49,
+      "flood_rate_on_heavy_days": 0.098
+    },
+    {
+      "district": "Perambalur",
+      "years": 25.1,
+      "flood_days": 66,
+      "flood_days_per_decade": 26.3,
+      "heavy_days_per_year": 0.28,
+      "flood_rate_on_heavy_days": 0.143
+    },
+    {
+      "district": "Ramanathapuram",
+      "years": 32.7,
+      "flood_days": 86,
+      "flood_days_per_decade": 26.3,
+      "heavy_days_per_year": 0.89,
+      "flood_rate_on_heavy_days": 0.138
+    },
+    {
+      "district": "Virudhunagar",
+      "years": 26.7,
+      "flood_days": 67,
+      "flood_days_per_decade": 25.1,
+      "heavy_days_per_year": 0.3,
+      "flood_rate_on_heavy_days": 0.125
+    },
+    {
+      "district": "Chengalpattu",
+      "years": 33.0,
+      "flood_days": 81,
+      "flood_days_per_decade": 24.6,
+      "heavy_days_per_year": 1.88,
+      "flood_rate_on_heavy_days": 0.048
+    },
+    {
+      "district": "Theni",
+      "years": 25.1,
+      "flood_days": 61,
+      "flood_days_per_decade": 24.3,
+      "heavy_days_per_year": 0.28,
+      "flood_rate_on_heavy_days": 0.0
+    },
+    {
+      "district": "Kallakurichi",
+      "years": 32.7,
+      "flood_days": 75,
+      "flood_days_per_decade": 22.9,
+      "heavy_days_per_year": 0.31,
+      "flood_rate_on_heavy_days": 0.1
+    },
+    {
+      "district": "Dharmapuri",
+      "years": 19.2,
+      "flood_days": 42,
+      "flood_days_per_decade": 21.8,
+      "heavy_days_per_year": 0.36,
+      "flood_rate_on_heavy_days": 0.429
+    },
+    {
+      "district": "Namakkal",
+      "years": 21.9,
+      "flood_days": 47,
+      "flood_days_per_decade": 21.5,
+      "heavy_days_per_year": 0.23,
+      "flood_rate_on_heavy_days": 0.4
+    },
+    {
+      "district": "Ariyalur",
+      "years": 22.9,
+      "flood_days": 48,
+      "flood_days_per_decade": 20.9,
+      "heavy_days_per_year": 1.44,
+      "flood_rate_on_heavy_days": 0.273
+    },
+    {
+      "district": "Salem",
+      "years": 22.9,
+      "flood_days": 45,
+      "flood_days_per_decade": 19.6,
+      "heavy_days_per_year": 0.31,
+      "flood_rate_on_heavy_days": 0.286
+    },
+    {
+      "district": "Ranipet",
+      "years": 32.5,
+      "flood_days": 63,
+      "flood_days_per_decade": 19.4,
+      "heavy_days_per_year": 1.08,
+      "flood_rate_on_heavy_days": 0.114
+    },
+    {
+      "district": "Sivagangai",
+      "years": 33.0,
+      "flood_days": 63,
+      "flood_days_per_decade": 19.1,
+      "heavy_days_per_year": 0.3,
+      "flood_rate_on_heavy_days": 0.1
+    },
+    {
+      "district": "Tenkasi",
+      "years": 32.7,
+      "flood_days": 60,
+      "flood_days_per_decade": 18.3,
+      "heavy_days_per_year": 0.37,
+      "flood_rate_on_heavy_days": 0.083
+    },
+    {
+      "district": "Tirupathur",
+      "years": 32.7,
+      "flood_days": 60,
+      "flood_days_per_decade": 18.3,
+      "heavy_days_per_year": 0.89,
+      "flood_rate_on_heavy_days": 0.103
+    },
+    {
+      "district": "Karur",
+      "years": 19.2,
+      "flood_days": 35,
+      "flood_days_per_decade": 18.2,
+      "heavy_days_per_year": 0.31,
+      "flood_rate_on_heavy_days": 0.167
+    },
+    {
+      "district": "Tiruppur",
+      "years": 16.9,
+      "flood_days": 27,
+      "flood_days_per_decade": 16.0,
+      "heavy_days_per_year": 0.35,
+      "flood_rate_on_heavy_days": 0.0
+    },
+    {
+      "district": "Mayiladuthurai",
+      "years": 33.0,
+      "flood_days": 0,
+      "flood_days_per_decade": 0.0,
+      "heavy_days_per_year": 3.55,
+      "flood_rate_on_heavy_days": 0.0
+    }
+  ],
+  "unmatched_district_names": {
+    "Many parts": 1,
+    "South Tripura": 1,
+    "Many districts of Tamil Nadu.": 2,
+    "Districts of Cauvery delta zone": 1,
+    "Districts of Cauvery delta": 1,
+    "Many parts of Tamil Nadu.": 1,
+    "Karaikal": 1,
+    "Nagarkoil": 1
+  },
+  "scope": "rainfall term only: the inventory is by district and day, so elevation, drainage and the other modifiers are not calibrated by this",
+  "note": "Rainfall accumulation score separates flood days from dry days with AUC 0.8434; flood rate rises from 0.008 in 'safe' to 0.2222 in 'extreme'. Site-level modifiers remain expert-set."
+}
