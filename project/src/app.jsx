@@ -124,6 +124,21 @@ function Rail({ active, go }){
   );
 }
 
+// Data licences require this on every screen (Open-Meteo CC BY 4.0, OSM ODbL, SoilGrids and IFI CC BY 4.0).
+function AttributionFooter(){
+  const link = { color:"var(--text-mid)", textDecoration:"underline", textDecorationColor:"var(--stroke-2)" };
+  return (
+    <footer className="attribution" style={{marginTop:"auto",padding:"10px 24px 12px",fontSize:10.5,lineHeight:1.7,color:"var(--text-lo)",borderTop:"1px solid var(--stroke)",background:"var(--bg-2)"}}>
+      Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style={link}>Open-Meteo.com</a> (CC BY 4.0)
+      {" · "}Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={link}>OpenStreetMap contributors</a> (ODbL)
+      {" · "}Soil data <a href="https://soilgrids.org/" target="_blank" rel="noreferrer" style={link}>ISRIC SoilGrids</a> (CC BY 4.0)
+      {" · "}Flood history <a href="https://doi.org/10.5281/zenodo.4742142" target="_blank" rel="noreferrer" style={link}>India Flood Inventory</a> (CC BY 4.0)
+      {" · "}Elevation SRTM via <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noreferrer" style={link}>AWS Terrain Tiles</a>
+      {" · "}Forecast fallback <a href="https://api.met.no/" target="_blank" rel="noreferrer" style={link}>MET Norway</a> (CC BY 4.0)
+    </footer>
+  );
+}
+
 function App(){
   const hash = useHash();
   const active = (hash||"").replace("#/","").split("?")[0] || "dashboard";
@@ -182,6 +197,7 @@ function App(){
       <main className="main" data-screen-label={active}>
         <TopBar onOpenEmerg={()=>setEmergOpen(true)} riisUpdateCount={riisUpdateCount}/>
         {screen}
+        <AttributionFooter/>
       </main>
 
       {/* Floating chat FAB */}

@@ -14,8 +14,12 @@
     const token = localStorage.getItem('riis_token');
     if (token) headers['Authorization'] = `Bearer ${token}`;
     return fetch(`${API_BASE}${path}`, { ...opts, headers })
-      .then(r => {
-        if (!r.ok) throw new Error(`API ${r.status}: ${r.statusText}`);
+      .then(async r => {
+        if (!r.ok) {
+          let detail = '';
+          try { const j = await r.json(); detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail || j); } catch (e) {}
+          throw new Error(detail ? `${detail} (HTTP ${r.status})` : `API ${r.status}: ${r.statusText}`);
+        }
         return r.json();
       });
   }

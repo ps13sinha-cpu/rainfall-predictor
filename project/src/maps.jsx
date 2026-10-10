@@ -420,6 +420,8 @@ function RealFloodMap({ intensity, onResult }) {
   const elRef    = useRef_m(null);
   const mapRef   = useRef_m(null);
   const layerRef = useRef_m(null);
+  const flowRef = useRef_m(null);
+  const catchRef = useRef_m(null);
   const mkrRef   = useRef_m(null);
   const [meta, setMeta]   = useState_m(null);   // last backend response summary
   const [state, setState] = useState_m('loading'); // loading | ok | empty | error
@@ -467,6 +469,20 @@ function RealFloodMap({ intensity, onResult }) {
         if (Math.abs(window.RIIS.location.lat - reqLat) > 1e-6) return;
 
         if (layerRef.current) { layerRef.current.remove(); layerRef.current = null; }
+        if (flowRef.current) { flowRef.current.remove(); flowRef.current = null; }
+        if (catchRef.current) { catchRef.current.remove(); catchRef.current = null; }
+        // water routed from high ground to low ground: flow paths and the point's catchment
+        if (res.flow_paths && res.flow_paths.features && res.flow_paths.features.length) {
+          flowRef.current = L.geoJSON(res.flow_paths, {
+            style: f => ({ color: f.properties.class === 'major' ? '#38BDF8' : '#0EA5E9', weight: f.properties.class === 'major' ? 2.5 : 1.2, opacity: f.properties.class === 'major' ? 0.9 : 0.55 }),
+            onEachFeature: (f, lyr) => lyr.bindPopup(`<b style="font-family:JetBrains Mono">${f.properties.flow_m3} m³</b> routed through here<br/><span style="color:#8ab">${Math.round(f.properties.share * 100)}% of the window's runoff · D8 flow path</span>`),
+          }).addTo(mapRef.current);
+        }
+        if (res.catchment && res.catchment.geometry && res.catchment.properties.cells > 3) {
+          catchRef.current = L.geoJSON(res.catchment, { style: { color: '#A78BFA', weight: 1.5, dashArray: '5 4', fill: true, fillColor: '#A78BFA', fillOpacity: 0.06 } })
+            .bindPopup(`<b>Catchment of this point</b><br/><span style="color:#8ab">${res.point ? `${res.point.upslope_area_km2} km² drains here · relief ${res.point.catchment_relief_m} m · ~${res.point.time_of_concentration_min} min to arrive` : ''}</span>`)
+            .addTo(mapRef.current);
+        }
         const n = res.geojson ? res.geojson.features.length : 0;
         if (n === 0) { setMeta(res); setState('empty'); if (onResult) onResult(res); return; }
 
@@ -543,6 +559,9 @@ function RealFloodMap({ intensity, onResult }) {
             <span className="mono" style={{fontSize:9,color:'var(--text-lo)'}}>{lbl}</span>
           </span>
         ))}
+        <span className="mono" style={{fontSize:9, color:'var(--text-lo)', marginLeft:4}}>·</span>
+        <span style={{display:'inline-flex', alignItems:'center', gap:3}}><span style={{width:12,height:2,background:'#38BDF8'}}/><span className="mono" style={{fontSize:9,color:'var(--text-lo)'}}>flow path (high→low)</span></span>
+        <span style={{display:'inline-flex', alignItems:'center', gap:3}}><span style={{width:9,height:9,border:'1px dashed #A78BFA',borderRadius:2}}/><span className="mono" style={{fontSize:9,color:'var(--text-lo)'}}>catchment of point</span></span>
       </div>
       {/* DEM source badge */}
       <div style={{position:'absolute', bottom:8, right:8, zIndex:500, pointerEvents:'none', background:'rgba(6,13,21,0.85)', border:'1px solid var(--stroke)', borderRadius:6, padding:'3px 8px'}}>

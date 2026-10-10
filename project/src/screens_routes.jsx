@@ -159,7 +159,7 @@ function RoutesScreen() {
         <div>
           <div className="k">LIVE CONDITIONS</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: liveColor, marginTop: 2 }}>
-            {!live ? (roadsState === 'error' ? 'Backend unreachable' : 'Reading rain at your location…')
+            {!live ? (roadsState === 'error' ? `Road data unavailable${roadsErr ? ': ' + roadsErr : ''}` : 'Reading rain at your location…')
               : raining ? `Rain in progress · ${live.rainfall_mm} mm over 12 h (past 6 h ${live.past_6h_mm} mm · next 6 h ${live.next_6h_mm} mm)`
               : `Dry right now · ${live.next_6h_mm} mm expected in the next 6 h`}
           </div>
@@ -240,7 +240,7 @@ function RoutesScreen() {
               {routes && routes.reachable === false && routes.snapped && (
                 <div style={{ padding: '8px 10px', background: 'rgba(239,68,68,0.12)', border: '1px solid #EF444455', borderRadius: 8, marginBottom: 10, fontSize: 12 }}>
                   <b style={{ color: '#FCA5A5' }}>{routes.source === 'osrm+local' ? 'The road route passes flooded roads with no local detour.' : 'No safe way through right now.'}</b>
-                  {(routes.blocking_segments || []).length > 0 && <div style={{ color: 'var(--text-mid)', marginTop: 4 }}>Blocked by: {routes.blocking_segments.slice(0, 5).map(s => `${s.name || s.highway} (${s.max_depth_m} m)`).join(', ')}</div>}
+                  {(routes.blocking_segments || []).length > 0 && <div style={{ color: 'var(--text-mid)', marginTop: 4 }}>Blocked by: {routes.blocking_segments.slice(0, 5).map(s => `${s.name || s.highway} (${s.score != null ? s.score + '/100, ' : ''}${s.max_depth_m} m)`).join(', ')}</div>}
                 </div>
               )}
               {safe && (
@@ -255,7 +255,7 @@ function RoutesScreen() {
                       ? <span>Avoids {routes.closed_avoided.length} flooded segment{routes.closed_avoided.length === 1 ? '' : 's'}{normal ? ` (+${fmtKm(Math.max(0, safe.length_m - normal.length_m))} vs the usual way)` : ''}: <span style={{ color: 'var(--text-mid)' }}>{routes.closed_avoided.slice(0, 3).map(s => `${s.name || 'unnamed road'} ${s.max_depth_m} m`).join(', ')}</span></span>
                       : (normal && normal.closed_segments ? `The usual way has ${normal.closed_segments} closed segment${normal.closed_segments === 1 ? '' : 's'}` : 'Same as the usual way — nothing flooded on it right now.')}
                   </div>
-                  {safe.worst_status === 'caution' && <div style={{ fontSize: 11.5, color: '#F59E0B' }}>Some stretches have 15 to 30 cm of standing water. Drive slowly, keep to the crown of the road.</div>}
+                  {safe.worst_status === 'caution' && <div style={{ fontSize: 11.5, color: '#F59E0B' }}>Some stretches score 25 to 50 on the two-tier hazard (rain × low ground × water nearby, times site modifiers). Drive slowly, keep to the crown of the road.</div>}
                   {routes.source === 'osrm+local' && (
                     <div style={{ fontSize: 11.5, color: 'var(--text-mid)', lineHeight: 1.5, padding: '6px 8px', background: 'rgba(10,18,28,0.5)', border: '1px solid var(--stroke)', borderRadius: 6 }}>
                       <b style={{ color: 'var(--text-hi)' }}>Long-distance route</b> via OSRM · {Math.round((routes.scored_fraction || 0) * 100)}% of it flood-checked
@@ -277,7 +277,7 @@ function RoutesScreen() {
               {most.map((r, i) => (
                 <div key={i} onClick={() => setFlashId(r.segment_id)} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed rgba(120,180,255,0.08)', cursor: 'pointer', fontSize: 12 }}>
                   <span><b style={{ color: 'var(--text-hi)' }}>{r.name}</b> <span style={{ color: 'var(--text-lo)' }}>{r.highway}</span></span>
-                  <span className="mono" style={{ color: 'var(--text-mid)' }}>{r.max_depth_m} m</span>
+                  <span className="mono" style={{ color: 'var(--text-mid)' }} title={r.primary ? Object.entries(r.primary).map(([k, v]) => `${k} ${v}`).join(' · ') : ''}>{r.score != null ? `${r.score}/100 · ` : ''}{r.max_depth_m} m</span>
                   <span className="sev" style={{ color: ROUTE_STATUS_COLOR[r.status], background: ROUTE_STATUS_COLOR[r.status] + '22', fontSize: 10 }}>{ROUTE_STATUS_LABEL[r.status]}</span>
                 </div>
               ))}

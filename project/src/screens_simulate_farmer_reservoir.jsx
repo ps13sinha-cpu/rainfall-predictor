@@ -1,6 +1,81 @@
 // RIIS — Flood Simulation, Farmer Advisory, Reservoir Intelligence
 const { useState: useState_s, useEffect: useEffect_s } = React;
 
+// Validation banner + data-quality line for the hyperlocal impact (driven by the backend's
+// validation_status, data_quality and cap_reason; never hidden while the status is untested).
+function ValidationBanner({ vs, dq, cap, bias }){
+  const untested = !vs || vs.status === "untested_hypothesis";
+  const imputed = (dq && dq.imputed) || [];
+  const accent = untested ? "#F59E0B" : "#22C55E";
+  return (
+    <div role="status" style={{margin:"12px 0 0",padding:"10px 14px",borderRadius:10,border:`1px solid ${accent}`,background:untested?"rgba(245,158,11,0.10)":"rgba(34,197,94,0.08)"}}>
+      <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+        <span className="k" style={{color:accent,letterSpacing:".12em"}}>{untested ? "UNTESTED HYPOTHESIS" : "CALIBRATED"}</span>
+        <span style={{fontSize:12.5,color:"var(--text-hi)",fontWeight:600}}>
+          {untested ? "Scores are not yet validated against observed floods."
+                    : `Validated on ${vs.n_events} observed events · AUC ${vs.auc} · ${vs.method || ""}`}
+        </span>
+      </div>
+      {vs && vs.note && <div style={{fontSize:11,color:"var(--text-mid)",marginTop:4,lineHeight:1.5}}>{vs.note}</div>}
+      <div style={{fontSize:11.5,color:"var(--text-hi)",marginTop:6,lineHeight:1.5}}>
+        <b>Data quality:</b>{" "}
+        {imputed.length ? `${imputed.length} input${imputed.length>1?"s":""} from fallbacks or defaults — ${imputed.join(", ")}` : "every engine input is live"}
+        {dq && dq.forecast_fallback && <span> · forecast from {dq.forecast_provider || "fallback provider"}</span>}
+        {cap && <span style={{color:"#F59E0B"}}> · Cap applied: {cap}</span>}
+      </div>
+      {bias && bias.status === "measured" && (
+        <div style={{fontSize:11,color:"var(--text-mid)",marginTop:4,lineHeight:1.5}}>
+          <b>Reanalysis bias ({bias.district}):</b> ERA5 totals are {Math.round(bias.ratio_era5_over_station*100)}% of gauge totals and {Math.round((bias.p99_ratio||0)*100)}% on the heaviest 1% of days; heavy-day detection {bias.heavy_day_pod==null?"n/a":Math.round(bias.heavy_day_pod*100)+"%"}. The models learned the reanalysis, so treat extreme-day probabilities as conservative.
+        </div>
+      )}
+      {bias && bias.status !== "measured" && (
+        <div style={{fontSize:11,color:"var(--text-lo)",marginTop:4}}>Reanalysis bias not measured for this district (Tamil Nadu median ratio {bias.tamil_nadu_median_ratio ?? "n/a"}).</div>
+      )}
+    </div>
+  );
+}
+
+// Source, age and licence per input layer (backend `provenance`).
+function ProvenancePanel({ rows }){
+  const [open, setOpen] = useState_s(false);
+  if (!rows || !rows.length) return null;
+  const age = s => s == null ? "—" : s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s/60)} min` : s < 86400 ? `${(s/3600).toFixed(1)} h` : `${(s/86400).toFixed(1)} d`;
+  const tone = st => st === "live" ? "#22C55E" : st === "fallback" || st === "stale" ? "#F59E0B" : "#EF4444";
+  return (
+    <div style={{marginTop:12,border:"1px solid var(--stroke)",borderRadius:10,background:"rgba(10,18,28,0.4)"}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",display:"flex",gap:10,alignItems:"center",padding:"8px 12px",background:"none",border:"none",color:"var(--text-mid)",cursor:"pointer",textAlign:"left"}}>
+        <span className="k">PROVENANCE · {rows.length} LAYERS</span>
+        <span style={{fontSize:10.5,color:"var(--text-lo)"}}>{rows.filter(r=>r.status==="live").length} live · {rows.filter(r=>r.status!=="live").length} fallback/unavailable</span>
+        <span style={{marginLeft:"auto",fontSize:11}}>{open ? "▾ hide" : "▸ show"}</span>
+      </button>
+      {open && (
+        <div style={{padding:"0 12px 10px",overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:10.5}}>
+            <thead>
+              <tr style={{color:"var(--text-lo)",textAlign:"left"}}>
+                {["Layer","Source","Fetched","Age","TTL","Licence","Status"].map(h=><th key={h} style={{padding:"4px 6px",borderBottom:"1px solid var(--stroke)",fontWeight:500}}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r,i)=>(
+                <tr key={i} style={{color:"var(--text-mid)"}}>
+                  <td style={{padding:"4px 6px",color:"var(--text-hi)"}} className="mono">{r.layer}</td>
+                  <td style={{padding:"4px 6px",maxWidth:260}} title={r.url}>{r.source}</td>
+                  <td style={{padding:"4px 6px"}} className="mono">{r.fetched_at ? r.fetched_at.replace("T"," ").slice(0,16) : "—"}</td>
+                  <td style={{padding:"4px 6px"}} className="mono">{age(r.cache_age_s)}</td>
+                  <td style={{padding:"4px 6px"}} className="mono">{age(r.ttl_s)}</td>
+                  <td style={{padding:"4px 6px"}}>{r.licence}</td>
+                  <td style={{padding:"4px 6px",color:tone(r.status),fontWeight:600}}>{r.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SimulateScreen(){
   const p = RIIS.prediction;
   const initialRain = Math.max(20, Math.round(p.rainfall_mm * 2 || 60));
@@ -74,7 +149,9 @@ function SimulateScreen(){
         <div className="id">GIS ENGINE · v2.1 · {cityName.toUpperCase()}</div>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:16}}>
+      {hl && <ValidationBanner vs={hl.validation_status} dq={hl.data_quality} cap={hl.cap_reason} bias={hl.reanalysis_bias}/>}
+
+      <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:16,marginTop:hl?12:0}}>
         <div className="panel brackets">
           <div className="panel-hd">
             <h3>Simulated Inundation Map — {cityName}</h3>
@@ -177,10 +254,10 @@ function SimulateScreen(){
       {/* Hyperlocal ten-factor analysis (backend engine v2) */}
       <div className="panel brackets" style={{marginTop:16}}>
         <div className="panel-hd">
-          <h3>Hyperlocal Factor Analysis — {hl ? `${hl.categories.length} Factor Groups` : "Ten Factor Groups"}</h3>
+          <h3>Hyperlocal Hazard — {hl && hl.primary ? `${hl.primary.terms.length} Primaries × ${hl.modifiers.rows.length} Supporting Modifiers` : "Primaries × Supporting Modifiers"}</h3>
           <span className="live" style={{background:(cHl||"#22D3EE")+"22",color:cHl||"#22D3EE"}}>
-            <span className="d" style={{background:cHl||"#22D3EE"}}/>{hl ? `IMPACT ${hl.impact.score}/100 · ${riskLabel(hl.impact.class)}` : "COMPUTING…"}</span>
-          <span className="sub">{hl ? `data confidence ${hl.impact.confidence_pct}% · ${hl.impact.return_period || "return period n/a"} · engine v${hl.engine_version||"2"}${hl.still_loading&&hl.still_loading.length?` · still fetching ${hl.still_loading.join(", ")}`:""}` : "fetching DEM · OSM · soil · tide · reservoirs · flood history"}</span>
+            <span className="d" style={{background:cHl||"#22D3EE"}}/>{hl ? `IMPACT ${hl.impact.score}/100 · ${riskLabel(hl.impact.class)}${hl.data_quality&&hl.data_quality.cap_applied?" (CAPPED)":""}` : "COMPUTING…"}</span>
+          <span className="sub">{hl ? `data confidence ${hl.impact.confidence_pct}% · ${hl.impact.return_period || "return period n/a"} · engine v${hl.engine_version||"2"}${hl.validation_status&&hl.validation_status.status==="untested_hypothesis"?" · untested hypothesis":""}${hl.data_quality&&hl.data_quality.cap_applied?` · class capped at mod (uncapped ${hl.impact.class_uncapped})`:""}${hl.still_loading&&hl.still_loading.length?` · still fetching ${hl.still_loading.join(", ")}`:""}` : "fetching DEM · OSM · soil · tide · reservoirs · flood history"}</span>
         </div>
         <div className="panel-bd">
           {!hl && !hlErr && (
@@ -225,22 +302,63 @@ function SimulateScreen(){
               ))}
             </div>
 
-            {/* Category bars */}
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {hl.categories.map((cat,i)=>{
-                const cc = cat.score>=75?"#EF4444":cat.score>=50?"#F97316":cat.score>=25?"#F59E0B":"#10B981";
-                return (
-                  <div key={i} className="crop-gauge" style={{margin:0}}>
-                    <div className="lbl">
-                      <span>{cat.name} <span style={{color:"var(--text-lo)",fontSize:10}}>weight {Math.round(cat.weight*100)}% · {cat.share_pct}% of total score</span></span>
-                      <b style={{color:cc}} className="num">{cat.score}/100</b>
-                    </div>
-                    <div className="track"><div className="fill" style={{width:cat.score+"%",background:cc}}/></div>
-                    <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:2}}>{cat.source}</div>
+            {/* Primary hazard (geometric mean) and supporting multipliers */}
+            {hl.primary && hl.modifiers ? (
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{padding:"10px 12px",background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
+                  <div className="k">PRIMARY HAZARD · base {hl.impact.base_hazard}/100</div>
+                  <div style={{fontSize:10.5,color:"var(--text-lo)",margin:"2px 0 8px"}}>Geometric mean: any primary near zero pulls the whole hazard down.</div>
+                  {hl.primary.terms.map((t,i)=>{
+                    const cc = t.score>=75?"#EF4444":t.score>=50?"#F97316":t.score>=25?"#F59E0B":"#10B981";
+                    return (
+                      <div key={i} className="crop-gauge" style={{margin:"0 0 8px"}}>
+                        <div className="lbl">
+                          <span>{t.name} <span style={{color:"var(--text-lo)",fontSize:10}}>exponent {t.exponent}</span></span>
+                          <b style={{color:cc}} className="num">{t.score}/100</b>
+                        </div>
+                        <div className="track"><div className="fill" style={{width:t.score+"%",background:cc}}/></div>
+                        <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:2}}>{t.source}</div>
+                      </div>
+                    );
+                  })}
+                  <div style={{fontSize:10.5,color:"var(--text-mid)",marginTop:4}}>
+                    People at risk (not in the score): <b className="num">{(hl.exposure&&hl.exposure.people_exposed||0).toLocaleString()}</b> · {hl.exposure?hl.exposure.structures:0} structures · {hl.exposure?hl.exposure.roads_km:0} km roads
                   </div>
-                );
-              })}
-            </div>
+                </div>
+                <div style={{padding:"10px 12px",background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
+                  <div className="k">SUPPORTING MODIFIERS · ×{hl.modifiers.product}</div>
+                  <div style={{fontSize:10.5,color:"var(--text-lo)",margin:"2px 0 6px"}}>Bounded multipliers (product capped {hl.modifiers.cap[0]}–{hl.modifiers.cap[1]}): they move a score by a class, never create a flood.</div>
+                  {hl.modifiers.rows.map((m,i)=>{
+                    const up = m.effect_pct>0, mc = up ? (m.effect_pct>=12?"#EF4444":"#F59E0B") : (m.effect_pct<0?"#10B981":"var(--text-mid)");
+                    return (
+                      <div key={i} style={{padding:"4px 0",borderBottom:"1px dashed rgba(120,180,255,0.08)"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:11.5}}>
+                          <span style={{color:"var(--text-hi)"}}>{m.name} <span style={{color:"var(--text-lo)",fontSize:10}}>{m.score}/100 · range ×{m.range[0]}–{m.range[1]}</span></span>
+                          <span className="mono" style={{color:mc,fontWeight:700}}>{up?"+":""}{m.effect_pct}%</span>
+                        </div>
+                        <div style={{fontSize:10.5,color:"var(--text-lo)"}}>{m.source}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {hl.categories.map((cat,i)=>{
+                  const cc = cat.score>=75?"#EF4444":cat.score>=50?"#F97316":cat.score>=25?"#F59E0B":"#10B981";
+                  return (
+                    <div key={i} className="crop-gauge" style={{margin:0}}>
+                      <div className="lbl">
+                        <span>{cat.name} <span style={{color:"var(--text-lo)",fontSize:10}}>weight {Math.round(cat.weight*100)}%</span></span>
+                        <b style={{color:cc}} className="num">{cat.score}/100</b>
+                      </div>
+                      <div className="track"><div className="fill" style={{width:cat.score+"%",background:cc}}/></div>
+                      <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:2}}>{cat.source}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Drainage system, ponding timeline, secondary hazards */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginTop:14}}>
@@ -273,7 +391,7 @@ function SimulateScreen(){
                 <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:6,lineHeight:1.5}}>
                   Inflow = runoff ({Math.round(hl.runoff.coefficient*100)}% of rain, {hl.impact.pattern}) + upstream; outflow = drainage decaying as receiving waters fill.
                   Ponded fraction {Math.round((hl.inundation.ponded_fraction||0)*100)}% of the cell → mean {hl.inundation.depth_mean_m} m, max {hl.inundation.depth_max_m} m.
-                  Score = 0.6 × factor composite ({hl.impact.factor_composite}) + 0.4 × inundation severity ({hl.impact.inundation_severity}).
+                  {hl.impact.base_hazard!=null ? `Score = base hazard ${hl.impact.base_hazard} × modifiers ${hl.impact.modifier_product} (legacy additive formula would give ${hl.impact.legacy_additive_score}).` : `Score = 0.6 × factor composite (${hl.impact.factor_composite}) + 0.4 × inundation severity (${hl.impact.inundation_severity}).`}
                 </div>
               </div>
               <div style={{padding:"10px 12px",background:"rgba(10,18,28,0.5)",border:"1px solid var(--stroke)",borderRadius:8}}>
@@ -303,6 +421,14 @@ function SimulateScreen(){
                 ))}
               </div>
             )}
+            {hl.data_quality && (
+              <div style={{fontSize:11,color:hl.data_quality.cap_applied?"#F59E0B":"var(--text-mid)",marginTop:10,lineHeight:1.5}}>
+                Data quality: {hl.data_quality.imputed_count ? `${hl.data_quality.imputed_count} imputed — ${hl.data_quality.imputed.join(", ")}` : "all inputs live"}
+                {hl.cap_reason ? ` · ${hl.cap_reason}` : ""}
+                {hl.data_quality.ml && hl.data_quality.ml.imputed_count ? ` · ML inputs imputed: ${hl.data_quality.ml.imputed.join(", ")}` : ""}
+              </div>
+            )}
+            <ProvenancePanel rows={hl.provenance}/>
             <div style={{fontSize:10.5,color:"var(--text-lo)",marginTop:10}}>
               Data: {Object.entries(hl.data_confidence||{}).map(([k,v])=>`${k} ${v?"✓":"✗"}`).join(" · ")}
             </div>
@@ -427,7 +553,7 @@ function FarmerScreen(){
             ["Topsoil moisture", soil.moisture_0_7 != null ? `${soil.moisture_0_7} m³/m³` : "—", `${soil.saturation_pct}% saturated · ${String(soil.texture).replace("_"," ")}`, soil.saturation_pct >= 85 ? "#F59E0B" : "#10B981"],
             ["Available water", irr.plant_available_water_pct != null ? `${irr.plant_available_water_pct}%` : "—", `root zone ${a.crop.root_depth_cm} cm`, irr.plant_available_water_pct != null && irr.plant_available_water_pct < 35 ? "#F59E0B" : "#10B981"],
             ["Wind", `${a.now.wind_kmh != null ? Math.round(a.now.wind_kmh) : "—"} km/h`, `gusts to ${a.lodging.gust_max_3d_kmh} km/h (3 d)`, a.lodging.level === "high" ? "#EF4444" : "#7DD3FC"],
-            ["Waterlogging", wl.level.toUpperCase(), `~${wl.ponding_hours_72h} h vs ${wl.tolerance_hours} h tolerance`, lvl(wl.level)],
+            ["Waterlogging", wl.level.toUpperCase(), `${wl.score != null ? "hazard " + wl.score + "/100 · " : ""}~${wl.ponding_hours_72h} h vs ${wl.tolerance_hours} h tolerance`, lvl(wl.level)],
           ].map(([k,v,s,c],i)=>(
             <div key={i} className="panel" style={{padding:"10px 12px",borderLeft:`3px solid ${c}`}}>
               <div className="k">{k}</div>
@@ -517,7 +643,7 @@ function FarmerScreen(){
               <div className="panel-hd"><h3>Risks this week</h3></div>
               <div className="panel-bd" style={{display:"flex",flexDirection:"column",gap:8,fontSize:12}}>
                 {[
-                  ["Waterlogging", wl.level, `${wl.ponding_hours_72h} h ponding on ${irr.rain_3d_forecast_mm} mm / 3 d · HAND ${wl.hand_m != null ? wl.hand_m + " m" : "n/a"} · drains ${wl.drainage_capacity_mm_h} mm/h`],
+                  ["Waterlogging", wl.level, `${wl.drivers_text ? wl.drivers_text + " · " : ""}${wl.ponding_hours_72h} h ponding on ${irr.rain_3d_forecast_mm} mm / 3 d · HAND ${wl.hand_m != null ? wl.hand_m + " m" : "n/a"} · drains ${wl.drainage_capacity_mm_h} mm/h`],
                   ["Disease pressure", a.disease.overall, a.disease.list.slice(0,3).map(d=>`${d.name} ${d.favourable_hours_72h} h`).join(" · ") + ` · leaf wetness ${a.disease.leaf_wetness_hours_72h} h`],
                   ["Heat stress", a.stress.heat_days.length ? (a.stress.heat_days.length >= 3 ? "high" : "moderate") : "low", a.stress.heat_days.length ? `${a.stress.heat_days.length} day(s) ≥ ${a.stress.t_heat} °C` : `no day above ${a.stress.t_heat} °C`],
                   ["Lodging / wind", a.lodging.level, `gusts to ${a.lodging.gust_max_3d_kmh} km/h vs ${a.lodging.threshold_kmh} km/h threshold`],
