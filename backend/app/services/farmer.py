@@ -64,8 +64,10 @@ def _stage_idx(stage):
 
 
 async def fetch_forecast(lat, lon) -> dict:
+    from app.services.budget import budgeted_get
     async with httpx.AsyncClient(timeout=25) as client:
-        r = await client.get(FORECAST_URL, params={
+        # 14 days of data (7 past + 7 ahead), 25 variables -> 3 budget units
+        r = await budgeted_get(client, FORECAST_URL, 3, "farmer_forecast", params={
             "latitude": lat, "longitude": lon, "timezone": "auto", "past_days": 7, "forecast_days": 7,
             "current": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_gusts_10m,cloud_cover,apparent_temperature",
             "daily": "precipitation_sum,precipitation_probability_max,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,"
@@ -126,6 +128,19 @@ async def nearest_reservoir(lat, lon):
                 "observed_at": getattr(r, "observed_at", None), "inflow_cms": r.inflow_cms, "outflow_cms": r.outflow_cms}
     except Exception:
         return None
+
+
+def waterlogging_level(score: float) -> str:
+    """Engine classes -> advisory level: safe/mod boundary 25, high from 50."""
+    return "high" if score >= 50 else "moderate" if score >= 25 else "low"
+
+
+def hazard_drivers(imp: dict, top_n: int = 3) -> list:
+    """Short strings naming the primaries and the strongest supporting modifiers behind a score."""
+    out = [f"{t['name']} {t['score']}/100" for t in (imp.get("primary") or {}).get("terms", [])]
+    rows = sorted((imp.get("modifiers") or {}).get("rows", []), key=lambda r: -abs(r.get("effect_pct", 0)))
+    out += [f"{r['name']} {'+' if r['effect_pct'] > 0 else ''}{r['effect_pct']}%" for r in rows[:top_n] if r.get("effect_pct")]
+    return out
 
 
 async def advisory(lat: float, lon: float, crop: str = "paddy", stage: str = "Vegetative", population: int = 0) -> dict:
@@ -214,8 +229,16 @@ async def advisory(lat: float, lon: float, crop: str = "paddy", stage: str = "Ve
     pond_h = imp["inundation"]["ponding_hours"]
     tol = C["waterlog_tol_h"][si]
     hand = (geo.get("terrain") or {}).get("hand_m")
-    wl_level = "high" if pond_h >= tol else "moderate" if pond_h >= tol * 0.5 or ((sat_pct or 0) >= 85 and rain3_future >= 40) else "low"
-    waterlogging = {"level": wl_level, "ponding_hours_72h": pond_h, "tolerance_hours": tol, "depth_max_m": imp["inundation"]["depth_max_m"],
+    wl_score = imp["impact"]["score"]
+    wl_level = waterlogging_level(wl_score)            # primary (rain, elevation, water) x supporting modifiers only
+    drivers = hazard_drivers(imp)
+    waterlogging = {"level": wl_level, "score": wl_score, "class": imp["impact"]["class"], "base_hazard": imp["impact"].get("base_hazard"),
+                    "modifier_product": imp["impact"].get("modifier_product"),
+                    "primary": (imp.get("primary") or {}).get("terms"), "modifiers": (imp.get("modifiers") or {}).get("rows"),
+                    "drivers": drivers, "drivers_text": " · ".join(drivers),
+                    "basis": "two-tier hazard: primary (rainfall, relative elevation, distance to water) x bounded supporting modifiers; crop tolerance is reported beside it, not scored",
+                    "tolerance_exceeded": bool(pond_h >= tol),
+                    "ponding_hours_72h": pond_h, "tolerance_hours": tol, "depth_max_m": imp["inundation"]["depth_max_m"],
                     "hand_m": hand, "closed_depression": (geo.get("terrain") or {}).get("in_closed_depression"),
                     "infiltration_mm_h": soil.get("infiltration_mm_h"), "saturation_pct": sat_pct,
                     "drainage_capacity_mm_h": imp["runoff"]["drainage_capacity_mm_h"], "runoff_coefficient": imp["runoff"]["coefficient"]}
@@ -289,13 +312,16 @@ async def advisory(lat: float, lon: float, crop: str = "paddy", stage: str = "Ve
     def add(priority, kind, title, desc, icon):
         adv.append({"priority": priority, "type": kind, "title": title, "desc": desc, "icon": icon})
     if wl_level == "high":
-        add(1, "warn", f"Waterlogging likely: ~{pond_h:.0f} h of standing water vs {tol} h {C['name']} tolerance at {stage.lower()}",
-            f"{rain3_future} mm forecast over 3 days on {texture.replace('_', ' ')} soil at {sat_pct}% saturation"
-            + (f", only {hand} m above the nearest drainage line" if hand is not None else "")
-            + ". Open field drains now, stop irrigation, and plan to drain within "
+        add(1, "warn", f"Waterlogging likely: hazard {wl_score}/100 ({imp['impact']['class']}) for {C['name']} at {stage.lower()}",
+            f"Drivers: {waterlogging['drivers_text']}. {rain3_future} mm forecast over 3 days on {texture.replace('_', ' ')} soil"
+            + (f", {hand} m above the nearest drainage line" if hand is not None else "")
+            + f". Simulated ponding ~{pond_h:.0f} h against a {tol} h tolerance"
+            + (" (exceeded)" if pond_h >= tol else "") + ". Open field drains now, stop irrigation, and plan to drain within "
             + (f"{tol} h" if tol < 48 else "two days") + " of ponding.", "droplet")
     elif wl_level == "moderate":
-        add(2, "info", f"Watch low patches: ponding ~{pond_h:.0f} h possible", f"{rain3_future} mm over 3 days with soil at {sat_pct}% saturation. Keep drains clear; {C['name']} tolerates about {tol} h at this stage.", "droplet")
+        add(2, "info", f"Watch low patches: hazard {wl_score}/100 ({imp['impact']['class']})",
+            f"Drivers: {waterlogging['drivers_text']}. {rain3_future} mm over 3 days with soil at {sat_pct}% saturation; "
+            f"simulated ponding ~{pond_h:.0f} h, {C['name']} tolerates about {tol} h at this stage. Keep drains clear.", "droplet")
     if irrigate_mm > 0:
         add(1 if irrigation["days_until_stress"] in (0, 1) else 2, "info", f"Irrigate about {irrigate_mm:.0f} mm {irrigation['recommended_when']}",
             f"Crop water need {etc7} mm this week (Kc {kc} x ET0) against {rain7_future} mm forecast rain; plant-available water "

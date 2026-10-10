@@ -330,6 +330,106 @@ async def ensure_site(db, lat: float, lon: float, force: bool = False) -> dict:
 
 
 # ── Flood scoring ─────────────────────────────────────────────────────────────
+SCORE_CLASS = ((75, "closed_all"), (50, "closed_cars"), (25, "caution"))   # engine classes -> road status
+
+
+def classify_score(score: float, seg: dict, any_wet_near: bool = False, elevation_term: float | None = None) -> str:
+    """Road status from the two-tier hazard score (primary x supporting), plus structural rules.
+
+    Bridges stay open. Underpasses (tunnel below grade) are at least caution and close to cars when
+    water is simulated nearby. A culvert crossing lifts a low score to caution. Thresholds are the
+    engine's own classes: safe < 25 open, mod < 50 caution, high < 75 closed to cars, extreme closed to all.
+    """
+    if seg.get("bridge"):
+        return "open"
+    st = "open"
+    for floor, name in SCORE_CLASS:
+        if score >= floor:
+            st = name
+            break
+    if seg.get("culvert_near") and score >= 15:
+        st = max(st, "caution", key=STATUS_ORDER.get)
+    if elevation_term is not None and elevation_term < ROAD_CLOSE_MIN_ELEV and STATUS_ORDER[st] >= STATUS_ORDER["closed_cars"]:
+        st = "caution"                       # high ground does not close on rain alone
+    if seg.get("tunnel") and not seg.get("bridge") and (seg.get("layer") or 0) < 0:
+        st = max(st, "caution", key=STATUS_ORDER.get)
+        if any_wet_near:
+            st = max(st, "closed_cars", key=STATUS_ORDER.get)
+    return st
+
+
+def site_hazard_context(bundle: dict, rainfall_mm: float, duration_h: float, intensity_mm_h=None) -> dict:
+    """Supporting modifiers for the whole site, from the impact engine, for this scenario.
+
+    Every segment shares them except 'Duration & ponding', which is re-driven per segment by the
+    DEM-simulated depth on that segment (the one physical thing that differs road by road).
+    """
+    from app.services.hyperlocal import compute_impact, MODIFIER_RANGES
+    scenario = {"rainfall_mm": rainfall_mm, "duration_h": duration_h, "intensity_mm_h": intensity_mm_h,
+                "pattern": "steady", "lat": bundle["site"]["lat"], "lon": bundle["site"]["lon"]}
+    try:
+        imp = compute_impact(bundle["geo"], bundle["ant"], {}, scenario, 0, upstream=None, tide=None)
+        rows = {r["name"]: r for r in imp["modifiers"]["rows"]}
+        product_rest = 1.0
+        for name, r in rows.items():
+            if name != "Duration & ponding":
+                product_rest *= r["multiplier"]
+        return {"ok": True, "peak_intensity_mm_h": imp["impact"]["peak_intensity_mm_h"],
+                "site_severity": imp["impact"]["inundation_severity"], "product_rest": product_rest,
+                "dp_range": MODIFIER_RANGES["Duration & ponding"], "rows": imp["modifiers"]["rows"],
+                "water_type": (bundle["geo"].get("water") or {}).get("type"),
+                "lowness": (bundle["geo"].get("elevation") or {}).get("lowness", 0.5),
+                "site_score": imp["impact"]["score"], "site_class": imp["impact"]["class"]}
+    except Exception as e:
+        mean = intensity_mm_h or rainfall_mm / max(duration_h, 0.5)
+        return {"ok": False, "error": str(e)[:160], "peak_intensity_mm_h": mean, "site_severity": 0.0,
+                "product_rest": 1.0, "dp_range": (0.9, 1.2), "rows": [], "water_type": None, "lowness": 0.5,
+                "site_score": None, "site_class": None}
+
+
+ROAD_HAND_SCALE_M = 4.0      # road-to-road differences are sub-metre: 100 at the drainage line, 0 at the median HAND
+ROAD_PIT_SCALE_M = 0.5       # a half-metre depression under the carriageway is a full pit
+ROAD_CLOSE_MIN_ELEV = 30.0   # a road only closes when its own elevation term says it is genuinely low
+
+
+def road_elevation_term(seg: dict) -> float:
+    """The engine's relative-elevation primary at road scale (0..100)."""
+    from app.services.hyperlocal import _clamp
+    hand_low = _clamp(1 - (seg.get("hand_m") or 0.0) / ROAD_HAND_SCALE_M, 0, 1) * 100
+    pit = _clamp((seg.get("pit_depth_m") or 0.0) / ROAD_PIT_SCALE_M, 0, 1) * 100
+    elev = seg.get("elev_m") if seg.get("elev_m") is not None else 20.0
+    abs_low = _clamp((40.0 - elev) / 35.0, 0, 1) * 100
+    return max(0.5 * hand_low + 0.4 * pit + 0.1 * abs_low, 3.0)
+
+
+def segment_hazard(seg: dict, ctx: dict, max_depth_m: float, rainfall_mm: float, duration_h: float) -> dict:
+    """Two-tier score for one road segment: its own primaries x the site's modifiers.
+
+    Rainfall and distance-to-water terms come straight from the engine's primary_hazard; the
+    elevation term is the same formula at road scale (see ROAD_* constants), because the engine's
+    8 m HAND scale calls a whole coastal plain 'low' and cannot tell one road from the next.
+    """
+    from app.services.hyperlocal import primary_hazard, PRIMARY_EXPONENTS, MODIFIER_PRODUCT_RANGE, _clamp
+    terrain_ok = seg.get("hand_m") is not None and seg.get("elev_m") is not None
+    prim = primary_hazard(ctx["peak_intensity_mm_h"], seg.get("hand_m"), seg.get("pit_depth_m") or 0.0,
+                          seg.get("elev_m") if seg.get("elev_m") is not None else 20.0, seg.get("dist_water_m"),
+                          ctx.get("water_type"), ctx.get("lowness", 0.5), terrain_ok,
+                          event_mm=rainfall_mm, duration_h=duration_h)
+    terms = {t["name"]: float(t["score"]) for t in prim["terms"]}
+    e_road = road_elevation_term(seg) if terrain_ok else terms["Elevation (relative)"]
+    terms["Elevation (relative)"] = round(e_road)
+    base = 100 * ((terms["Rainfall intensity"] / 100) ** PRIMARY_EXPONENTS["intensity"]
+                  * (e_road / 100) ** PRIMARY_EXPONENTS["elevation"]
+                  * (terms["Distance to water"] / 100) ** PRIMARY_EXPONENTS["water"])
+    lo, hi = ctx["dp_range"]
+    dp_driver = max(float(ctx["site_severity"]), 100.0 * min(max_depth_m / 0.6, 1.0))
+    dp_mult = lo + (hi - lo) * dp_driver / 100.0
+    product = _clamp(ctx["product_rest"] * dp_mult, *MODIFIER_PRODUCT_RANGE)
+    score = _clamp(round(base * product), 0, 100)
+    return {"score": score, "base": round(base), "modifier_product": round(product, 3),
+            "primary": {k: round(v) for k, v in terms.items()}, "terrain_ok": terrain_ok, "elevation_term": round(e_road)}
+
+
 def classify(max_depth, wet_fraction, seg, any_wet_near=False):
     if seg.get("bridge"):
         return "open"
@@ -376,7 +476,8 @@ async def score_segments(db, bundle: dict, rainfall_mm: float, duration_h: float
     t0 = time.time()
     grid = bundle["grid"]
     forcing = net_ponding_mm(bundle["geo"], bundle["ant"], rainfall_mm, duration_h)
-    depth = depth_grid(grid, forcing["net_mm"])["depth"]
+    from app.services.inundation import routed_depth_grid
+    depth = routed_depth_grid(grid, forcing["net_mm"])["depth"]     # water routed high to low, not spread evenly
     wet_mask = depth >= 0.05
     res = float(grid["res_m"])
     near_cells = max(1, int(60 / res))
@@ -384,6 +485,7 @@ async def score_segments(db, bundle: dict, rainfall_mm: float, duration_h: float
     reports = await active_reports(db, bundle["site"]["bbox"])
     rep_tree = cKDTree(np.array([[r.lat, r.lon] for r in reports])) if reports else None
     mlat, mlon = _m_per_deg(bundle["site"]["lat"])
+    ctx = site_hazard_context(bundle, rainfall_mm, duration_h, intensity_mm_h)
 
     out = {}
     for sid, seg in bundle["segments"].items():
@@ -400,7 +502,11 @@ async def score_segments(db, bundle: dict, rainfall_mm: float, duration_h: float
             if idx:
                 r, c = idx
                 any_wet_near = bool(wet_mask[max(r - near_cells, 0):r + near_cells + 1, max(c - near_cells, 0):c + near_cells + 1].any())
-        st = classify(max_d, wet_frac, seg, any_wet_near)
+        hz = segment_hazard(seg, ctx, max_d, rainfall_mm, duration_h)
+        if hz["terrain_ok"]:
+            st, basis = classify_score(hz["score"], seg, any_wet_near, hz["elevation_term"]), "two_tier"
+        else:
+            st, basis = classify(max_d, wet_frac, seg, any_wet_near), "depth_fallback"   # no DEM for this segment
         source = "sim"
         if rep_tree is not None:
             d, i = rep_tree.query([seg["mid_lat"], seg["mid_lon"]])
@@ -412,14 +518,17 @@ async def score_segments(db, bundle: dict, rainfall_mm: float, duration_h: float
                 if rep.depth_cm is not None:
                     max_d = max(max_d, rep.depth_cm / 100.0)
                 source = f"report:{rep.id}"
-        out[sid] = {"status": st, "max_depth_m": round(max_d, 2), "wet_fraction": round(wet_frac, 2), "source": source}
+        out[sid] = {"status": st, "max_depth_m": round(max_d, 2), "wet_fraction": round(wet_frac, 2), "source": source,
+                    "score": hz["score"], "base": hz["base"], "modifier_product": hz["modifier_product"],
+                    "primary": hz["primary"], "basis": basis}
 
     _status[(site_id, key)] = (time.time(), out)
     await db.execute(delete(RoadStatusCache).where(RoadStatusCache.site_id == site_id, RoadStatusCache.scenario_key == key))
     db.add(RoadStatusCache(site_id=site_id, scenario_key=key, status_json={str(k): v for k, v in out.items()}))
     await db.commit()
     await _log(db, f"scored site {site_id} scenario {key}", {"seconds": round(time.time() - t0, 2), "segments": len(out),
-                                                            "net_ponding_mm": forcing["net_ponding_mm"]})
+                                                            "net_ponding_mm": forcing["net_ponding_mm"],
+                                                            "site_score": ctx.get("site_score"), "modifiers_ok": ctx.get("ok")})
     return out
 
 

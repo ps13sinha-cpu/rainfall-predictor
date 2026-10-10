@@ -29,16 +29,22 @@ import math
 import json
 import time
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
 from app.services import terrain as _terrain
+from app.services import site_cache as _site_cache
 from app.services.flood_history import lookup as flood_lookup
 from app.services.inundation import get_dem, priority_flood
 
 # ── Caches ────────────────────────────────────────────────────────────────────
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "cache", "hyperlocal")
+# Static layers live in the site_cache table of riis.db (services/site_cache.py), shared by
+# every worker; CACHE_DIR is the legacy per-machine JSON location, imported once per site.
+CACHE_DIR = _site_cache.LEGACY_DIR
+CALIBRATION_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "calibration.json")
+RESERVOIR_STALE_H = 48.0          # fallback when a reservoir row carries no `stale` flag
+RESERVOIR_SYNC_TTL = 6 * 3600     # the scheduler re-syncs reservoir pages every 6 h
 _geo_cache = {}           # (lat, lon) -> {component: (ts, value)}
 _arc_cache = {}
 _live_cache = {}
@@ -52,6 +58,7 @@ TTL = {  # seconds; static layers live on disk
     "terrain": 30 * 86400, "water": 7 * 86400, "soil": 30 * 86400, "landuse": 7 * 86400,
     "infra": 7 * 86400, "coast": 30 * 86400, "district": 30 * 86400, "flood_history": 30 * 86400,
     "elevation": 30 * 86400, "buildings": 7 * 86400,
+    "worldcover": 180 * 86400, "population": 180 * 86400,
 }
 DEGRADED_GRACE = 10 * 60
 
@@ -88,28 +95,148 @@ def _clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 
-# ── Disk cache ────────────────────────────────────────────────────────────────
+def _iso(ts) -> str | None:
+    try:
+        return datetime.fromtimestamp(float(ts), timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+
+
+async def _om_get(client: httpx.AsyncClient, url: str, params=None, units: float = 1, label: str = "open-meteo"):
+    """GET an Open-Meteo endpoint through the shared daily call budget (services/budget.py,
+    another agent's module) when it is importable; a plain client.get otherwise. A
+    BudgetExhausted error propagates so the caller takes its fallback path."""
+    try:
+        from app.services.budget import budgeted_get
+    except Exception:
+        return await client.get(url, params=params)
+    full = str(httpx.URL(url, params=params)) if params else url
+    return await budgeted_get(client, full, units, label)
+
+
+# ── Site cache (shared table in riis.db; legacy JSON imported once) ───────────
 def _site_key(lat, lon):
     return f"{round(lat, 3):.3f}_{round(lon, 3):.3f}"
 
 
 def _disk_load(key):
+    """{layer: {"t": fetched_at, "v": payload}} from the shared site_cache table."""
     try:
-        with open(os.path.join(CACHE_DIR, f"{key}.json")) as f:
-            return json.load(f)
-    except Exception:
+        return _site_cache.load_site(key)
+    except Exception as e:
+        print(f"[RIIS-hyperlocal] site cache read failed: {e}")
         return {}
 
 
 def _disk_save(key, store):
     try:
-        os.makedirs(CACHE_DIR, exist_ok=True)
-        tmp = os.path.join(CACHE_DIR, f"{key}.json.tmp")
-        with open(tmp, "w") as f:
-            json.dump({k: {"t": t, "v": v} for k, (t, v) in store.items()}, f)
-        os.replace(tmp, os.path.join(CACHE_DIR, f"{key}.json"))
+        _site_cache.save_site(key, store)
     except Exception as e:
-        print(f"[RIIS-hyperlocal] disk cache write failed: {e}")
+        print(f"[RIIS-hyperlocal] site cache write failed: {e}")
+
+
+def validation_status() -> dict:
+    """What the impact score has been checked against. Until the lead produces
+    app/data/calibration.json the honest answer is: nothing observed."""
+    try:
+        with open(CALIBRATION_PATH) as f:
+            cal = json.load(f)
+        note = cal.get("note") or (
+            f"Calibrated against {cal.get('n_events')} inventory flood events (rank AUC {cal.get('auc')}); "
+            f"this scores district-day rainfall against recorded floods, not hyperlocal depths. Method: "
+            f"{(cal.get('method') or '')[:160]}")
+        return {"status": cal.get("status") or "calibrated", "computed_at": cal.get("computed_at"),
+                "method": cal.get("method"), "n_events": cal.get("n_events"), "auc": cal.get("auc"),
+                "class_flood_rates": cal.get("class_flood_rates"), "note": note, "file": "app/data/calibration.json"}
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        return {"status": "untested_hypothesis",
+                "note": f"calibration.json present but unreadable ({e}); scores are not validated against observed floods"}
+    return {"status": "untested_hypothesis",
+            "note": "Impact scores are an expert-set ordering (see HYPERLOCAL_ENGINE.md) and have not been "
+                    "validated against observed flood depths or extents. Treat the class as a hypothesis, "
+                    "not a measurement, until app/data/calibration.json exists."}
+
+
+LICENCES = {
+    "open_meteo": "Open-Meteo.com, CC BY 4.0 (non-commercial)",
+    "osm": "© OpenStreetMap contributors, ODbL",
+    "soilgrids": "ISRIC SoilGrids, CC BY 4.0",
+    "terrain": "SRTM via AWS Terrain Tiles, public domain",
+    "ifi": "India Flood Inventory (IIT Delhi), CC BY 4.0",
+    "metno": "MET Norway, CC BY 4.0",
+    "reservoir": "public page, scraped",
+    "worldcover": "ESA WorldCover 2021 v200, CC BY 4.0",
+    "ghsl": "JRC GHSL GHS-POP R2023A, CC BY 4.0",
+    "riis": "RIIS internal",
+}
+LAYER_SOURCES = {  # layer: (source name, url or dataset id, licence key, ttl_s)
+    "terrain": ("SRTM via AWS Terrain Tiles (D8 hydrology in terrain.py)",
+                "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png", "terrain", TTL["terrain"]),
+    "elevation": ("Open-Meteo Elevation API", ELEV_URL, "open_meteo", TTL["elevation"]),
+    "water": ("OpenStreetMap water and waterways via Overpass", OVERPASS_URLS[0], "osm", TTL["water"]),
+    "landuse": ("OpenStreetMap landuse and natural polygons via Overpass", OVERPASS_URLS[0], "osm", TTL["landuse"]),
+    "infra": ("OpenStreetMap drainage, barriers and facilities via Overpass", OVERPASS_URLS[0], "osm", TTL["infra"]),
+    "buildings": ("OpenStreetMap building count via Overpass", OVERPASS_URLS[0], "osm", TTL["buildings"]),
+    "coast": ("OpenStreetMap coastline via Overpass", OVERPASS_URLS[0], "osm", TTL["coast"]),
+    "soil": ("ISRIC SoilGrids v2.0 (clay and sand, 0-5 cm)", SOIL_URL, "soilgrids", TTL["soil"]),
+    "district": ("Nominatim reverse geocoding", NOMINATIM_URL, "osm", TTL["district"]),
+    "flood_history": ("India Flood Inventory with Impacts v4 + district_lookup.json", "10.5281/zenodo.4742142",
+                      "ifi", TTL["flood_history"]),
+    "worldcover": ("ESA WorldCover 10 m 2021 (built-up share = impervious), windowed read from S3",
+                   "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/", "worldcover", TTL["worldcover"]),
+    "population": ("JRC GHS-POP 2020 3 arc-second, people within 2.5 km, local tiles",
+                   "https://ghsl.jrc.ec.europa.eu/download.php?ds=pop", "ghsl", TTL["population"]),
+    "archive": ("Open-Meteo ERA5 archive, 3 years daily precipitation", ARCHIVE_URL, "open_meteo", 60 * 60 * 6),
+    "forecast": ("Open-Meteo forecast (ECMWF IFS, GFS, ICON; ERA5-Land soil moisture)", FORECAST_URL, "open_meteo", 60 * 10),
+    "tide": ("Open-Meteo Marine sea_level_height_msl", MARINE_URL, "open_meteo", 60 * 60),
+    "reservoirs": ("RIIS reservoirs table (CMWSSB and KSEB daily pages; seeded where no page exists)",
+                   "riis.db/reservoirs", "reservoir", RESERVOIR_SYNC_TTL),
+}
+
+
+def build_provenance(geo: dict, ant: dict, weather: dict, tide: dict, upstream: dict, now: float | None = None) -> list:
+    """One entry per input layer: source, url, fetched_at, cache age, TTL, licence, status."""
+    now = now or time.time()
+    meta = geo.get("layer_meta") or {}
+    rows = []
+
+    def add(layer, value, fetched_ts, src_override=None, status=None):
+        name, url, lic, ttl = LAYER_SOURCES[layer]
+        if src_override:
+            name, url, lic = src_override
+        src = (value or {}).get("source") or "unavailable"
+        if status is None:
+            status = "unavailable" if "unavailable" in src else "fallback" if (
+                "fallback" in src or "default" in src or "sparse" in src) else "live"
+        rows.append({"layer": layer, "source": name, "url": url, "source_tag": src,
+                     "fetched_at": _iso(fetched_ts), "cache_age_s": (round(now - fetched_ts) if fetched_ts else None),
+                     "ttl_s": ttl, "licence": LICENCES[lic], "status": status})
+
+    for layer in ("terrain", "elevation", "water", "landuse", "worldcover", "infra", "buildings", "population", "coast",
+                  "soil", "district", "flood_history"):
+        if layer not in geo and layer not in meta:
+            continue
+        add(layer, geo.get(layer), (meta.get(layer) or {}).get("fetched_at"))
+    add("archive", ant, ant.get("fetched_at"), status="live" if ant.get("series") else "unavailable")
+    if weather.get("source") == "metno":
+        add("forecast", weather, weather.get("fetched_at"),
+            src_override=(weather.get("provider") or "MET Norway Locationforecast (fallback)",
+                          "https://api.met.no/weatherapi/locationforecast/2.0/", "metno"), status="fallback")
+    else:
+        add("forecast", weather, weather.get("fetched_at"))
+    if tide.get("applicable"):
+        add("tide", tide, tide.get("fetched_at"))
+    if upstream.get("source"):
+        res = upstream.get("reservoirs") or []
+        stale_all = bool(res) and all(r.get("stale") for r in res)
+        add("reservoirs", upstream, upstream.get("fetched_at"),
+            status="unavailable" if upstream.get("source") == "unavailable" else "stale" if stale_all else "live")
+        rows[-1]["observations"] = [{"name": r.get("name"), "source": r.get("source"), "observed_at": r.get("observed_at"),
+                                     "age_h": r.get("age_h"), "stale": r.get("stale"), "url": r.get("source_url")}
+                                    for r in res]
+    return rows
 
 
 # ── Overpass ──────────────────────────────────────────────────────────────────
@@ -134,7 +261,7 @@ async def _fetch_elevation(client, lat, lon) -> dict:
     pts = [(lat, lon), (lat + d, lon), (lat - d, lon), (lat, lon + d), (lat, lon - d)]
     q = "&".join(f"latitude={p[0]}&longitude={p[1]}" for p in pts)
     try:
-        r = await client.get(f"{ELEV_URL}?{q}")
+        r = await _om_get(client, f"{ELEV_URL}?{q}", units=1, label="elevation")
         elevs = r.json().get("elevation", [])
         center, ring = elevs[0], elevs[1:]
         spread = max(ring) - min(ring)
@@ -146,12 +273,28 @@ async def _fetch_elevation(client, lat, lon) -> dict:
         return {"elevation_m": 20.0, "slope_m_km": 1.0, "lowness": 0.5, "source": "fallback", "error": str(e)}
 
 
+async def _fetch_worldcover(lat, lon) -> dict:
+    from app.services.landcover import landcover_shares
+    return await asyncio.to_thread(landcover_shares, lat, lon)
+
+
+async def _fetch_population(lat, lon) -> dict:
+    from app.services.population import population_density
+    return await asyncio.to_thread(population_density, lat, lon)
+
+
 async def _fetch_terrain(lat, lon) -> dict:
     """SRTM window -> slope, HAND, upstream area, sinks (see terrain.py)."""
     try:
         grid = await get_dem(lat, lon, z=13, n=256)
         filled = priority_flood(grid["dem"])
+        grid["filled"] = filled
         out = _terrain.analyse(grid, filled)
+        try:                                          # water routed from high ground to this point
+            from app.services import routing as _routing
+            out["routing"] = _routing.point_metrics(grid)
+        except Exception as e:
+            out["routing"] = {"error": str(e)[:120]}
         out["lowness"] = _clamp(math.exp(-out["hand_m"] / 6.0) * 0.7 + 0.3 * out["share_of_neighbours_higher"], 0, 1)
         out["slope_m_km"] = round(math.tan(math.radians(out["slope_deg"])) * 1000, 1)
         return out
@@ -370,9 +513,10 @@ async def _fetch_archive(client, lat, lon) -> dict:
     end = datetime.utcnow().date()
     start = end - timedelta(days=3 * 365)
     try:
-        r = await client.get(ARCHIVE_URL, params={"latitude": lat, "longitude": lon, "start_date": start.isoformat(),
-                                                  "end_date": end.isoformat(), "daily": "precipitation_sum",
-                                                  "timezone": "auto"})
+        # 3 years of daily data is ~78 call units on the free tier (one per location per two weeks)
+        r = await _om_get(client, ARCHIVE_URL, params={"latitude": lat, "longitude": lon, "start_date": start.isoformat(),
+                                                       "end_date": end.isoformat(), "daily": "precipitation_sum",
+                                                       "timezone": "auto"}, units=78, label="archive_3y")
         daily = r.json().get("daily", {})
         vals = [v or 0.0 for v in daily.get("precipitation_sum", [])]
         if not vals:
@@ -535,6 +679,8 @@ async def get_geofactors(lat: float, lon: float, force: bool = False, budget: fl
         hit = store.get(name)
         if not hit or force:
             return False
+        if name == "terrain" and isinstance(hit[1], dict) and hit[1].get("source") != "unavailable" and "routing" not in hit[1]:
+            return False                      # cached before flow routing existed: recompute once
         ttl = min(TTL[name], DEGRADED_GRACE) if _is_degraded(name, hit[1]) else TTL[name]
         return now - hit[0] < ttl
 
@@ -545,15 +691,34 @@ async def get_geofactors(lat: float, lon: float, force: bool = False, budget: fl
     if not fresh("elevation") and "elevation" not in pending:
         jobs["elevation"] = _fetch_elevation(client, lat, lon)
 
-    # Overpass limits concurrent queries per IP, so the three OSM calls run one after another
+    # Overpass limits concurrent queries per IP, so the three OSM calls run one after another.
+    # A lock row in riis.db makes the chain idempotent across workers: the first worker fetches,
+    # any other asking for the same site meanwhile waits for its rows instead of fetching too.
+    osm_layers = ("water", "landuse", "infra", "coast", "buildings")
+
     async def _osm_chain():
+        if not _site_cache.acquire_lock(key, "osm", ttl_s=_site_cache.LOCK_TTL_S):
+            deadline = time.time() + 60
+            while time.time() < deadline and _site_cache.lock_held(key, "osm"):
+                await asyncio.sleep(1.5)
+            rows = _disk_load(key)
+            for n in osm_layers:
+                if n in rows:
+                    store[n] = (rows[n]["t"], rows[n]["v"])
+            if all(fresh(n) for n in osm_layers):
+                return {}          # the other worker's fetch landed; nothing to do
+            if not _site_cache.acquire_lock(key, "osm", ttl_s=_site_cache.LOCK_TTL_S):
+                return {}          # still locked after the wait: let that worker finish
         out = {}
-        if not (fresh("water") and fresh("landuse") and fresh("infra")):
-            out.update(await _fetch_osm_bundle(client, lat, lon))
-        if not fresh("coast"):
-            out["coast"] = await _fetch_coast(client, lat, lon)
-        if not fresh("buildings"):
-            out["buildings"] = await _fetch_buildings(client, lat, lon)
+        try:
+            if not (fresh("water") and fresh("landuse") and fresh("infra")):
+                out.update(await _fetch_osm_bundle(client, lat, lon))
+            if not fresh("coast"):
+                out["coast"] = await _fetch_coast(client, lat, lon)
+            if not fresh("buildings"):
+                out["buildings"] = await _fetch_buildings(client, lat, lon)
+        finally:
+            _site_cache.release_lock(key, "osm")
         return out
     if "osm" not in pending and not (fresh("water") and fresh("landuse") and fresh("infra")
                                      and fresh("coast") and fresh("buildings")):
@@ -561,6 +726,9 @@ async def get_geofactors(lat: float, lon: float, force: bool = False, budget: fl
     for name, fn in (("soil", _fetch_soil), ("district", _fetch_district)):
         if not fresh(name) and name not in pending:
             jobs[name] = fn(client, lat, lon)
+    for name, fn in (("worldcover", _fetch_worldcover), ("population", _fetch_population)):
+        if not fresh(name) and name not in pending:
+            jobs[name] = fn(lat, lon)
 
     def _absorb(name, res):
         flat = res if name == "osm" else {name: res}
@@ -575,7 +743,7 @@ async def get_geofactors(lat: float, lon: float, force: bool = False, budget: fl
         if "district" in store and not fresh("flood_history"):
             dname = (store["district"][1] or {}).get("district") or district_hint
             try:
-                store["flood_history"] = (time.time(), flood_lookup(dname))
+                store["flood_history"] = (time.time(), flood_lookup(dname, (store["district"][1] or {}).get("state")))
             except Exception as e:
                 store["flood_history"] = (time.time(), {"source": "unavailable", "error": str(e)})
 
@@ -612,7 +780,7 @@ async def get_geofactors(lat: float, lon: float, force: bool = False, budget: fl
     if not fresh("flood_history"):
         dname = (store.get("district", (0, {}))[1] or {}).get("district") or district_hint
         try:
-            store["flood_history"] = (now, flood_lookup(dname))
+            store["flood_history"] = (now, flood_lookup(dname, (store.get("district", (0, {}))[1] or {}).get("state")))
         except Exception as e:
             store["flood_history"] = (now, {"source": "unavailable", "error": str(e)})
     _disk_save(key, store)
@@ -625,11 +793,17 @@ async def get_geofactors(lat: float, lon: float, force: bool = False, budget: fl
     payload.setdefault("landuse", {"impervious_pct": 40.0, "green_pct": 40.0, "wetland_pct": 0.0,
                                    "farmland_pct": 0.0, "source": "fallback"})
     payload.setdefault("infra", {"source": "unavailable"})
+    payload.setdefault("worldcover", {"source": "unavailable"})
+    payload.setdefault("population", {"source": "unavailable"})
     payload.setdefault("coast", {"coast_km": None, "coastal": False, "source": "unavailable"})
     payload.setdefault("district", {"district": None, "source": "unavailable"})
     payload.setdefault("flood_history", {"source": "unavailable"})
     payload["fetched_at"] = datetime.utcnow().isoformat()
     payload["still_loading"] = sorted(pending.keys())
+    # per-layer timestamps for the provenance block (epoch seconds; TTL from the table above)
+    payload["layer_meta"] = {name: {"fetched_at": store[name][0], "fetched_at_iso": _iso(store[name][0]),
+                                    "ttl_s": TTL.get(name), "age_s": round(time.time() - store[name][0])}
+                             for name in store}
     return payload
 
 
@@ -648,13 +822,16 @@ async def get_antecedent(lat: float, lon: float) -> dict:
         else:
             arc = hit[1]
     rain = arc.get("rain", [])
+    fetched_at = (_arc_cache.get(key) or (now, None))[0]
     if not rain:
         return {"rain_1d_mm": 0, "rain_3d_mm": 0, "rain_7d_mm": 0, "rain_30d_mm": 0, "saturation_pct": 50,
-                "return_days": 0, "series": [], "source": arc.get("source", "unavailable")}
+                "return_days": 0, "series": [], "source": arc.get("source", "unavailable"), "fetched_at": fetched_at,
+                "estimated": True}
     r1, r3, r7, r30 = (round(sum(rain[-k:]), 1) for k in (1, 3, 7, 30))
     sat = _clamp(round(100 * (0.55 * min(r30, 200) / 200 + 0.30 * min(r7, 60) / 60 + 0.15 * min(r3, 25) / 25) + 8), 5, 100)
     return {"rain_1d_mm": r1, "rain_3d_mm": r3, "rain_7d_mm": r7, "rain_30d_mm": r30,
-            "saturation_pct": sat, "return_days": len(rain), "series": rain, "source": arc.get("source")}
+            "saturation_pct": sat, "return_days": len(rain), "series": rain, "source": arc.get("source"),
+            "fetched_at": fetched_at}
 
 
 async def get_live_conditions(lat: float, lon: float) -> dict:
@@ -665,21 +842,22 @@ async def get_live_conditions(lat: float, lon: float) -> dict:
     hit = _live_cache.get(key)
     if hit and now - hit[0] < _LIVE_TTL:
         return hit[1]
-    out = {"source": "open_meteo_forecast"}
+    out = {"source": "open_meteo_forecast", "provider": "Open-Meteo", "provider_fallback": False, "fetched_at": now}
     async with httpx.AsyncClient(timeout=20) as client:
         try:
             a, b = await asyncio.gather(
-                client.get(FORECAST_URL, params={
+                _om_get(client, FORECAST_URL, params={
                     "latitude": lat, "longitude": lon,
                     "current": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_gusts_10m,"
                                "wind_direction_10m,pressure_msl,cloud_cover",
                     "hourly": "precipitation,precipitation_probability,cape,soil_moisture_0_to_7cm,"
                               "soil_moisture_7_to_28cm,pressure_msl",
                     "minutely_15": "precipitation", "forecast_minutely_15": 24,
-                    "past_hours": 6, "forecast_days": 2, "timezone": "auto"}),
-                client.get(FORECAST_URL, params={
+                    "past_hours": 6, "forecast_days": 2, "timezone": "auto"}, units=1, label="forecast_live"),
+                _om_get(client, FORECAST_URL, params={
                     "latitude": lat, "longitude": lon, "hourly": "precipitation",
-                    "models": "ecmwf_ifs025,gfs_seamless,icon_seamless", "forecast_days": 1, "timezone": "auto"}),
+                    "models": "ecmwf_ifs025,gfs_seamless,icon_seamless", "forecast_days": 1, "timezone": "auto"},
+                        units=3, label="forecast_models"),
             )
             wx, mm = a.json(), b.json()
             cur = wx.get("current", {})
@@ -735,12 +913,61 @@ async def get_live_conditions(lat: float, lon: float) -> dict:
                 "model_agreement": (round(sum(1 for v in mvals if v >= 5) / len(mvals), 2) if mvals else None),
             })
         except Exception as e:
-            out.update({"source": "unavailable", "error": str(e), "current_rain": 0, "temperature": 28,
-                        "humidity": 70, "wind_speed": 0, "probability": 40, "next_6h_rain": 0.0,
-                        "peak_intensity": 0.0, "models_next_6h": {}})
+            fallback = await _metno_live(lat, lon)
+            if fallback is not None:
+                fallback["open_meteo_error"] = str(e)
+                out = fallback
+            else:
+                out.update({"source": "unavailable", "provider": None, "error": str(e), "current_rain": 0,
+                            "temperature": 28, "humidity": 70, "wind_speed": 0, "probability": 40,
+                            "next_6h_rain": 0.0, "peak_intensity": 0.0, "models_next_6h": {}})
     if out.get("source") != "unavailable" or not hit:
         _live_cache[key] = (now, out)
     return out
+
+
+async def _metno_live(lat: float, lon: float) -> dict | None:
+    """Live conditions from MET Norway through services/forecast_providers.fetch_metno (another
+    agent's module; imported lazily so this works before it lands), mapped onto the fields the
+    engine reads. MET Norway has no CAPE, soil moisture, nowcast or model ensemble, so those stay
+    None and compute_impact reports soil moisture as missing."""
+    try:
+        from app.services.forecast_providers import fetch_metno
+    except Exception:
+        return None
+    try:
+        w = await fetch_metno(lat, lon)
+    except Exception as e:
+        print(f"[RIIS-hyperlocal] MET Norway fallback failed: {e}")
+        return None
+    if not w:
+        return None
+    hourly = w.get("hourly_data") or w.get("hourly") or {}
+    precip = [v or 0.0 for v in (hourly.get("precipitation") or [])]
+    times = hourly.get("time") or []
+    nowt = datetime.now().strftime("%Y-%m-%dT%H")
+    i0 = next((i for i, t in enumerate(times) if str(t)[:13] == nowt), 0)
+    p6 = precip[i0:i0 + 6]
+    p24 = precip[i0:i0 + 24]
+    press = [v for v in (hourly.get("pressure_msl") or [])[max(0, i0 - 3):i0 + 1] if v is not None]
+    next6 = round(sum(p6), 1) if p6 else float(w.get("next_6h_rain") or 0.0)
+    return {
+        "source": "metno", "provider": "MET Norway Locationforecast", "provider_tag": w.get("source"),
+        "provider_fallback": True,
+        "fetched_at": time.time(),
+        "current_rain": precip[i0] if i0 < len(precip) else 0.0,
+        "temperature": w.get("temperature", 28), "humidity": w.get("humidity", 70),
+        "wind_speed": w.get("wind_speed", 0) or 0, "wind_gusts": w.get("wind_gusts", 0) or 0,
+        "wind_direction": w.get("wind_direction"), "pressure": w.get("pressure"), "cloud_cover": w.get("cloud_cover"),
+        "probability": w.get("max_probability"),
+        "next_6h_rain": next6, "past_6h_rain": None,
+        "next_24h_rain": round(sum(p24), 1) if p24 else None,
+        "peak_intensity": round(max(p24), 1) if p24 else float(w.get("peak_intensity") or 0.0),
+        "nowcast_2h_mm": None, "cape_max_6h": None,
+        "soil_moisture_0_7": None, "soil_moisture_7_28": None,
+        "pressure_trend_3h": round(press[-1] - press[0], 1) if len(press) >= 2 else None,
+        "models_next_6h": {"metno": next6}, "model_spread_mm": None, "model_agreement": None,
+    }
 
 
 async def get_tide(lat: float, lon: float, coastal: bool) -> dict:
@@ -753,9 +980,9 @@ async def get_tide(lat: float, lon: float, coastal: bool) -> dict:
         return hit[1]
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(MARINE_URL, params={"latitude": lat, "longitude": lon,
-                                                     "hourly": "sea_level_height_msl", "forecast_days": 2,
-                                                     "timezone": "auto"})
+            r = await _om_get(client, MARINE_URL, params={"latitude": lat, "longitude": lon,
+                                                          "hourly": "sea_level_height_msl", "forecast_days": 2,
+                                                          "timezone": "auto"}, units=1, label="marine_tide")
         h = r.json().get("hourly", {})
         times, vals = h.get("time", []), h.get("sea_level_height_msl", [])
         nowt = datetime.now().strftime("%Y-%m-%dT%H")
@@ -766,11 +993,11 @@ async def get_tide(lat: float, lon: float, coastal: bool) -> dict:
         hi = max(win, key=lambda x: x[1])
         out = {"applicable": True, "now_m": round(win[0][1], 2), "max_next_6h_m": round(max(v for _, v in win[:6]), 2),
                "next_high_m": round(hi[1], 2), "next_high_time": hi[0], "rising": len(win) > 1 and win[1][1] > win[0][1],
-               "source": "open_meteo_marine"}
+               "source": "open_meteo_marine", "fetched_at": now}
         _tide_cache[key] = (now, out)
         return out
     except Exception as e:
-        return {"applicable": True, "now_m": None, "source": "unavailable", "error": str(e)}
+        return {"applicable": True, "now_m": None, "source": "unavailable", "error": str(e), "fetched_at": now}
 
 
 async def get_upstream_reservoirs(lat: float, lon: float, point_elev: float, radius_km: float = 40.0) -> dict:
@@ -791,7 +1018,7 @@ async def get_upstream_reservoirs(lat: float, lon: float, point_elev: float, rad
         try:
             q = "&".join(f"latitude={a}&longitude={b}" for a, b in need)
             async with httpx.AsyncClient(timeout=15) as client:
-                r = await client.get(f"{ELEV_URL}?{q}")
+                r = await _om_get(client, f"{ELEV_URL}?{q}", units=1, label="reservoir_elevation")
             for pt, e in zip(need, r.json().get("elevation", [])):
                 _elev_cache[pt] = e
         except Exception:
@@ -801,13 +1028,40 @@ async def get_upstream_reservoirs(lat: float, lon: float, point_elev: float, rad
         e = _elev_cache.get((round(r.lat, 3), round(r.lon, 3)))
         upstream = e is None or e >= (point_elev or 0) - 3
         storage = 100 * (r.current_mcft or 0) / max(r.capacity_mcft or 1, 1)
-        out.append({"name": r.name, "code": r.code, "distance_km": round(_haversine_km(lat, lon, r.lat, r.lon), 1),
-                    "elevation_m": e, "upstream": upstream, "storage_pct": round(storage, 1),
-                    "overflow_prob": round(float(r.overflow_prob or 0), 2), "inflow_cms": r.inflow_cms,
-                    "outflow_cms": r.outflow_cms, "risk_class": r.risk_class})
+        row = {"name": r.name, "code": r.code, "distance_km": round(_haversine_km(lat, lon, r.lat, r.lon), 1),
+               "elevation_m": e, "upstream": upstream, "storage_pct": round(storage, 1),
+               "overflow_prob": round(float(r.overflow_prob or 0), 2), "inflow_cms": r.inflow_cms,
+               "outflow_cms": r.outflow_cms, "risk_class": r.risk_class}
+        row.update(_reservoir_freshness(r))
+        out.append(row)
     out.sort(key=lambda x: x["distance_km"])
-    return {"reservoirs": out, "count": len(out), "upstream_count": sum(1 for x in out if x["upstream"]),
-            "source": "riis_db"}
+    ups = [x for x in out if x["upstream"]]
+    return {"reservoirs": out, "count": len(out), "upstream_count": len(ups),
+            "upstream_all_stale": bool(ups) and all(x["stale"] for x in ups),
+            "source": "riis_db", "fetched_at": time.time()}
+
+
+def _reservoir_freshness(r) -> dict:
+    """observed_at, age_h, stale, live, source for a reservoir row. The reservoir sync
+    (services/reservoir_live.py) sets these on the row; when a row predates that, derive
+    them: age from the report date, stale past RESERVOIR_STALE_H, live when a public page
+    (not the seed) produced the values."""
+    source = getattr(r, "source", None) or "seed"
+    observed_at = getattr(r, "observed_at", None)
+    age_h = getattr(r, "age_h", None)
+    if age_h is None and observed_at:
+        try:
+            age_h = round((datetime.utcnow() - datetime.fromisoformat(str(observed_at)[:19])).total_seconds() / 3600, 1)
+        except ValueError:
+            age_h = None
+    live = getattr(r, "live", None)
+    if live is None:
+        live = source != "seed"
+    stale = getattr(r, "stale", None)
+    if stale is None:
+        stale = (not live) or age_h is None or age_h > RESERVOIR_STALE_H
+    return {"observed_at": observed_at, "age_h": age_h, "stale": bool(stale), "live": bool(live),
+            "source": source, "source_url": getattr(r, "source_url", None)}
 
 
 # ── Scoring ───────────────────────────────────────────────────────────────────
@@ -819,6 +1073,98 @@ CATEGORY_WEIGHTS = {
 PATTERN_PEAK = {"steady": 1.0, "front": 1.6, "back": 1.4, "burst": 2.2}
 BLOCKAGE_BY_MONTH = {1: 0.9, 2: 0.9, 3: 0.9, 4: 0.9, 5: 0.85, 6: 0.85, 7: 0.85, 8: 0.95, 9: 0.95,
                      10: 0.9, 11: 0.8, 12: 0.7}
+
+
+# ── Two-tier scoring (engine 3.0) ─────────────────────────────────────────────
+# Three primaries (rainfall intensity, relative elevation, distance to water) form a base hazard by
+# geometric mean, so any one of them near zero pulls the hazard down: no rain means no flood, a ridge
+# does not flood. The other factor groups are bounded multipliers that can move the score by about a
+# class but never create a flood from nothing. Exposure is reported separately as people at risk.
+PRIMARY_EXPONENTS = {"intensity": 0.5, "elevation": 0.3, "water": 0.2}
+INTENSITY_CURVE = [(0.0, 0.0), (10.0, 25.0), (25.0, 50.0), (50.0, 75.0), (80.0, 100.0)]   # mm/h -> 0..100
+# IMD 24-h classes: heavy 64.5, very heavy 115.6, extremely heavy 204.5 mm; a long steady deluge must not
+# score as light rain just because its hourly rate is modest
+ACCUMULATION_CURVE = [(0.0, 0.0), (64.5, 25.0), (115.6, 50.0), (204.5, 75.0), (350.0, 100.0)]   # mm/event -> 0..100
+WATER_TYPE_EFFECT = {"river": 1.0, "canal": 1.0, "stream": 0.9, "water": 0.8, "lake": 0.8, "reservoir": 0.8,
+                     "pond": 0.8, "drain": 0.5, "ditch": 0.5}
+WATER_FLOOR = 15.0          # pluvial flooding happens far from any mapped water; OSM water coverage is patchy
+WATER_UNMAPPED = 40.0
+MODIFIER_RANGES = {         # name: (min, max); driver is the matching 0..100 score
+    "Saturation & soil": (0.85, 1.25), "Drainage": (0.80, 1.20), "Impervious cover": (0.95, 1.15),
+    "Upstream & tide": (1.00, 1.30), "Duration & ponding": (0.90, 1.20), "Historical": (0.95, 1.15),
+    "Real-time": (0.95, 1.10), "Model": (0.95, 1.10),
+}
+MODIFIER_PRODUCT_RANGE = (0.6, 1.6)
+
+
+def _piecewise(curve, x):
+    if x <= curve[0][0]:
+        return curve[0][1]
+    for (x0, y0), (x1, y1) in zip(curve, curve[1:]):
+        if x <= x1:
+            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    return curve[-1][1]
+
+
+def primary_hazard(peak_intensity_mm_h: float, hand_m, sink_depth_m: float, elev_m: float,
+                   water_dist_m, water_type, lowness: float, terrain_ok: bool,
+                   event_mm: float = 0.0, duration_h: float = 6.0, convergence_pct=None) -> dict:
+    """The three primary drivers on 0..100 and their geometric-mean base hazard."""
+    i_peak = _piecewise(INTENSITY_CURVE, max(peak_intensity_mm_h, 0.0))
+    # accumulation counts in full up to a day, then is scaled down (300 mm over 3 days is not one IMD day)
+    i_acc = _piecewise(ACCUMULATION_CURVE, max(event_mm, 0.0) * min(1.0, 24.0 / max(duration_h, 1.0)))
+    intensity = max(i_peak, i_acc)
+    rain_note = f"peak {peak_intensity_mm_h:.0f} mm/h" + (f" · {event_mm:.0f} mm/{duration_h:.0f} h governs" if i_acc > i_peak else "")
+    if terrain_ok and hand_m is not None:
+        hand_low = _clamp(1 - hand_m / 8.0, 0, 1) * 100              # 100 at the drainage line, 0 at 8 m above it
+        pit = _clamp(sink_depth_m / 1.0, 0, 1) * 100                  # 100 at a 1 m deep closed depression
+        abs_low = _clamp((40.0 - elev_m) / 35.0, 0, 1) * 100          # 100 under 5 m, 0 above 40 m
+        if convergence_pct is not None:
+            # water routed from higher ground converges here: percentile of D8 flow accumulation in the window
+            elevation = 0.5 * hand_low + 0.25 * pit + 0.1 * abs_low + 0.15 * _clamp(convergence_pct, 0, 100)
+            elev_note = f"HAND {hand_m} m · pit {sink_depth_m:.1f} m · {elev_m:.0f} m asl · flow convergence p{convergence_pct:.0f}"
+        else:
+            elevation = 0.6 * hand_low + 0.3 * pit + 0.1 * abs_low
+            elev_note = f"HAND {hand_m} m · pit {sink_depth_m:.1f} m · {elev_m:.0f} m asl"
+    else:
+        elevation = _clamp(lowness, 0, 1) * 100
+        elev_note = f"lowness {lowness:.2f} (DEM unavailable)"
+    elevation = max(elevation, 3.0)                                   # DEM noise floor
+    if water_dist_m is None:
+        water, water_note = WATER_UNMAPPED, "no water mapped within 3 km"
+    else:
+        effect = WATER_TYPE_EFFECT.get(water_type or "water", 0.8)
+        water = max(100 * math.exp(-water_dist_m / 1800.0) * effect, WATER_FLOOR)
+        water_note = f"{water_dist_m} m to {water_type or 'water'} (effect x{effect})"
+    base = 100 * ((intensity / 100) ** PRIMARY_EXPONENTS["intensity"]
+                  * (elevation / 100) ** PRIMARY_EXPONENTS["elevation"]
+                  * (water / 100) ** PRIMARY_EXPONENTS["water"])
+    return {
+        "base": _clamp(base, 0, 100),
+        "terms": [
+            {"name": "Rainfall intensity", "score": round(intensity), "exponent": PRIMARY_EXPONENTS["intensity"],
+             "source": rain_note},
+            {"name": "Elevation (relative)", "score": round(elevation), "exponent": PRIMARY_EXPONENTS["elevation"],
+             "source": elev_note},
+            {"name": "Distance to water", "score": round(water), "exponent": PRIMARY_EXPONENTS["water"],
+             "source": water_note},
+        ],
+    }
+
+
+def modifiers(drivers: dict, sources: dict) -> dict:
+    """Map each supporting factor's 0..100 score onto its bounded multiplier."""
+    rows, product = [], 1.0
+    for name, (lo, hi) in MODIFIER_RANGES.items():
+        v = _clamp(drivers.get(name, 50.0), 0, 100)
+        m = lo + (hi - lo) * v / 100.0
+        product *= m
+        rows.append({"name": name, "score": round(v), "multiplier": round(m, 3), "range": [lo, hi],
+                     "effect_pct": round((m - 1) * 100, 1), "source": sources.get(name, "")})
+    raw = product
+    product = _clamp(product, *MODIFIER_PRODUCT_RANGE)
+    return {"rows": rows, "product": round(product, 3), "product_uncapped": round(raw, 3),
+            "cap": list(MODIFIER_PRODUCT_RANGE)}
 
 
 def _pattern_shape(pattern: str, hours: int) -> list:
@@ -876,10 +1222,19 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
     if cape >= 1500:
         peak_intensity *= 1.15
 
-    impervious = land.get("impervious_pct", 40.0)
-    green = land.get("green_pct", 40.0)
-    wetland = land.get("wetland_pct", 0.0)
-    farmland = land.get("farmland_pct", 0.0)
+    wc = geo.get("worldcover") or {}
+    wc_ok = wc.get("impervious_pct") is not None and "unavailable" not in str(wc.get("source"))
+    if wc_ok:
+        # ESA WorldCover 10 m: built-up share stands in for impervious cover; OSM polygons only fill gaps
+        impervious, green = wc["impervious_pct"], wc["green_pct"]
+        wetland, farmland = wc["wetland_pct"], wc["farmland_pct"]
+        land_source = "worldcover"
+    else:
+        impervious = land.get("impervious_pct", 40.0)
+        green = land.get("green_pct", 40.0)
+        wetland = land.get("wetland_pct", 0.0)
+        farmland = land.get("farmland_pct", 0.0)
+        land_source = land.get("source")
     elev_m = terr.get("elevation_m", elev.get("elevation_m", 20.0)) if terr_ok else elev.get("elevation_m", 20.0)
     slope_deg = terr.get("slope_deg", math.degrees(math.atan(elev.get("slope_m_km", 1.0) / 1000))) if terr_ok \
         else math.degrees(math.atan(elev.get("slope_m_km", 1.0) / 1000))
@@ -887,6 +1242,8 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
     hand = terr.get("hand_m") if terr_ok else None
     lowness = terr.get("lowness", elev.get("lowness", 0.5)) if terr_ok else elev.get("lowness", 0.5)
     upstream_km2 = terr.get("upstream_area_km2", 0.0) if terr_ok else 0.0
+    routing = (terr.get("routing") or {}) if terr_ok else {}
+    routing_ok = routing.get("acc_cells_at_point") is not None
     in_sink = bool(terr.get("in_closed_depression")) if terr_ok else False
     sink_depth = terr.get("depression_depth_m", 0.0) if terr_ok else 0.0
     no_outlet = bool(terr.get("no_outlet_in_window")) if terr_ok else False
@@ -988,13 +1345,24 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
 
     # ── 5. Upstream & coastal ─────────────────────────────────────────────────
     res_score, res_note = 0.0, None
-    for rv in upstream.get("reservoirs", []):
-        if not rv.get("upstream"):
+    res_rows = [rv for rv in upstream.get("reservoirs", []) if rv.get("upstream")]
+    res_stale_rows = [rv for rv in res_rows if rv.get("stale")]
+    res_all_stale = bool(res_rows) and len(res_stale_rows) == len(res_rows)
+    res_age_h = max((rv.get("age_h") or 0) for rv in res_stale_rows) if res_stale_rows else None
+    if res_all_stale:
+        # no fresh observation: the reservoir term contributes nothing (multiplier 1.0) rather than
+        # acting on a storage figure that may be days or weeks old
+        res_note = (f"reservoir data stale ({res_age_h:.0f} h old), ignored" if res_age_h
+                    else "reservoir data stale (no observation date), ignored")
+    for rv in res_rows:
+        if rv.get("stale"):
             continue
         s = (0.6 * _clamp(rv["storage_pct"] / 100.0, 0, 1) + 0.4 * _clamp(rv["overflow_prob"], 0, 1)) * 100
         s *= math.exp(-rv["distance_km"] / 25.0)
         if s > res_score:
             res_score, res_note = s, f"{rv['name']} {rv['storage_pct']:.0f}% full, {rv['distance_km']} km upstream"
+    if res_stale_rows and not res_all_stale:
+        res_note = (res_note or "no fresh upstream reservoir") + f" · {len(res_stale_rows)} stale row(s) ignored"
     tide_score = 0.0
     if tide.get("applicable") and tide.get("now_m") is not None:
         tide_score = _clamp((tide.get("max_next_6h_m", 0) + 0.5) / 1.5, 0, 1) * 100
@@ -1009,9 +1377,15 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
     # ── 7. Exposure ───────────────────────────────────────────────────────────
     cell_km2 = 25.0
     # district population over a typical district area, lifted by mapped building density where OSM has coverage
-    density = population / 2000.0 if population else 2000.0
-    if bpk:
-        density = max(density, bpk * 4.5)
+    pop_layer = geo.get("population") or {}
+    if pop_layer.get("density_km2") is not None and "unavailable" not in str(pop_layer.get("source")):
+        density = float(pop_layer["density_km2"])           # GHS-POP 2020, people per km2 within 2.5 km
+        density_source = pop_layer.get("source")
+    else:
+        density = population / 2000.0 if population else 2000.0
+        if bpk:
+            density = max(density, bpk * 4.5)
+        density_source = "district total over a nominal area, lifted by OSM building density"
     density_score = _clamp(density / 12000.0, 0, 1) * 100
     building_score = _clamp(bpk / 1500.0, 0, 1) * 100
     crit = infra.get("critical_facilities", 0) or 0
@@ -1036,9 +1410,10 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
     rt_score = _clamp(0.5 * nowcast + 0.25 * hum_score + 0.25 * press_score, 0, 100)
 
     # ── 10. Model + data confidence ───────────────────────────────────────────
+    forecast_ok = weather.get("source") in ("open_meteo_forecast", "metno")
     comps = {"terrain": terr_ok, "water": water_dist is not None, "soil": soil.get("source") == "soilgrids",
              "landuse": land.get("source") == "osm_overpass", "infra": infra.get("source") == "osm_overpass",
-             "soil_moisture": sm is not None, "forecast": weather.get("source") == "open_meteo_forecast",
+             "soil_moisture": sm is not None, "forecast": forecast_ok,
              "archive": bool(ant.get("series")), "flood_history": fh.get("district") is not None,
              "coast": coast.get("source") == "osm_overpass"}
     confidence = round(100 * sum(comps.values()) / len(comps))
@@ -1054,7 +1429,11 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
     # outflow = effective drainage capacity, decaying as the receiving system (drains, tanks, river, sea) fills.
     hours = max(1, int(math.ceil(duration_h)))
     shape = _pattern_shape(pattern, hours)
-    upstream_mult = 1.0 + 1.0 * _clamp(math.log10(1 + upstream_km2 * 10) / 1.5, 0, 1)   # up to x2 for large catchments
+    if routing_ok:
+        # water routed from higher ground: D8 accumulation at the point, in cells, says how many cells' runoff arrives here
+        upstream_mult = _clamp(1.0 + 0.8 * math.log10(max(routing["acc_cells_at_point"], 1)), 1.0, 3.5)
+    else:
+        upstream_mult = 1.0 + 1.0 * _clamp(math.log10(1 + upstream_km2 * 10) / 1.5, 0, 1)   # up to x2 for large catchments
     stored, cum_in, peak_store, hours_ponded, series = 0.0, 0.0, 0.0, 0.0, []
     for h_i in range(hours + 24):  # keep draining for a day after the rain stops
         rain_h = rain_event * shape[h_i] if h_i < hours else 0.0
@@ -1083,8 +1462,33 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
     severity = _clamp(100 * (0.5 * min(peak_store / 120.0, 1) + 0.3 * min(depth_max / 0.8, 1)
                              + 0.2 * min(ponding_hours / 36.0, 1)), 0, 100)
     weighted = {k: CATEGORY_WEIGHTS[k] * v for k, v in cat_scores.items()}
-    total = sum(weighted.values())
-    impact_score = _clamp(round(0.6 * total + 0.4 * severity), 0, 100)
+    total = sum(weighted.values())          # legacy additive composite, reported for comparison only
+    # ── Two-tier score: base hazard from the three primaries, bounded multipliers from the rest ──
+    primary = primary_hazard(peak_intensity, hand, sink_depth, elev_m, water_dist, water.get("type"),
+                             lowness, terr_ok, event_mm=rain_event, duration_h=duration_h,
+                             convergence_pct=routing.get("flow_convergence_pct") if routing_ok else None)
+    mod_drivers = {
+        "Saturation & soil": hydro_score,
+        "Drainage": cap_score,                                   # effective capacity after blockage, outfall, structures
+        "Impervious cover": impervious,
+        "Upstream & tide": upstream_score,
+        "Duration & ponding": severity,                          # the hourly water balance: accumulation, pattern, ponding hours
+        "Historical": hist_score,
+        "Real-time": rt_score,
+        "Model": model_score,
+    }
+    mod_sources = {
+        "Saturation & soil": f"saturation {sat}% · C={runoff_c:.2f} · infiltration {inf_eff:.1f} mm/h",
+        "Drainage": f"effective {effective_cap:.0f} mm/h vs peak {peak_intensity:.0f} mm/h · blockage x{blockage} · outfall x{outfall:.2f}",
+        "Impervious cover": f"impervious {impervious:.0f}%",
+        "Upstream & tide": (res_note or "no upstream reservoir") + (f" · tide {tide.get('now_m'):+.2f} m" if tide.get("now_m") is not None else ""),
+        "Duration & ponding": f"{rain_event:.0f} mm over {duration_h:.0f} h ({pattern}) · peak storage {peak_store:.0f} mm · {hours_ponded:.0f} h ponded",
+        "Historical": (rp_label or "archive pending") + (f" · DFSI {fh.get('dfsi')}" if fh.get("district") else ""),
+        "Real-time": f"now {cur_rain} mm/h · next 2h {now2h if now2h is not None else 'n/a'} mm · Δp {ptrend if ptrend is not None else 'n/a'} hPa",
+        "Model": (f"{ml_detail.get('model_name', 'ML')} heavy-rain p={ml_detail.get('heavy_rain_probability')}" if ml_detail else "heuristic"),
+    }
+    mods = modifiers(mod_drivers, mod_sources)
+    impact_score = _clamp(round(primary["base"] * mods["product"]), 0, 100)
     if rain_event < 0.5 and mean_intensity < 0.5:
         impact_score = min(impact_score, 18)
     cls = "extreme" if impact_score >= 75 else "high" if impact_score >= 50 else "mod" if impact_score >= 25 else "safe"
@@ -1094,11 +1498,12 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
         "Meteorological": f"peak {peak_intensity:.0f} mm/h ({pattern}) · models agree {agreement if agreement is not None else 'n/a'} · CAPE {cape}",
         "Hydrological": f"saturation {sat}% ({sat_source}) · C={runoff_c:.2f} · {soil.get('texture')} · infiltration {inf_eff:.1f} mm/h",
         "Topographical": (f"HAND {hand} m · slope {slope_deg:.1f}° · upstream {upstream_km2} km²"
+                          + (f" · routed inflow x{upstream_mult:.1f} ({routing['acc_cells_at_point']} cells, relief {routing['catchment_relief_m']} m, tc ~{routing['time_of_concentration_min']} min)" if routing_ok else "")
                           + (" · closed depression" if in_sink else "")) if terr_ok else f"elev {elev_m} m (DEM unavailable)",
         "Drainage": f"effective {effective_cap:.0f} mm/h (engineered {engineered_cap:.0f} + natural {natural_cap:.0f}) · design {design_cap:.0f} · blockage x{blockage} · outfall x{outfall:.2f} · drains {drains} culverts {infra.get('culverts', 0)}",
         "Upstream & Coastal": " · ".join(filter(None, [res_note, (f"tide {tide.get('now_m'):+.2f} m" if tide.get('now_m') is not None else None),
                                                        ("river nearby" if river_near else None), ("wetland buffer" if wetland > 0 else None)])) or "no upstream reservoir, inland",
-        "Land cover": f"impervious {impervious}% · green {green}% · wetland {wetland}% · farmland {farmland}%",
+        "Land cover": f"impervious {impervious}% · green {green}% · wetland {wetland}% · farmland {farmland}% ({land_source})",
         "Exposure": f"pop {population:,} in 25 km² · {bpk} buildings/km² · {crit} critical facilities",
         "Historical": (rp_label or "archive pending") + (f" · IFI {fh.get('district')} DFSI {fh.get('dfsi')} ({fh.get('district_events')} events)" if fh.get("district") else ""),
         "Real-time": f"now {cur_rain} mm/h · next 2h {now2h if now2h is not None else 'n/a'} mm · RH {humidity}% · Δp {ptrend if ptrend is not None else 'n/a'} hPa/3h",
@@ -1154,6 +1559,52 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
         cls = "extreme" if impact_score >= 75 else "high" if impact_score >= 50 else "mod" if impact_score >= 25 else "safe"
         evac = "Tier-1 Active" if impact_score >= 75 else "Standby" if impact_score >= 50 else "Monitor" if impact_score >= 25 else "None"
 
+    # ── Data quality: which engine inputs are fallbacks or defaults ───────────
+    dq_details = {}
+    if not terr_ok:
+        dq_details["terrain unavailable"] = f"elevation from {elev.get('source')} ({terr.get('error') or 'DEM window not fetched'})"
+    if water_dist is None:
+        dq_details["water unmapped"] = f"no OSM water within 3 km; distance term fixed at {WATER_UNMAPPED:.0f}"
+    if soil.get("source") not in ("soilgrids", "soilgrids_nearby"):
+        dq_details["soil default"] = f"{soil.get('texture')} regional default, infiltration {infiltration} mm/h"
+    if land_source not in ("osm_overpass", "worldcover"):
+        dq_details["landuse default"] = f"impervious {impervious}% assumed ({land_source})"
+    if pop_layer.get("density_km2") is None:
+        dq_details["population proxy"] = "GHS-POP tile unavailable; district total spread over a nominal area"
+    if infra.get("source") != "osm_overpass":
+        dq_details["infra default"] = "no OSM drainage, barrier or facility counts"
+    if sm is None:
+        dq_details["soil moisture missing"] = f"saturation {sat}% from antecedent rain only"
+    if not forecast_ok:
+        dq_details["forecast missing"] = f"live conditions unavailable ({weather.get('error') or weather.get('source')})"
+    if not ant.get("series"):
+        dq_details["archive missing"] = "no 3-year rainfall record; return period and antecedent saturation estimated"
+    if fh.get("district") is None:
+        dq_details["flood history unmatched"] = (f"district '{(geo.get('district') or {}).get('district')}' not in the "
+                                                 f"flood inventory lookup")
+    if res_all_stale:
+        dq_details["reservoirs stale"] = res_note
+    if tide.get("applicable") and tide.get("now_m") is None:
+        dq_details["tide unavailable"] = "coastal site without a marine forecast; outfall assumed free"
+    key_inputs_missing = [k for k in ("terrain unavailable", "forecast missing", "soil moisture missing") if k in dq_details]
+    data_quality = {
+        "imputed": list(dq_details.keys()), "imputed_count": len(dq_details),
+        "key_inputs_imputed": bool(key_inputs_missing), "key_inputs": ["terrain", "forecast", "soil moisture"],
+        "details": dq_details, "forecast_provider": weather.get("provider"),
+        "forecast_fallback": bool(weather.get("provider_fallback")),
+        "reservoirs_stale": res_all_stale,
+        "ml": (ml_detail or {}).get("data_quality") if ml_detail else None,
+    }
+    cap_reason, cls_uncapped, evac_uncapped = None, cls, evac
+    if key_inputs_missing and cls in ("high", "extreme"):
+        cls, evac = "mod", "Monitor"
+        cap_reason = (f"key inputs imputed ({', '.join(key_inputs_missing)}): class and evacuation tier capped at "
+                      f"'mod' (score {impact_score} kept) until live data is complete")
+    elif key_inputs_missing:
+        cap_reason = f"key inputs imputed ({', '.join(key_inputs_missing)}); class already at or below 'mod'"
+    data_quality["cap_applied"] = cls != cls_uncapped
+    data_quality["cap_reason"] = cap_reason
+
     # ── Advisories ────────────────────────────────────────────────────────────
     adv = []
     if runoff_c >= 0.6:
@@ -1182,10 +1633,12 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
         adv.append(f"{fh['district']} district ranks high on the India Flood Inventory severity index (DFSI {fh['dfsi']}, {fh.get('district_events')} recorded floods).")
 
     return {
-        "engine_version": "2.0",
+        "engine_version": "3.0",
         "location": {
             "lat": scenario.get("lat"), "lon": scenario.get("lon"),
             "district": (geo.get("district") or {}).get("district"), "state": (geo.get("district") or {}).get("state"),
+            "district_code": fh.get("district_code"), "district_canonical": fh.get("district"),
+            "district_match": fh.get("district_match"),
             "elevation_m": elev_m, "slope_deg": round(slope_deg, 2), "slope_m_km": round(math.tan(math.radians(slope_deg)) * 1000, 1),
             "hand_m": hand, "upstream_area_km2": upstream_km2, "closed_depression": in_sink,
             "nearest_water_m": water_dist, "water_type": water.get("type"), "coast_km": coast.get("coast_km"),
@@ -1194,6 +1647,9 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
             "population_cell": population, "buildings_per_km2": bpk,
         },
         "antecedent": {k: v for k, v in ant.items() if k != "series"},
+        "routing": ({**routing, "inflow_multiplier": round(upstream_mult, 2),
+                     "basis": "D8 flow routing on the SRTM window: runoff from every higher cell is followed downslope to this point"}
+                    if routing_ok else {"status": "unavailable", "inflow_multiplier": round(upstream_mult, 2)}),
         "runoff": {"coefficient": round(runoff_c, 2), "runoff_mm": round(runoff_mm, 1),
                    "drainage_capacity_mm_h": round(effective_cap, 1), "peak_runoff_cms": peak_runoff_cms},
         "drainage": {"design_capacity_mm_h": round(design_cap, 1), "blockage_factor": blockage,
@@ -1203,16 +1659,26 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
                      "mapped": {k: infra.get(k, 0) for k in ("culverts", "embankments", "railways", "pumping_stations",
                                                              "storm_drains", "underpasses")},
                      "drains_mapped": drains, "waterways_mapped": waterways},
+        "primary": primary,
+        "modifiers": mods,
+        "exposure": {"score": round(expo_score), "population_density_km2": round(density), "density_source": density_source,
+                     "people_in_2_5km": pop_layer.get("people_in_radius"), "landcover_source": land_source,
+                     "buildings_per_km2": bpk, "critical_facilities": crit,
+                     "people_exposed": people, "structures": structures, "roads_km": roads_km,
+                     "note": "exposure does not enter the hazard score; it is reported as people at risk"},
         "categories": categories,
         "impact": {"score": impact_score, "class": cls, "confidence_pct": confidence, "return_period": rp_label,
                    "peak_intensity_mm_h": round(peak_intensity, 1), "pattern": pattern,
-                   "factor_composite": round(total), "inundation_severity": round(severity)},
+                   "base_hazard": round(primary["base"]), "modifier_product": mods["product"],
+                   "legacy_additive_score": round(_clamp(0.6 * total + 0.4 * severity, 0, 100)),
+                   "factor_composite": round(total), "inundation_severity": round(severity),
+                   "class_uncapped": cls_uncapped, "cap_reason": cap_reason},
         "inundation": {"depth_mean_m": round(depth_mean, 2), "depth_max_m": round(depth_max, 2),
                        "area_km2": round(area, 2), "structures": structures, "roads_km": roads_km,
                        "people_exposed": people, "drainage_saturation_pct": drainage_sat,
                        "ponding_hours": ponding_hours, "peak_storage_mm": round(peak_store, 1),
                        "ponded_fraction": round(pond_fraction, 2), "storage_series_mm": series[:hours + 12],
-                       "evacuation": evac},
+                       "evacuation": evac, "evacuation_uncapped": evac_uncapped},
         "secondary_hazards": hazards,
         "factors": {"terrain": terr if terr_ok else None, "soil": soil,
                     "soil_moisture": {"m3_m3_0_7cm": sm, "m3_m3_7_28cm": weather.get("soil_moisture_7_28"),
@@ -1223,6 +1689,10 @@ def compute_impact(geo: dict, ant: dict, weather: dict, scenario: dict, populati
                                         "agreement": agreement, "cape_max_6h": cape,
                                         "pressure_trend_3h": ptrend, "nowcast_2h_mm": now2h}},
         "data_confidence": comps,
+        "data_quality": data_quality,
+        "cap_reason": cap_reason,
+        "provenance": build_provenance(geo, ant, weather, tide, upstream),
+        "validation_status": validation_status(),
         "advisories": adv,
         "computed_at": datetime.utcnow().isoformat(),
     }

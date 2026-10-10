@@ -1,6 +1,7 @@
 """Safe Routes endpoints — road network, flood status per segment, flood-avoiding routing,
 geocoding proxies, road condition reports, and the road flood-risk model."""
 import time
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -80,12 +81,28 @@ async def roads(lat: float = Query(...), lon: float = Query(...),
 
     Without `rainfall_mm` the scenario is LIVE: rain observed in the last 6 h plus the next 6 h forecast."""
     t0 = time.time()
-    scn = await live_scenario(lat, lon) if rainfall_mm is None else _scn(rainfall_mm, duration_h, intensity_mm_h)
-    try:
-        b = await R.ensure_site(db, lat, lon)
-        status = await R.score_segments(db, b, scn["rainfall_mm"], scn["duration_h"], scn.get("intensity_mm_h"))
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+    scenario_error = None
+    if rainfall_mm is None:
+        try:
+            scn = await live_scenario(lat, lon)
+        except Exception as e:                      # forecast outage: score the dry case, say so
+            scenario_error = str(e)[:160]
+            scn = dict(_scn(0.0, 12.0, 0.0), source="unavailable", error=scenario_error, past_6h_mm=0.0, next_6h_mm=0.0, current_mm_h=0.0)
+    else:
+        scn = _scn(rainfall_mm, duration_h, intensity_mm_h)
+    last_err = None
+    for attempt in range(2):                        # one retry: terrain tiles and Overpass drop connections now and then
+        try:
+            b = await R.ensure_site(db, lat, lon)
+            status = await R.score_segments(db, b, scn["rainfall_mm"], scn["duration_h"], scn.get("intensity_mm_h"))
+            last_err = None
+            break
+        except Exception as e:
+            last_err = e
+            await asyncio.sleep(2)
+    if last_err is not None:
+        raise HTTPException(status_code=503, detail=(f"road site not ready: {str(last_err)[:200]}. The terrain tiles or "
+                                                     "OpenStreetMap did not answer; the site is cached once it loads, so retry in a moment."))
     risk = _risk_ml(b)
     feats = []
     for sid, seg in b["segments"].items():
@@ -96,6 +113,8 @@ async def roads(lat: float = Query(...), lon: float = Query(...),
                                      "wet_fraction": st.get("wet_fraction", 0.0), "tunnel": seg["tunnel"], "bridge": seg["bridge"],
                                      "oneway": seg["oneway"], "length_m": seg["length_m"], "hand_m": seg["hand_m"],
                                      "culvert_near": seg["culvert_near"], "source": st.get("source", "sim"),
+                                     "score": st.get("score"), "base": st.get("base"), "modifier_product": st.get("modifier_product"),
+                                     "primary": st.get("primary"), "basis": st.get("basis", "two_tier"),
                                      "risk_ml": risk.get(sid)}})
     # most affected: worst depth per named road
     by_name = {}
@@ -104,15 +123,17 @@ async def roads(lat: float = Query(...), lon: float = Query(...),
         if not p["name"] or p["status"] == "open":
             continue
         cur = by_name.get(p["name"])
-        if cur is None or p["max_depth_m"] > cur["max_depth_m"]:
+        if cur is None or (p.get("score") or 0, p["max_depth_m"]) > (cur.get("score") or 0, cur["max_depth_m"]):
             by_name[p["name"]] = {"name": p["name"], "highway": p["highway"], "status": p["status"],
-                                  "max_depth_m": p["max_depth_m"], "segment_id": p["segment_id"],
+                                  "max_depth_m": p["max_depth_m"], "score": p.get("score"), "primary": p.get("primary"),
+                                  "segment_id": p["segment_id"],
                                   "lat": b["segments"][p["segment_id"]]["mid_lat"], "lon": b["segments"][p["segment_id"]]["mid_lon"]}
-    most = sorted(by_name.values(), key=lambda x: (-R.STATUS_ORDER[x["status"]], -x["max_depth_m"]))[:15]
+    most = sorted(by_name.values(), key=lambda x: (-R.STATUS_ORDER[x["status"]], -(x.get("score") or 0), -x["max_depth_m"]))[:15]
     counts = {}
     for f in feats:
         counts[f["properties"]["status"]] = counts.get(f["properties"]["status"], 0) + 1
     return {"type": "FeatureCollection", "features": feats, "site": b["site"], "scenario": scn, "mode": mode,
+            "scenario_error": scenario_error,
             "status_counts": counts, "most_affected": most, "risk_ml_coverage": round(len(risk) / max(len(feats), 1), 2),
             "computed_in_s": round(time.time() - t0, 2)}
 

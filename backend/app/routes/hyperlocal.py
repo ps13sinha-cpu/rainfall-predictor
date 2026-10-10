@@ -1,6 +1,13 @@
-"""Hyperlocal impact routes — factors + full rainfall impact assessment (engine v2)."""
+"""Hyperlocal impact routes — factors + full rainfall impact assessment (engine 3.0).
+
+Every /impact response carries `data_quality` (which inputs are fallbacks or defaults and
+whether the class was capped), `provenance` (source, age, TTL and licence per layer),
+`validation_status` (untested_hypothesis until app/data/calibration.json exists) and
+`cap_reason`; `location.district_code` is the LGD code resolved through district_lookup.json.
+"""
 import asyncio
 
+from app.services.station_bias_lookup import station_bias_for
 from fastapi import APIRouter, HTTPException, Query
 
 from app.services.hyperlocal import (get_geofactors, get_antecedent, get_live_conditions, get_tide,
@@ -109,7 +116,9 @@ async def impact(lat: float = Query(...), lon: float = Query(...),
                                 upstream=upstream, tide=tide, ml_detail=ml_detail)
         result["weather"] = live
         result["still_loading"] = geo.get("still_loading", [])
+        result["data_quality"]["still_loading"] = result["still_loading"]
         result["district_context"] = {"nearest_seeded_district": ctx["name"], "code": ctx["code"]}
+        result["reanalysis_bias"] = station_bias_for(ctx["name"], (result.get("location") or {}).get("district"))
         return result
     except HTTPException:
         raise

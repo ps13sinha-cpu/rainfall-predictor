@@ -25,6 +25,11 @@ FEATURES = ["rainfall_mm", "duration_h", "intensity_mm_h", "elev_m", "hand_m", "
             "impervious_pct", "culvert_near", "tunnel", "bridge", "layer", "highway_class", "length_m",
             "site_saturation_pct", "site_infiltration_mm_h", "site_drain_count"]
 LABELS = {"open": 0, "caution": 1, "closed_cars": 2, "closed_all": 2}
+# Direction the physics dictates: more rain, deeper pit, more saturation -> more risk; higher ground, higher above
+# drainage, farther from water, faster infiltration -> less. Everything else is left free (0).
+MONOTONE = {"rainfall_mm": 1, "intensity_mm_h": 1, "elev_m": -1, "hand_m": -1, "pit_depth_m": 1, "dist_water_m": -1,
+            "site_saturation_pct": 1, "site_infiltration_mm_h": -1}
+MONOTONE_CONSTRAINTS = "(" + ",".join(str(MONOTONE.get(f, 0)) for f in FEATURES) + ")"
 _model = None
 
 
@@ -71,9 +76,11 @@ def train(samples: list, held_out_site: int | None) -> dict:
     cw = counts.sum() / (3 * np.maximum(counts, 1))
     w = cw[y] * np.array([5.0 if s["label_source"] == "report" else 1.0 for s in tr])
     model = xgb.XGBClassifier(n_estimators=300, max_depth=5, learning_rate=0.05, objective="multi:softprob",
-                              num_class=3, tree_method="hist", n_jobs=4, random_state=42, verbosity=0)
+                              num_class=3, tree_method="hist", n_jobs=4, random_state=42, verbosity=0,
+                              monotone_constraints=MONOTONE_CONSTRAINTS)
     model.fit(X, y, sample_weight=w)
-    metrics = {"trained_at": datetime.utcnow().isoformat(), "features": FEATURES, "n_train": int(len(tr)), "n_test": int(len(te)),
+    metrics = {"trained_at": datetime.utcnow().isoformat(), "features": FEATURES, "monotone_constraints": MONOTONE,
+               "n_train": int(len(tr)), "n_test": int(len(te)),
                "sites": sites, "held_out_site": held_out_site,
                "label_sources": {"sim": sum(1 for s in samples if s["label_source"] == "sim"),
                                  "report": sum(1 for s in samples if s["label_source"] == "report")},

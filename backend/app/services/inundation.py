@@ -17,6 +17,8 @@ Water surface level W is found by binary search on the depression-filled
 surface F so that sum(min(W, F) - dem)+ == V (pit storage first, then
 uniform sheet excess over the domain when pits are full).
 """
+import os
+import json
 import asyncio
 import heapq
 import io
@@ -32,9 +34,44 @@ from scipy import ndimage
 TERRAIN_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
 TILE_UA = {"User-Agent": "RIIS-Inundation/1.0 (rainfall impact research)"}
 
-_DEM_TTL = 60 * 60 * 24          # terrain is static — cache 24 h
+_DEM_TTL = 60 * 60 * 24          # terrain is static — cache 24 h in memory
+_DEM_DISK_TTL = 30 * 86400        # and 30 days on disk, so a restart never needs AWS for a known site
 _dem_cache = {}                   # key -> (ts, payload)
 _MAX_CACHE = 8                    # keep memory bounded (~3.5 MB/site)
+DEM_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "cache", "dem")
+
+
+def _dem_disk_path(key) -> str:
+    lat, lon, z, n = key
+    return os.path.join(DEM_DIR, f"{lat:.3f}_{lon:.3f}_z{z}_n{n}.npz")
+
+
+def _dem_disk_load(key):
+    p = _dem_disk_path(key)
+    try:
+        if not os.path.exists(p) or time.time() - os.path.getmtime(p) > _DEM_DISK_TTL:
+            return None
+        z = np.load(p, allow_pickle=False)
+        meta = json.loads(str(z["meta"]))
+        out = {"dem": z["dem"].astype(np.float32), "lats": z["lats"], "lons": z["lons"], **meta}
+        if "filled" in z.files:
+            out["filled"] = z["filled"].astype(np.float64)
+        out["cache_key"] = list(key)
+        return out
+    except Exception:
+        return None
+
+
+def _dem_disk_save(key, payload) -> None:
+    try:
+        os.makedirs(DEM_DIR, exist_ok=True)
+        meta = {k: v for k, v in payload.items() if k not in ("dem", "lats", "lons", "filled")}
+        tmp = _dem_disk_path(key) + ".tmp.npz"
+        extra = {"filled": payload["filled"].astype(np.float32)} if payload.get("filled") is not None else {}
+        np.savez_compressed(tmp, dem=payload["dem"], lats=payload["lats"], lons=payload["lons"], meta=json.dumps(meta), **extra)
+        os.replace(tmp, _dem_disk_path(key))
+    except Exception:
+        pass
 
 
 def _px_to_lon(x_px: float, z: int) -> float:
@@ -64,6 +101,12 @@ async def get_dem(lat: float, lon: float, z: int = 15, n: int = 384) -> dict:
     hit = _dem_cache.get(key)
     if hit and now - hit[0] < _DEM_TTL:
         return hit[1]
+    disk = _dem_disk_load(key)
+    if disk is not None:
+        if len(_dem_cache) >= _MAX_CACHE:
+            _dem_cache.pop(next(iter(_dem_cache)))
+        _dem_cache[key] = (now, disk)
+        return disk
 
     cx, cy = _lon_to_px(lon, z), _lat_to_py(lat, z)
     ix0, iy0 = int(cx - n / 2), int(cy - n / 2)
@@ -73,10 +116,17 @@ async def get_dem(lat: float, lon: float, z: int = 15, n: int = 384) -> dict:
 
     async def _tile(tx, ty):
         url = TERRAIN_URL.format(z=z, x=tx, y=ty)
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(url, headers=TILE_UA)
-            r.raise_for_status()
-            return tx, ty, np.asarray(Image.open(io.BytesIO(r.content)).convert("RGB"), dtype=np.uint8)
+        last = None
+        for attempt in range(3):                       # AWS tile edges drop connections now and then
+            try:
+                async with httpx.AsyncClient(timeout=20) as client:
+                    r = await client.get(url, headers=TILE_UA)
+                    r.raise_for_status()
+                    return tx, ty, np.asarray(Image.open(io.BytesIO(r.content)).convert("RGB"), dtype=np.uint8)
+            except (httpx.TransportError, httpx.HTTPStatusError) as e:
+                last = e
+                await asyncio.sleep(1.5 * (attempt + 1))
+        raise RuntimeError(f"terrain tile {z}/{tx}/{ty} unavailable after 3 attempts: {last}")
 
     tiles = await asyncio.gather(*(_tile(tx, ty) for tx in txs for ty in tys))
 
@@ -108,7 +158,9 @@ async def get_dem(lat: float, lon: float, z: int = 15, n: int = 384) -> dict:
     }
     if len(_dem_cache) >= _MAX_CACHE:
         _dem_cache.pop(next(iter(_dem_cache)))
+    payload["cache_key"] = list(key)
     _dem_cache[key] = (now, payload)
+    _dem_disk_save(key, payload)
     return payload
 
 
@@ -237,6 +289,8 @@ def depth_grid(dem_grid: dict, net_mm: float) -> dict:
     if filled is None:
         filled = priority_flood(dem)
         dem_grid["filled"] = filled
+        if dem_grid.get("cache_key"):
+            _dem_disk_save(tuple(dem_grid["cache_key"]), dem_grid)
     pit_storage = float(np.sum(filled - dem) * cell_a)          # m^3 held in depressions
     volume = max(0.0, net_mm / 1000.0) * n_cells * cell_a       # m^3 to place
 
@@ -271,12 +325,38 @@ def depth_grid(dem_grid: dict, net_mm: float) -> dict:
             "pit_storage": pit_storage, "volume": volume, "cell_a": cell_a}
 
 
-def simulate(dem_grid: dict, net_mm: float) -> dict:
-    """Match net ponding depth against DEM storage and build GeoJSON."""
+def routed_depth_grid(dem_grid: dict, net_mm: float) -> dict:
+    """Route net runoff downslope (D8 on the raw DEM) and fill depressions by fill-and-spill.
+
+    Same return keys as depth_grid plus `routing` (through_m3, exited, pits, overflows), so the
+    roads scorer and the simulator can swap it in. Falls back to depth_grid on any failure.
+    """
+    from app.services import routing as RT
     dem = dem_grid["dem"].astype(np.float64)
-    dg = depth_grid(dem_grid, net_mm)
+    cell_a = dem_grid["cell_w_m"] * dem_grid["cell_h_m"]
+    try:
+        r = RT.route_runoff(dem_grid, net_mm)
+    except Exception as e:                      # never let routing take the simulator down
+        out = depth_grid(dem_grid, net_mm)
+        out["routing"] = {"mode": "uniform_fallback", "error": str(e)[:160]}
+        return out
+    filled = dem_grid.get("filled")
+    pit_storage = float(np.sum(filled - dem) * cell_a)
+    mode = "routed_spilling" if r["n_overflows"] else "routed_contained"
+    return {"depth": r["depth"], "level": None, "mode": mode, "spilled": round(r["exited_m3"], 1),
+            "pit_storage": pit_storage, "volume": r["generated_m3"], "cell_a": cell_a,
+            "routing": {"mode": "d8_fill_spill", "through_m3": r["through_m3"], "exited_m3": round(r["exited_m3"]),
+                        "n_pits": r["n_pits"], "n_pits_wet": r["n_pits_wet"], "n_overflows": r["n_overflows"],
+                        "generated_m3": round(r["generated_m3"]), "ponded_m3": round(r["ponded_m3"])}}
+
+
+def simulate(dem_grid: dict, net_mm: float, routed: bool = True) -> dict:
+    """Place net runoff on the DEM (routed high-to-low by default) and build GeoJSON."""
+    dem = dem_grid["dem"].astype(np.float64)
+    dg = routed_depth_grid(dem_grid, net_mm) if routed else depth_grid(dem_grid, net_mm)
     depth, level, mode, spilled = dg["depth"], dg["level"], dg["mode"], dg["spilled"]
     pit_storage, volume, cell_a = dg["pit_storage"], dg["volume"], dg["cell_a"]
+    routing = dg.get("routing") or {"mode": "uniform"}
     wet = depth >= 0.05                           # ponding threshold 5 cm
     wet_area = float(wet.sum() * cell_a / 1e6)    # km²
 
@@ -328,7 +408,26 @@ def simulate(dem_grid: dict, net_mm: float) -> dict:
     else:
         deepest = None
 
+    flow_paths, catchment, point = {"type": "FeatureCollection", "features": []}, None, None
+    if routing.get("mode") == "d8_fill_spill":
+        try:
+            from app.services import routing as RT
+            through = routing.pop("through_m3")
+            if float(through.max()) <= 0:            # drainage took all the runoff: still show where water would flow
+                through = RT.route_runoff(dem_grid, 1.0)["through_m3"]
+                routing["paths_basis"] = "topographic (nominal 1 mm): no net runoff in this scenario"
+            flow_paths = RT.flow_paths_geojson(dem_grid, through)
+            h = RT.ensure_hydrology(dem_grid)
+            n0 = dem_grid["n"] // 2
+            mask, _ = RT.upslope_mask(h, n0, n0)
+            catchment = RT.catchment_geojson(dem_grid, mask)
+            point = RT.point_metrics(dem_grid)
+        except Exception as e:
+            routing["paths_error"] = str(e)[:120]
+    routing.pop("through_m3", None)
+
     return {
+        "routing": routing, "flow_paths": flow_paths, "catchment": catchment, "point": point,
         "grid": {"z": dem_grid["z"], "res_m": dem_grid["res_m"],
                  "span_km": dem_grid["span_km"], "n": dem_grid["n"],
                  "center": [round(float(dem_grid["lats"][dem_grid["n"] // 2]), 5),
