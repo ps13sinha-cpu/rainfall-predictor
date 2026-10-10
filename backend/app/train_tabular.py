@@ -25,6 +25,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from app.services.features import TABULAR_FEATURES, CLASS_NAMES, SoftVote, build_training_frame, update_registry  # noqa: E402
+from app.services.train_meta import pins, coverage_weights, write_pins_sidecar, SEED  # noqa: E402
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "riis.db")
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ml_models")
@@ -104,19 +105,26 @@ def main():
     sw = compute_sample_weight("balanced", y_tr)
     # soften the balancing so the models do not over-predict extremes
     sw = np.sqrt(sw)
+    # inverse-coverage weights: a district with four years of archive must not outvote one with one year
+    cov_w, coverage = coverage_weights(train, "district_id")
+    sw = sw * cov_w
+    data_pins = pins(df, ["district_id", "date"], seed=SEED, holdout_from=HOLDOUT_FROM,
+                     coverage_weighting="inverse rows per district, mean 1, multiplied into the class weights",
+                     label_source="Open-Meteo archive (ERA5 / ERA5-Land reanalysis), not station gauges")
+    print(f"coverage imbalance {data_pins['coverage_imbalance']}x across {len(coverage)} districts; table sha256 {data_pins['sha256'][:12]}")
 
     models = {
         "xgboost": xgb.XGBClassifier(
             n_estimators=500, max_depth=5, learning_rate=0.04, subsample=0.85,
             colsample_bytree=0.8, min_child_weight=3, objective="multi:softprob",
             num_class=4, eval_metric="mlogloss", tree_method="hist", n_jobs=12,
-            random_state=42, verbosity=0),
+            random_state=SEED, verbosity=0),
         "random_forest": RandomForestClassifier(
             n_estimators=300, max_depth=14, min_samples_leaf=5, max_features="sqrt",
-            n_jobs=-1, random_state=42),
+            n_jobs=-1, random_state=SEED),
         "gradient_boost": HistGradientBoostingClassifier(
             max_iter=400, learning_rate=0.05, max_depth=6, l2_regularization=0.5,
-            early_stopping=False, random_state=42),
+            early_stopping=False, random_state=SEED),
     }
 
     registry = {}
@@ -134,8 +142,9 @@ def main():
             "train_rows": int(len(X_tr)), "test_rows": int(len(X_te)),
             "holdout_from": HOLDOUT_FROM, "features": TABULAR_FEATURES,
             "train_seconds": round(secs, 1), "trained_at": datetime.utcnow().isoformat(),
-            "metrics": m,
+            "metrics": m, "data_pins": data_pins,
         }
+        write_pins_sidecar(MODEL_DIR, name, data_pins)
         print(f"  {name:15s} acc {m['accuracy']:.3f}  macroF1 {m['macro_f1']:.3f}  "
               f"heavyAUC {m['heavy_rain_auc']}  ({secs:.0f}s)")
 
@@ -152,7 +161,7 @@ def main():
         "train_rows": int(len(X_tr)), "test_rows": int(len(X_te)),
         "holdout_from": HOLDOUT_FROM, "features": TABULAR_FEATURES,
         "train_seconds": round(time.time() - t, 1), "trained_at": datetime.utcnow().isoformat(),
-        "metrics": m,
+        "metrics": m, "data_pins": data_pins,
     }
     print(f"  {'ensemble_vote':15s} acc {m['accuracy']:.3f}  macroF1 {m['macro_f1']:.3f}  "
           f"heavyAUC {m['heavy_rain_auc']}")

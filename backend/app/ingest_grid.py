@@ -24,6 +24,9 @@ import calendar
 import httpx
 import numpy as np
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from app.services.budget import estimate_units, require_bulk, budgeted_get_sync, BudgetExhausted, OpenMeteoRateLimited  # noqa: E402
+
 ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ml_models")
 OUT_PATH = os.path.join(OUT_DIR, "grid_precip.npz")
@@ -53,19 +56,26 @@ def fetch_month(client, pts, year, month):
         f"&start_date={year}-{month:02d}-01&end_date={year}-{month:02d}-{last}"
         f"&hourly=precipitation&timezone=Asia%2FKolkata"
     )
+    units = estimate_units(f"{year}-{month:02d}-01", f"{year}-{month:02d}-{last}", n_locations=len(pts))
     for attempt in range(8):
         try:
-            r = client.get(url, timeout=180)
-            if r.status_code == 200:
-                data = r.json()
-                return [data] if isinstance(data, dict) else data
-            if r.status_code == 429:
+            try:
+                r = budgeted_get_sync(client, url, units, "ingest_grid", timeout=180)
+            except BudgetExhausted as e:
+                print(f"\n    budget: {e}", flush=True)
+                raise
+            except OpenMeteoRateLimited:
                 wait = 60 * (attempt + 1)
                 print(f"\n    rate limited, sleeping {wait}s", flush=True)
                 time.sleep(wait)
                 continue
+            if r.status_code == 200:
+                data = r.json()
+                return [data] if isinstance(data, dict) else data
             print(f"\n    HTTP {r.status_code}: {r.text[:160]}", flush=True)
             time.sleep(10)
+        except BudgetExhausted:
+            raise
         except Exception as e:
             print(f"\n    error {e}, retrying", flush=True)
             time.sleep(15)
@@ -111,6 +121,11 @@ def main():
     months = list(month_range(start, end))
     print(f"Grid {len(LATS)}x{len(LONS)} = {len(pts)} points, {len(months)} months {start}..{end}")
 
+    todo = [(y, m) for y, m in months if not os.path.exists(os.path.join(CACHE_DIR, f"{y}-{m:02d}.json"))]
+    need = sum(estimate_units(f"{y}-{m:02d}-01", f"{y}-{m:02d}-{calendar.monthrange(y, m)[1]}", len(pts)) for y, m in todo)
+    if not require_bulk(need, f"ingest_grid ({len(todo)} months x {len(pts)} points)"):
+        sys.exit(2)
+
     t0 = time.time()
     with httpx.Client() as client:
         for y, m in months:
@@ -118,7 +133,11 @@ def main():
             if os.path.exists(cache):
                 continue
             print(f"{y}-{m:02d} ...", end=" ", flush=True)
-            data = fetch_month(client, pts, y, m)
+            try:
+                data = fetch_month(client, pts, y, m)
+            except BudgetExhausted:
+                print("\nSTOPPED: Open-Meteo budget exhausted; cached months are kept, rerun after the 00:00 UTC reset.")
+                break
             if data is None:
                 print("FAILED")
                 continue

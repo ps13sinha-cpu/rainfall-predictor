@@ -45,6 +45,18 @@ def rain_class(mm):
     return np.where(mm > 50, 3, np.where(mm > 20, 2, np.where(mm > 5, 1, 0)))
 
 
+def grid_pins() -> dict:
+    """Date range, frame count and content hash of the gridded training file."""
+    import hashlib
+    z = np.load(GRID_PATH, allow_pickle=True)
+    times = [str(t) for t in z["times"]] if "times" in z.files else []
+    arr = z[z.files[0]] if "precip" not in z.files else z["precip"]
+    h = hashlib.sha256(np.ascontiguousarray(arr).tobytes()).hexdigest()
+    return {"frames": int(arr.shape[0]), "grid_shape": list(arr.shape[1:]), "sha256": h,
+            "start_time": times[0] if times else None, "end_time": times[-1] if times else None,
+            "seed": 42, "label_source": "Open-Meteo archive hourly precipitation on a 0.25 degree grid (ERA5-Land)"}
+
+
 def load_windows():
     z = np.load(GRID_PATH)
     P = z["precip"].astype(np.float32)          # (T, H, W) mm/h
@@ -233,7 +245,7 @@ def train_one(name, cell, Net, P, ends, y, persist, split, device):
         "family": "spatial", "task": "next_6h_rain_grid", "input": f"last {IN_FRAMES} hourly frames, {P.shape[1]}x{P.shape[2]} grid",
         "params": int(n_params), "device": str(device), "epochs_run": len(history),
         "train_windows": int(len(tr)), "val_windows": int(len(va)), "test_windows": int(len(te)),
-        "test_block": TEST_BLOCK, "val_block": VAL_BLOCK, "train_seconds": round(secs, 1), "trained_at": datetime.utcnow().isoformat(),
+        "test_block": TEST_BLOCK, "val_block": VAL_BLOCK, "data_pins": grid_pins(), "train_seconds": round(secs, 1), "trained_at": datetime.utcnow().isoformat(),
         "history": history, "metrics": test, "persistence_baseline": base,
     }
     print(f"  {name}: TEST rmse {test['rmse_mm']} mm (persistence {base['rmse_mm']}), "

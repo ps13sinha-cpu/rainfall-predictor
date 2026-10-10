@@ -17,6 +17,9 @@ import sqlite3
 
 import httpx
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from app.services.budget import estimate_units, require_bulk, budgeted_get_sync, BudgetExhausted, OpenMeteoRateLimited  # noqa: E402
+
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "riis.db")
 ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 
@@ -52,18 +55,25 @@ def fetch_year(client, lat, lon, year):
         f"&start_date={year}-01-01&end_date={year}-12-31"
         f"&hourly={','.join(HOURLY_VARS)}&timezone=Asia%2FKolkata"
     )
+    units = estimate_units(f"{year}-01-01", f"{year}-12-31", n_locations=1, n_vars=len(HOURLY_VARS))
     for attempt in range(6):
         try:
-            r = client.get(url, timeout=120)
-            if r.status_code == 200:
-                return r.json().get("hourly", {})
-            if r.status_code == 429:
+            try:
+                r = budgeted_get_sync(client, url, units, "ingest_hourly", timeout=120)
+            except BudgetExhausted as e:
+                print(f"\n    budget: {e}", flush=True)
+                raise
+            except OpenMeteoRateLimited:
                 wait = 30 * (attempt + 1)
                 print(f"\n    rate limited, sleeping {wait}s", flush=True)
                 time.sleep(wait)
                 continue
+            if r.status_code == 200:
+                return r.json().get("hourly", {})
             print(f"\n    HTTP {r.status_code}: {r.text[:120]}", flush=True)
             time.sleep(5)
+        except BudgetExhausted:
+            raise
         except Exception as e:
             print(f"\n    error {e}, retrying", flush=True)
             time.sleep(10)
@@ -87,6 +97,12 @@ def main():
         if n >= 8700:
             done.add((did, int(yr)))
 
+    pending = [(d, yr) for d in districts for yr in range(y0, y1 + 1) if (d[0], yr) not in done]
+    need = sum(estimate_units(f"{yr}-01-01", f"{yr}-12-31", 1, len(HOURLY_VARS)) for _, yr in pending)
+    if not require_bulk(need, f"ingest_hourly ({len(pending)} district-years)"):
+        conn.close()
+        sys.exit(2)
+
     total = 0
     t0 = time.time()
     with httpx.Client() as client:
@@ -95,7 +111,12 @@ def main():
                 if (did, year) in done:
                     continue
                 print(f"[{i+1}/{len(districts)}] {name} {year} ...", end=" ", flush=True)
-                h = fetch_year(client, lat, lon, year)
+                try:
+                    h = fetch_year(client, lat, lon, year)
+                except BudgetExhausted:
+                    print("\nSTOPPED: Open-Meteo budget exhausted; rerun after the 00:00 UTC reset (the script is idempotent).")
+                    conn.close()
+                    sys.exit(3)
                 times = h.get("time", [])
                 if not times:
                     print("no data")

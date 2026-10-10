@@ -30,6 +30,7 @@ MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ml_models"
 REGISTRY = os.path.join(MODEL_DIR, "model_registry.json")
 
 HOLDOUT_FROM = "2025-07-01"
+DATA_PINS = {}
 WINDOW = 48          # hours of input
 HORIZON = 6          # hours ahead to accumulate
 STRIDE = 2           # training windows every 2 hours
@@ -62,6 +63,11 @@ def load_series():
         "ORDER BY h.district_id, h.time", conn)
     conn.close()
     print(f"hourly rows: {len(df)}  districts: {df.district_id.nunique()}")
+    global DATA_PINS
+    from app.services.train_meta import pins, SEED
+    DATA_PINS = pins(df, ["district_id", "time"], seed=SEED, holdout_from=HOLDOUT_FROM,
+                     label_source="Open-Meteo archive hourly (ERA5-Land reanalysis), not station gauges")
+    print(f"coverage imbalance {DATA_PINS['coverage_imbalance']}x; table sha256 {DATA_PINS['sha256'][:12]}")
 
     blocks, targets, ends, is_test, tstamps = [], [], [], [], []
     offset = 0
@@ -264,7 +270,7 @@ def train_one(name, cls, X, y_cls, y_mm, ends, is_test, norm, device):
         "family": "sequence", "task": "next_6h_rain_class", "input": f"last {WINDOW}h x {len(SEQ_FEATURES)} features",
         "params": int(n_params), "device": str(device), "epochs_run": len(history),
         "train_windows": int(len(tr_idx)), "val_windows": int(len(va_idx)), "test_windows": int(len(te_idx)),
-        "holdout_from": HOLDOUT_FROM, "train_seconds": round(secs, 1),
+        "holdout_from": HOLDOUT_FROM, "data_pins": DATA_PINS, "train_seconds": round(secs, 1),
         "trained_at": datetime.utcnow().isoformat(), "history": history, "metrics": test,
     }
     print(f"  {name}: TEST acc {test['accuracy']:.3f} macroF1 {test['macro_f1']:.3f} "

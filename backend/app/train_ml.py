@@ -77,6 +77,11 @@ def run_ingestion():
 
     total_ingested = 0
 
+    from app.services.budget import estimate_units, require_bulk, budgeted_get_sync, BudgetExhausted, OpenMeteoRateLimited
+    per_call = estimate_units(START_DATE, END_DATE, n_locations=1, n_vars=6)
+    if not require_bulk(per_call * len(districts), "train_ml ingest"):
+        return 0
+
     with httpx.Client() as client:
         for i, (did, code, name, lat, lon) in enumerate(districts):
             print(f"[{i+1}/{len(districts)}] {name} ({code})...", end=" ", flush=True)
@@ -90,7 +95,14 @@ def run_ingestion():
                     f"precipitation_sum,precipitation_hours,wind_speed_10m_max"
                     f"&timezone=auto"
                 )
-                resp = client.get(url, timeout=30)
+                try:
+                    resp = budgeted_get_sync(client, url, per_call, "train_ml", timeout=30)
+                except BudgetExhausted as e:
+                    print(f"STOP: {e}")
+                    break
+                except OpenMeteoRateLimited:
+                    print("HTTP 429 (rate limited; recorded)")
+                    continue
                 if resp.status_code != 200:
                     print(f"HTTP {resp.status_code}")
                     continue

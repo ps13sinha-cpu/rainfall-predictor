@@ -8,6 +8,10 @@ import os
 import time
 
 import httpx
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from app.services.budget import estimate_units, require_bulk, budgeted_get_sync, BudgetExhausted, OpenMeteoRateLimited  # noqa: E402
 
 START_DATE = "2024-01-01"
 END_DATE = "2025-12-31"
@@ -64,6 +68,10 @@ def run():
     districts = get_districts()
     print(f"\nIngesting {len(districts)} rate-limited districts (with retry + delay)...\n")
 
+    per_call = estimate_units(START_DATE, END_DATE, n_locations=1, n_vars=6)
+    if not require_bulk(per_call * len(districts), "ingest_remaining"):
+        return 0
+
     total = 0
     with httpx.Client() as client:
         for i, (did, code, name, lat, lon) in enumerate(districts):
@@ -79,8 +87,12 @@ def run():
                         f"precipitation_sum,precipitation_hours,wind_speed_10m_max"
                         f"&timezone=auto"
                     )
-                    resp = client.get(url, timeout=30)
-                    if resp.status_code == 429:
+                    try:
+                        resp = budgeted_get_sync(client, url, per_call, "ingest_remaining", timeout=30)
+                    except BudgetExhausted as e:
+                        print(f"STOP: {e}")
+                        return total
+                    except OpenMeteoRateLimited:
                         wait = 5 * (attempt + 1)
                         print(f"rate limited, waiting {wait}s...", end=" ", flush=True)
                         time.sleep(wait)
@@ -109,6 +121,7 @@ def run():
                 time.sleep(3)
 
     print(f"\nDONE: {total} new rows ingested")
+    return total
 
 
 if __name__ == "__main__":

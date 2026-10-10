@@ -29,11 +29,19 @@ Both ingest scripts cache what they have fetched (per district-year, per month)
 and skip it on rerun, so when you get HTTP 429 just run the same command again
 later. See `DATASETS_FOR_ML_MODELS.md` at the repo root for other sources.
 
-Current coverage (7 Oct 2026):
+Current coverage (9 Oct 2026):
 
-- `historical_weather`: 38k daily rows, 2024-2025 for all 36 districts, 2022-2023 for 16.
-- `historical_hourly`: 868k rows, 2025 for all 36 districts, 2024 for 35, 2022-2023 for 14.
-- `grid_precip.npz`: 5,880 hourly frames, 1 Jun 2024 to 31 Jan 2025 (both monsoons and Cyclone Fengal).
+- `historical_weather`: 61k daily rows, 2022-2025 for all 48 districts. `precipitation_hours` and `humidity_avg`
+  are aggregated from the hourly table (NULL for the 366 rows without hourly backing; no constants).
+- `historical_hourly`: 1.46 M rows, 2022-2025 for all 48 districts.
+- `grid_precip.npz`: 11,760 hourly frames, 1 Jun 2023 to 31 Jan 2025 (two north-east monsoons and Cyclone Fengal).
+
+Every training run records `data_pins` in the registry (date range, district ids, seed, row count, SHA-256 of the
+training table, rows per district and the coverage imbalance) via `app/services/train_meta.py`; the tabular
+models multiply inverse-coverage weights into the class weights so a district with four years does not outvote
+one with two. Missing hourly aggregates stay NaN in the training frame (all three tabular estimators handle NaN);
+`app/ml_models/feature_medians.json` (from `python -m app.build_feature_medians`) is only a safety net for a
+NaN-intolerant estimator at serving time, and every prediction reports what was imputed.
 
 ## 2. Train
 
@@ -76,27 +84,29 @@ older clients keep working.
 
 ## 4. Results
 
-Held-out metrics from `python -m app.report_models` (7 Oct 2026).
+Held-out metrics after the 9 Oct 2026 retrain on the evened-out corpus (every entry in
+`ml_models/model_registry.json` carries its `data_pins`). The 7 Oct numbers are kept in the registry history.
 
 ### Classification models (next-day for tabular, next-6h for sequence)
 
-| Model | Family | Train rows | Test rows | Accuracy | Macro F1 | Heavy-rain AUC | Extreme recall | Train time |
-|---|---|---|---|---|---|---|---|---|
-| XGBoost | tabular | 31372 | 6588 | 0.714 | 0.433 | 0.870 | 0.056 | 19s |
-| Random Forest | tabular | 31372 | 6588 | 0.731 | 0.426 | 0.868 | 0.014 | 7s |
-| Gradient Boost | tabular | 31372 | 6588 | 0.712 | 0.423 | 0.854 | 0.042 | 25s |
-| Ensemble Vote | tabular | 31372 | 6588 | 0.717 | 0.428 | 0.868 | 0.042 | 2s |
-| LSTM-Impact | sequence | 318351 | 79380 | 0.901 | 0.371 | 0.877 | 0.000 | 368s |
-| Transformer | sequence | 318351 | 79380 | 0.900 | 0.370 | 0.880 | 0.000 | 426s |
+| Model | Family | Train rows | Test rows | Accuracy | Macro F1 | Heavy-rain AUC | Train time |
+|---|---|---|---|---|---|---|---|
+| XGBoost | tabular | 54720 | 6588 | 0.722 | 0.463 | 0.876 | 22s |
+| Random Forest | tabular | 54720 | 6588 | 0.730 | 0.435 | 0.873 | 12s |
+| Gradient Boost | tabular | 54720 | 6588 | 0.727 | 0.457 | 0.873 | 35s |
+| Ensemble Vote | tabular | 54720 | 6588 | 0.726 | 0.466 | 0.877 | 1s |
+| LSTM-Impact | sequence | 1.46 M hourly rows | from 2025-07-01 | 0.910 | 0.377 | 0.884 | ~10 min |
+| Transformer | sequence | 1.46 M hourly rows | from 2025-07-01 | 0.905 | 0.427 | 0.918 | ~10 min |
 
-### Spatial nowcasting models (next-6h rain map, 11x11 grid at 0.25 deg)
+### Spatial nowcasting models (next-6h rain map, 11x11 grid at 0.25 deg, 11,760 training frames)
 
-| Model | RMSE mm/6h | MAE mm/6h | CSI 1mm | CSI 5mm | CSI 20mm | POD 5mm | Pixel class acc | Train time |
-|---|---|---|---|---|---|---|---|---|
-| ConvLSTM | 5.686 | 2.260 | 0.537 | 0.438 | 0.256 | 0.668 | 0.858 | 209s |
-| ConvLSTM persistence baseline | 6.753 | 2.466 | 0.490 | 0.350 | 0.318 | 0.519 | 0.844 | - |
-| ConvGRU | 5.875 | 2.104 | 0.550 | 0.429 | 0.052 | 0.577 | 0.871 | 226s |
-| ConvGRU persistence baseline | 6.753 | 2.466 | 0.490 | 0.350 | 0.318 | 0.519 | 0.844 | - |
+| Model | RMSE mm/6h | CSI 5mm | CSI 20mm | Pixel class acc | Train time |
+|---|---|---|---|---|---|
+| ConvLSTM | 5.727 | 0.426 | 0.197 | 0.877 | 1100s (time-capped) |
+| ConvGRU | 5.820 | 0.422 | 0.197 | 0.848 | 1270s (time-capped) |
+| Persistence baseline | 6.753 | 0.351 | 0.318 | 0.844 | - |
+
+Before-and-after on the same test sets is in `docs/PRODUCTION_READINESS.md`.
 
 ### Per-class F1 (classification models)
 
@@ -130,3 +140,15 @@ Reading the numbers:
 fetches the district's last 30 daily rows for the lag and rolling-sum features.
 The sequence and spatial checkpoints are saved with their normalisation and config and
 are not yet wired to a live endpoint; `app/eval_sequence.py` shows how to load one.
+
+## 6. Road flood-risk surrogate
+
+`app/services/roads_ml.py` trains an XGBoost classifier on (segment, scenario) samples labelled by the
+DEM ponding simulation (`python -m app.train_roads`). Since 9 Oct 2026 it carries monotone constraints
+so it agrees with the hyperlocal engine's primaries in direction: rainfall and intensity +1, pit depth
++1, site saturation +1; elevation, HAND, distance to water and infiltration -1. Held-out site 6 after the
+change: accuracy 0.797 (was 0.794), macro F1 0.416 (was 0.421), closed-road recall 0.995 (was 0.935),
+caution recall 0.19 (was 0.28). Feature importance after retraining: tunnel 0.245, intensity 0.227,
+duration 0.134, pit depth 0.098; HAND (0.018) and distance to water (0.011) rank low because the
+simulation labels come from local pit filling, not from river proximity. The tabular rain models have
+no terrain features, so constraints on elevation or water distance do not apply to them.
